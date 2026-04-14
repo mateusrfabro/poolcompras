@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Lanchonetes - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h2>Lanchonetes Cadastradas</h2>
+
+    {% if not lanchonetes %}
+        <div class="empty-state">Nenhuma lanchonete cadastrada ainda.</div>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome Fantasia</th>
+                    <th>Responsável</th>
+                    <th>Bairro</th>
+                    <th>CNPJ</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in lanchonetes %}
+                <tr>
+                    <td>{{ l.nome_fantasia }}</td>
+                    <td>{{ l.responsavel.nome_responsavel }}</td>
+                    <td>{{ l.bairro or '-' }}</td>
+                    <td>{{ l.cnpj or '-' }}</td>
+                    <td><span class="badge badge-{{ 'aberta' if l.ativa else 'fechada' }}">{{ 'Ativa' if l.ativa else 'Inativa' }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

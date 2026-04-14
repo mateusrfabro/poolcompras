@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if produto else 'Novo' }} Produto - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h2>{{ 'Editar' if produto else 'Novo' }} Produto</h2>
+
+    <form method="POST"
+          action="{{ url_for('admin.produto_editar', produto_id=produto.id) if produto else url_for('admin.produto_novo') }}"
+          class="form-card">
+        <div class="form-group">
+            <label for="nome">Nome do produto</label>
+            <input type="text" id="nome" name="nome" required placeholder="Ex: Blend bovino 180g" value="{{ produto.nome if produto else '' }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="categoria">Categoria</label>
+                <select id="categoria" name="categoria" required>
+                    <option value="">Selecione...</option>
+                    {% set categorias = ['Carne', 'Pão', 'Queijo', 'Molho', 'Vegetal', 'Bacon/Embutido', 'Bebida', 'Embalagem', 'Descartável', 'Outro'] %}
+                    {% for cat in categorias %}
+                        <option value="{{ cat }}" {{ 'selected' if produto and produto.categoria == cat }}>{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="unidade">Unidade</label>
+                <select id="unidade" name="unidade" required>
+                    <option value="">Selecione...</option>
+                    {% set unidades = ['kg', 'unidade', 'caixa', 'pacote', 'litro', 'fardo'] %}
+                    {% for un in unidades %}
+                        <option value="{{ un }}" {{ 'selected' if produto and produto.unidade == un }}>{{ un }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="descricao">Descrição (opcional)</label>
+            <input type="text" id="descricao" name="descricao" placeholder="Detalhes, marca de referência..." value="{{ produto.descricao if produto else '' }}">
+        </div>
+
+        {% if produto %}
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="ativo" {{ 'checked' if produto.ativo }}> Produto ativo
+            </label>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary btn-block">Salvar</button>
+    </form>
+    <a href="{{ url_for('admin.produtos') }}" class="back-link">Voltar</a>
+</div>
+{% endblock %}

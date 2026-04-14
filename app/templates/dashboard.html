@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Painel - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Olá, {{ current_user.nome_responsavel }}!</h2>
+    {% if lanchonete %}
+        <p class="subtitle">{{ lanchonete.nome_fantasia }} &mdash; {{ lanchonete.bairro or "Londrina" }}</p>
+    {% endif %}
+
+    {% if rodada_aberta %}
+        <div class="card card-highlight">
+            <h3>Rodada aberta: {{ rodada_aberta.nome }}</h3>
+            <p>Fecha em: {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</p>
+            <a href="{{ url_for('pedidos.novo') }}" class="btn btn-primary">Fazer pedido</a>
+        </div>
+
+        {% if meus_pedidos %}
+            <h3>Meus pedidos nesta rodada</h3>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Categoria</th>
+                        <th>Quantidade</th>
+                        <th>Unidade</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in meus_pedidos %}
+                    <tr>
+                        <td>{{ item.produto.nome }}</td>
+                        <td>{{ item.produto.categoria }}</td>
+                        <td>{{ item.quantidade }}</td>
+                        <td>{{ item.produto.unidade }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p class="empty-state">Você ainda não fez pedidos nesta rodada.</p>
+        {% endif %}
+    {% else %}
+        <div class="card">
+            <h3>Nenhuma rodada aberta</h3>
+            <p>Aguarde a próxima rodada de compras. Você será notificado!</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Meus Pedidos - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Meus Pedidos</h2>
+        {% if rodada %}
+            <a href="{{ url_for('pedidos.novo') }}" class="btn btn-primary">Adicionar item</a>
+        {% endif %}
+    </div>
+
+    {% if not rodada %}
+        <div class="empty-state">Nenhuma rodada aberta no momento.</div>
+    {% elif not pedidos %}
+        <div class="empty-state">
+            <p>Você ainda não fez pedidos nesta rodada.</p>
+            <a href="{{ url_for('pedidos.novo') }}" class="btn btn-primary">Fazer primeiro pedido</a>
+        </div>
+    {% else %}
+        <p class="subtitle">Rodada: {{ rodada.nome }} (fecha {{ rodada.data_fechamento.strftime('%d/%m/%Y') }})</p>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Quantidade</th>
+                    <th>Unidade</th>
+                    <th>Obs.</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in pedidos %}
+                <tr>
+                    <td>{{ item.produto.nome }}</td>
+                    <td>{{ item.produto.categoria }}</td>
+                    <td>{{ item.quantidade }}</td>
+                    <td>{{ item.produto.unidade }}</td>
+                    <td>{{ item.observacao or '-' }}</td>
+                    <td>
+                        {% if rodada.status == 'aberta' %}
+                        <form method="POST" action="{{ url_for('pedidos.remover', item_id=item.id) }}" style="display:inline">
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remover este item?')">Remover</button>
+                        </form>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

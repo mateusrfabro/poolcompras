@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Login - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h2>Entrar</h2>
+    <form method="POST" class="form-card">
+        <div class="form-group">
+            <label for="email">E-mail</label>
+            <input type="email" id="email" name="email" required placeholder="seu@email.com">
+        </div>
+        <div class="form-group">
+            <label for="senha">Senha</label>
+            <input type="password" id="senha" name="senha" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+    <p class="form-footer">Ainda não tem conta? <a href="{{ url_for('auth.registro') }}">Cadastre-se</a></p>
+</div>
+{% endblock %}

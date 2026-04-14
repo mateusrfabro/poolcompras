@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Demanda {{ rodada.nome }} - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h2>Demanda — {{ rodada.nome }}</h2>
+    <p class="subtitle">
+        Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status }}</span>
+        | Período: {{ rodada.data_abertura.strftime('%d/%m') }} a {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}
+    </p>
+
+    {% if not agregado %}
+        <div class="empty-state">Nenhum pedido nesta rodada.</div>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Quantidade total</th>
+                    <th>Unidade</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in agregado %}
+                <tr>
+                    <td>{{ item.nome }}</td>
+                    <td>{{ item.categoria }}</td>
+                    <td><strong>{{ item.total_quantidade }}</strong></td>
+                    <td>{{ item.unidade }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if rodada.status in ('fechada', 'cotando') %}
+            <a href="{{ url_for('fornecedor.enviar_cotacao', rodada_id=rodada.id) }}" class="btn btn-primary">Enviar meus preços</a>
+        {% endif %}
+    {% endif %}
+
+    {% if minhas_cotacoes %}
+        <h3>Minha cotação nesta rodada</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Preço unitário</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in minhas_cotacoes %}
+                <tr>
+                    <td>{{ c.produto.nome }}</td>
+                    <td>R$ {{ "%.2f"|format(c.preco_unitario) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <a href="{{ url_for('fornecedor.dashboard') }}" class="back-link">Voltar ao painel</a>
+</div>
+{% endblock %}

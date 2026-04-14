@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Admin - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <h2>Painel Administrativo</h2>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">{{ total_lanchonetes }}</span>
+            <span class="stat-label">Lanchonetes ativas</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ total_produtos }}</span>
+            <span class="stat-label">Produtos no catálogo</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ pedidos_rodada }}</span>
+            <span class="stat-label">Pedidos na rodada</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ qtd_lanchonetes_rodada }}</span>
+            <span class="stat-label">Lanchonetes participando</span>
+        </div>
+    </div>
+
+    {% if rodada_aberta %}
+        <div class="card card-highlight">
+            <h3>Rodada ativa: {{ rodada_aberta.nome }}</h3>
+            <p>Aberta até {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</p>
+            <div class="card-actions">
+                <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada_aberta.id) }}" class="btn btn-outline">Ver detalhes</a>
+                <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}" style="display:inline">
+                    <button type="submit" class="btn btn-danger" onclick="return confirm('Fechar esta rodada?')">Fechar rodada</button>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="card">
+            <p>Nenhuma rodada aberta.</p>
+            <a href="{{ url_for('admin.rodada_nova') }}" class="btn btn-primary">Criar nova rodada</a>
+        </div>
+    {% endif %}
+
+    <h3>Ações rápidas</h3>
+    <div class="quick-actions">
+        <a href="{{ url_for('admin.rodada_nova') }}" class="btn btn-outline">Nova rodada</a>
+        <a href="{{ url_for('admin.produtos') }}" class="btn btn-outline">Gerenciar produtos</a>
+        <a href="{{ url_for('admin.fornecedores') }}" class="btn btn-outline">Gerenciar fornecedores</a>
+        <a href="{{ url_for('admin.lanchonetes') }}" class="btn btn-outline">Ver lanchonetes</a>
+    </div>
+</div>
+{% endblock %}

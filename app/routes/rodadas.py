@@ -1,0 +1,89 @@
+from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask_login import login_required, current_user
+from datetime import datetime
+from sqlalchemy import func
+from app import db
+from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto
+
+rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")
+
+
+@rodadas_bp.route("/")
+@login_required
+def listar():
+    rodadas = Rodada.query.order_by(Rodada.data_abertura.desc()).all()
+    return render_template("rodadas/listar.html", rodadas=rodadas)
+
+
+@rodadas_bp.route("/<int:rodada_id>")
+@login_required
+def detalhe(rodada_id):
+    rodada = Rodada.query.get_or_404(rodada_id)
+
+    agregado = (
+        db.session.query(
+            Produto.id,
+            Produto.nome,
+            Produto.categoria,
+            Produto.unidade,
+            func.sum(ItemPedido.quantidade).label("total_quantidade"),
+            func.count(func.distinct(ItemPedido.lanchonete_id)).label("total_lanchonetes"),
+        )
+        .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .filter(ItemPedido.rodada_id == rodada_id)
+        .group_by(Produto.id, Produto.nome, Produto.categoria, Produto.unidade)
+        .order_by(Produto.categoria, Produto.nome)
+        .all()
+    )
+
+    cotacoes = Cotacao.query.filter_by(rodada_id=rodada_id).all()
+
+    return render_template(
+        "rodadas/detalhe.html",
+        rodada=rodada,
+        agregado=agregado,
+        cotacoes=cotacoes,
+    )
+
+
+@rodadas_bp.route("/<int:rodada_id>/cotar", methods=["GET", "POST"])
+@login_required
+def cotar(rodada_id):
+    if not current_user.is_admin:
+        flash("Apenas administradores podem inserir cotações.", "error")
+        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+    rodada = Rodada.query.get_or_404(rodada_id)
+    fornecedores = Fornecedor.query.filter_by(ativo=True).all()
+
+    produtos_ids = (
+        db.session.query(func.distinct(ItemPedido.produto_id))
+        .filter(ItemPedido.rodada_id == rodada_id)
+        .all()
+    )
+    produtos_ids = [p[0] for p in produtos_ids]
+    produtos = Produto.query.filter(Produto.id.in_(produtos_ids)).all()
+
+    if request.method == "POST":
+        fornecedor_id = request.form.get("fornecedor_id", type=int)
+        for produto in produtos:
+            preco = request.form.get(f"preco_{produto.id}", type=float)
+            if preco and preco > 0:
+                cotacao = Cotacao(
+                    rodada_id=rodada_id,
+                    fornecedor_id=fornecedor_id,
+                    produto_id=produto.id,
+                    preco_unitario=preco,
+                )
+                db.session.add(cotacao)
+
+        db.session.commit()
+        flash("Cotação registrada!", "success")
+        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+    return render_template(
+        "rodadas/cotar.html",
+        rodada=rodada,
+        fornecedores=fornecedores,
+        produtos=produtos,
+    )

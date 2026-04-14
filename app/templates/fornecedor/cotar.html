@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Enviar Cotação - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h2>Enviar Cotação</h2>
+    <p class="subtitle">Rodada: {{ rodada.nome }}</p>
+    <p class="subtitle">Informe seus preços por unidade (R$). Deixe em branco os produtos que não fornece.</p>
+
+    <form method="POST" class="form-card">
+        {% for produto in produtos %}
+        <div class="form-row" style="align-items: center;">
+            <div class="form-group" style="flex:2">
+                <label>{{ produto.nome }} <span style="color: var(--gray-500);">({{ produto.unidade }})</span></label>
+                <small style="color: var(--gray-500);">Demanda: {{ qtds.get(produto.id, 0) }} {{ produto.unidade }}</small>
+            </div>
+            <div class="form-group" style="flex:1">
+                <input type="number" name="preco_{{ produto.id }}" step="0.01" min="0" placeholder="R$">
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary btn-block">Enviar cotação</button>
+    </form>
+
+    <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=rodada.id) }}" class="back-link">Voltar</a>
+</div>
+{% endblock %}

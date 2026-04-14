@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Produtos - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Catálogo de Produtos</h2>
+        <a href="{{ url_for('admin.produto_novo') }}" class="btn btn-primary">Novo produto</a>
+    </div>
+
+    {% if not produtos %}
+        <div class="empty-state">Nenhum produto cadastrado. Comece adicionando os insumos.</div>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Categoria</th>
+                    <th>Unidade</th>
+                    <th>Descrição</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in produtos %}
+                <tr>
+                    <td>{{ p.nome }}</td>
+                    <td>{{ p.categoria }}</td>
+                    <td>{{ p.unidade }}</td>
+                    <td>{{ p.descricao or '-' }}</td>
+                    <td><span class="badge badge-{{ 'aberta' if p.ativo else 'fechada' }}">{{ 'Ativo' if p.ativo else 'Inativo' }}</span></td>
+                    <td><a href="{{ url_for('admin.produto_editar', produto_id=p.id) }}" class="btn btn-sm btn-outline">Editar</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}

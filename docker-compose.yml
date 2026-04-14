@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: poolcompras-db
+    restart: always
+    environment:
+      POSTGRES_DB: poolcompras
+      POSTGRES_USER: poolcompras
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-poolcompras2026}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U poolcompras"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: poolcompras-app
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://poolcompras:${DB_PASSWORD:-poolcompras2026}@db:5432/poolcompras
+      SECRET_KEY: ${SECRET_KEY:-troque-em-producao-chave-segura-2026}
+      FLASK_ENV: production
+    ports:
+      - "5050:5050"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:alpine
+    container_name: poolcompras-nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - app
+
+volumes:
+  pgdata:

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Novo Pedido - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h2>Adicionar ao Pedido</h2>
+    <p class="subtitle">Rodada: {{ rodada.nome }}</p>
+
+    <form method="POST" class="form-card">
+        <div class="form-group">
+            <label for="produto_id">Produto</label>
+            <select id="produto_id" name="produto_id" required>
+                <option value="">Selecione...</option>
+                {% for produto in produtos %}
+                    <option value="{{ produto.id }}">
+                        {{ produto.nome }} ({{ produto.categoria }}) — {{ produto.unidade }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="quantidade">Quantidade</label>
+                <input type="number" id="quantidade" name="quantidade" step="0.1" min="0.1" required>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="observacao">Observação (opcional)</label>
+            <input type="text" id="observacao" name="observacao" placeholder="Ex: prefiro marca X">
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Adicionar ao pedido</button>
+    </form>
+
+    <a href="{{ url_for('pedidos.listar') }}" class="back-link">Voltar aos meus pedidos</a>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Cotação - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h2>Inserir Cotação</h2>
+    <p class="subtitle">Rodada: {{ rodada.nome }}</p>
+
+    <form method="POST" class="form-card">
+        <div class="form-group">
+            <label for="fornecedor_id">Fornecedor</label>
+            <select id="fornecedor_id" name="fornecedor_id" required>
+                <option value="">Selecione...</option>
+                {% for f in fornecedores %}
+                    <option value="{{ f.id }}">{{ f.razao_social }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <h3>Preços por produto</h3>
+        {% for produto in produtos %}
+        <div class="form-row">
+            <div class="form-group" style="flex:2">
+                <label>{{ produto.nome }} ({{ produto.unidade }})</label>
+            </div>
+            <div class="form-group" style="flex:1">
+                <input type="number" name="preco_{{ produto.id }}" step="0.01" min="0" placeholder="R$">
+            </div>
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary btn-block">Salvar cotação</button>
+    </form>
+</div>
+{% endblock %}

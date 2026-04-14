@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Nova Rodada - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <h2>Criar Nova Rodada</h2>
+
+    <form method="POST" class="form-card">
+        <div class="form-group">
+            <label for="nome">Nome da rodada</label>
+            <input type="text" id="nome" name="nome" required placeholder="Ex: Semana 16 — Abril 2026">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="data_abertura">Data de abertura</label>
+                <input type="date" id="data_abertura" name="data_abertura" required>
+            </div>
+            <div class="form-group">
+                <label for="data_fechamento">Data de fechamento</label>
+                <input type="date" id="data_fechamento" name="data_fechamento" required>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">Criar rodada</button>
+    </form>
+    <a href="{{ url_for('rodadas.listar') }}" class="back-link">Voltar</a>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Rodada {{ rodada.nome }} - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <h2>{{ rodada.nome }}</h2>
+    <p class="subtitle">
+        Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status }}</span>
+        | {{ rodada.data_abertura.strftime('%d/%m') }} a {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}
+    </p>
+
+    <h3>Pedidos agregados</h3>
+    {% if not agregado %}
+        <div class="empty-state">Nenhum pedido nesta rodada ainda.</div>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Total pedido</th>
+                    <th>Unidade</th>
+                    <th>Lanchonetes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in agregado %}
+                <tr>
+                    <td>{{ item.nome }}</td>
+                    <td>{{ item.categoria }}</td>
+                    <td><strong>{{ item.total_quantidade }}</strong></td>
+                    <td>{{ item.unidade }}</td>
+                    <td>{{ item.total_lanchonetes }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    {% if current_user.is_admin and rodada.status in ('fechada', 'cotada') %}
+        <h3>Cotações</h3>
+        {% if cotacoes %}
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Fornecedor</th>
+                        <th>Produto</th>
+                        <th>Preço unitário</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in cotacoes %}
+                    <tr>
+                        <td>{{ c.fornecedor.razao_social }}</td>
+                        <td>{{ c.produto.nome }}</td>
+                        <td>R$ {{ "%.2f"|format(c.preco_unitario) }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>Nenhuma cotação registrada ainda.</p>
+        {% endif %}
+        <a href="{{ url_for('rodadas.cotar', rodada_id=rodada.id) }}" class="btn btn-primary">Inserir cotação</a>
+    {% endif %}
+</div>
+{% endblock %}
