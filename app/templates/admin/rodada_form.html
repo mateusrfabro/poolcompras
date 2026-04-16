@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="form-page">
+    <a href="{{ url_for('rodadas.listar') }}" class="btn-back">Voltar para Rodadas</a>
     <h2>Criar Nova Rodada</h2>
 
     <form method="POST" class="form-card">
@@ -24,6 +25,5 @@
 
         <button type="submit" class="btn btn-primary btn-block">Criar rodada</button>
     </form>
-    <a href="{{ url_for('rodadas.listar') }}" class="back-link">Voltar</a>
 </div>
 {% endblock %}

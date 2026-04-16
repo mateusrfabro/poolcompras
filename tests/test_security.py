@@ -1,6 +1,15 @@
 """Testes de seguranca: headers, CSRF (em app real) e IDOR."""
 
 
+def test_guarda_testes_nao_tocam_db_real(app):
+    """Guardiao: falha se o URI dos testes apontar para o DB de dev.
+    Evita repetir o incidente do Bloco C onde drop_all() apagou o DB real.
+    """
+    uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    assert "poolcompras.db" not in uri
+    assert "poolcompras-test-" in uri or ":memory:" in uri
+
+
 def test_security_headers_present(client):
     r = client.get("/login")
     h = r.headers

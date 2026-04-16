@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="form-page">
+    <a href="{{ url_for('admin.fornecedores') }}" class="btn-back">Voltar para Fornecedores</a>
     <h2>{{ 'Editar' if fornecedor else 'Novo' }} Fornecedor</h2>
 
     <form method="POST" class="form-card">
@@ -34,6 +35,5 @@
 
         <button type="submit" class="btn btn-primary btn-block">Salvar</button>
     </form>
-    <a href="{{ url_for('admin.fornecedores') }}" class="back-link">Voltar</a>
 </div>
 {% endblock %}

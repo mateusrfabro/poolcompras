@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="page">
+    <a href="{{ url_for('fornecedor.dashboard') }}" class="btn-back">Voltar para o painel</a>
     <h2>Demanda — {{ rodada.nome }}</h2>
     <p class="subtitle">
         Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status|status_label }}</span>
@@ -58,6 +59,5 @@
         </table></div>
     {% endif %}
 
-    <a href="{{ url_for('fornecedor.dashboard') }}" class="back-link">Voltar ao painel</a>
 </div>
 {% endblock %}

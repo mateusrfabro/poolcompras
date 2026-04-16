@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="form-page">
+    <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
     <h2>Inserir Cotação</h2>
     <p class="subtitle">Rodada: {{ rodada.nome }}</p>
 

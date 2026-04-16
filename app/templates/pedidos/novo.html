@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="form-page">
+    <a href="{{ url_for('pedidos.listar') }}" class="btn-back">Voltar para Meus Pedidos</a>
     <h2>Adicionar ao Pedido</h2>
     <p class="subtitle">Rodada: {{ rodada.nome }}</p>
 
@@ -35,6 +36,5 @@
         <button type="submit" class="btn btn-primary btn-block">Adicionar ao pedido</button>
     </form>
 
-    <a href="{{ url_for('pedidos.listar') }}" class="back-link">Voltar aos meus pedidos</a>
 </div>
 {% endblock %}

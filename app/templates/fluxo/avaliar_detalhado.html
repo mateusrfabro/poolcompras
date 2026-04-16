@@ -3,9 +3,7 @@
 
 {% block content %}
 <div class="page">
-    <div class="breadcrumb">
-        <a href="{{ url_for('historico.detalhe', rodada_id=rodada.id) }}">&larr; Voltar à rodada</a>
-    </div>
+    <a href="{{ url_for('historico.detalhe', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
 
     <div class="page-header">
         <div>

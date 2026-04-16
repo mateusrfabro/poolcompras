@@ -17,16 +17,22 @@ from app.models import Usuario, Lanchonete, Fornecedor, Produto, Rodada
 def app():
     """App Flask em modo teste com SQLite em arquivo temporario.
 
-    Arquivo (nao :memory:) para evitar problema de connection isolation: cada
-    connection a :memory: ve um DB vazio. Com arquivo, todas as connections
-    do pool veem o mesmo DB.
+    Define TEST_DATABASE_URL ANTES de create_app para garantir que o SQLAlchemy
+    seja inicializado apontando pro DB de teste — NUNCA toca o DB de producao/dev.
+    Arquivo (nao :memory:) para evitar connection isolation em pools.
     """
     fd, db_path = tempfile.mkstemp(suffix=".db", prefix="poolcompras-test-")
     os.close(fd)
-    os.environ["SECRET_KEY"] = "test-secret"  # caso algum lugar cheque
+    # IMPORTANTE: setar ANTES do create_app. TestingConfig le TEST_DATABASE_URL.
+    os.environ["TEST_DATABASE_URL"] = f"sqlite:///{db_path}"
+    os.environ["SECRET_KEY"] = "test-secret"
 
     app = create_app("testing")
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite:///{db_path}"
+    # Double-check: garante que nao tem URI apontando pro DB real
+    uri = app.config["SQLALCHEMY_DATABASE_URI"]
+    assert "poolcompras.db" not in uri, (
+        f"SEGURANCA: testes nao devem tocar DB real. URI={uri}"
+    )
 
     # Desabilita rate limiter em testes (evita 429 em varredura rapida)
     limiter.enabled = False
@@ -39,6 +45,7 @@ def app():
         db.drop_all()
 
     limiter.enabled = True  # reativa para proximos runs
+    os.environ.pop("TEST_DATABASE_URL", None)
     try:
         os.unlink(db_path)
     except OSError:

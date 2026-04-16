@@ -23,10 +23,15 @@ class DevelopmentConfig(Config):
 
 
 class TestingConfig(Config):
-    """Configuracao para suite de testes pytest."""
+    """Configuracao para suite de testes pytest.
+
+    NUNCA toca o DB de desenvolvimento: le TEST_DATABASE_URL (setada pelo conftest),
+    com fallback para SQLite in-memory. Se por qualquer motivo o conftest falhar
+    em setar, cai em :memory: (nao danifica o arquivo real).
+    """
     TESTING = True
     DEBUG = False
-    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URL") or "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "test-secret-never-use-in-prod"
 

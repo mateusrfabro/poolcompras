@@ -3,6 +3,7 @@
 
 {% block content %}
 <div class="form-page">
+    <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
     <h2>Enviar Cotação</h2>
     <p class="subtitle">Rodada: {{ rodada.nome }}</p>
     <p class="subtitle">Informe seus preços por unidade (R$). Deixe em branco os produtos que não fornece.</p>
@@ -24,6 +25,5 @@
         <button type="submit" class="btn btn-primary btn-block">Enviar cotação</button>
     </form>
 
-    <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=rodada.id) }}" class="back-link">Voltar</a>
 </div>
 {% endblock %}
