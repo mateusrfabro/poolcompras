@@ -303,6 +303,112 @@ body {
     border-top: 1px solid var(--gray-200);
 }
 
+/* === Historico de rodadas === */
+
+.page-sub {
+    color: var(--gray-700);
+    font-size: 0.95rem;
+    margin-top: 0.2rem;
+}
+
+.breadcrumb {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+.breadcrumb a {
+    color: var(--gray-700);
+    text-decoration: none;
+}
+.breadcrumb a:hover { color: var(--primary); }
+
+.section-title {
+    margin: 2rem 0 1rem;
+    color: var(--secondary);
+    font-size: 1.2rem;
+}
+
+/* Filter chips (abas de status) */
+.filter-chips {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+}
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.9rem;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: 20px;
+    text-decoration: none;
+    color: var(--gray-700);
+    font-size: 0.85rem;
+    transition: all 0.15s;
+}
+.chip:hover { border-color: var(--primary); color: var(--primary); }
+.chip-active {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+.chip-active:hover { color: var(--white); }
+.chip-count {
+    background: rgba(0, 0, 0, 0.08);
+    padding: 0 0.45rem;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.chip-active .chip-count { background: rgba(255, 255, 255, 0.25); }
+
+/* Badges adicionais */
+.badge-cancelada { background: #f8d7da; color: var(--danger); }
+.badge-cotando { background: #cce5ff; color: #004085; }
+.badge-lg { font-size: 0.85rem; padding: 0.35rem 0.9rem; }
+
+/* Stat cards (variantes) */
+.stat-card-primary { border-left: 4px solid var(--primary); }
+.stat-card-success { border-left: 4px solid var(--success); }
+.stat-card-success .stat-number { color: var(--success); }
+.stat-hint {
+    margin-top: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+/* Tag (categoria de produto, etc.) */
+.tag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    background: var(--gray-100);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: var(--gray-700);
+}
+
+.muted { color: var(--gray-500); }
+
+/* Caixa "Em breve nesta tela" */
+.next-step-info {
+    margin-top: 2.5rem;
+    padding: 1rem 1.2rem;
+    background: var(--gray-100);
+    border-left: 3px solid var(--primary);
+    border-radius: 4px;
+}
+.next-step-info h4 {
+    color: var(--secondary);
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+}
+.next-step-info p {
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    margin: 0;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .features { grid-template-columns: 1fr; }
@@ -312,4 +418,6 @@ body {
     .hero-actions { flex-direction: column; align-items: center; }
     .navbar { padding: 0 1rem; }
     .nav-links { gap: 0.6rem; font-size: 0.8rem; }
+    .filter-chips { gap: 0.3rem; }
+    .chip { font-size: 0.8rem; padding: 0.35rem 0.7rem; }
 }

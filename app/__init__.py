@@ -22,6 +22,7 @@ def create_app(config_name="default"):
     from app.routes.rodadas import rodadas_bp
     from app.routes.admin import admin_bp
     from app.routes.fornecedor import fornecedor_bp
+    from app.routes.historico import historico_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -29,6 +30,7 @@ def create_app(config_name="default"):
     app.register_blueprint(rodadas_bp)
     app.register_blueprint(admin_bp)
     app.register_blueprint(fornecedor_bp)
+    app.register_blueprint(historico_bp)
 
     with app.app_context():
         db.create_all()

@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}{{ rodada.nome }} - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('historico.listar') }}">&larr; Minhas Rodadas</a>
+    </div>
+
+    <div class="page-header">
+        <div>
+            <h2>{{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Aberta em {{ rodada.data_abertura.strftime('%d/%m/%Y as %H:%M') }}
+                &middot; Fechamento {{ rodada.data_fechamento.strftime('%d/%m/%Y as %H:%M') }}
+            </p>
+        </div>
+        <div>
+            <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status }}</span>
+        </div>
+    </div>
+
+    {% if rodada.status == 'cancelada' %}
+        <div class="alert alert-warning">
+            Esta rodada foi cancelada. Nao houve cotacoes finais e nada foi comprado.
+        </div>
+    {% endif %}
+
+    {# Stats de economia (so faz sentido se rodada teve cotacoes) #}
+    {% if total_estimado and total_estimado > 0 %}
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total preco partida</div>
+            <div class="stat-number">R$ {{ '%.2f'|format(total_partida) }}</div>
+            <div class="stat-hint">Soma do maior preco por produto</div>
+        </div>
+        <div class="stat-card stat-card-primary">
+            <div class="stat-label">Total via pool</div>
+            <div class="stat-number">R$ {{ '%.2f'|format(total_estimado) }}</div>
+            <div class="stat-hint">Negociado pela compra agregada</div>
+        </div>
+        <div class="stat-card stat-card-success">
+            <div class="stat-label">Sua economia</div>
+            <div class="stat-number">R$ {{ '%.2f'|format(economia) }}</div>
+            <div class="stat-hint">
+                {% if total_partida > 0 %}
+                    {{ '%.1f'|format(economia / total_partida * 100) }}% sobre o preco de partida
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <h3 class="section-title">Seus produtos nesta rodada</h3>
+
+    {% if not itens %}
+        <div class="empty-state">Voce nao pediu nenhum item nesta rodada.</div>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Volume pedido</th>
+                    <th>Preco partida</th>
+                    <th>Preco final</th>
+                    <th>Fornecedor</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for i in itens %}
+                <tr>
+                    <td><strong>{{ i.produto.nome }}</strong></td>
+                    <td><span class="tag">{{ i.produto.categoria }}</span></td>
+                    <td>{{ i.quantidade }} {{ i.produto.unidade }}</td>
+                    <td>
+                        {% if i.preco_partida %}
+                            R$ {{ '%.2f'|format(i.preco_partida) }}
+                        {% else %}
+                            <span class="muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if i.preco_final %}
+                            <strong>R$ {{ '%.2f'|format(i.preco_final) }}</strong>
+                        {% else %}
+                            <span class="muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if i.fornecedor %}
+                            {{ i.fornecedor.razao_social }}
+                        {% else %}
+                            <span class="muted">--</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if i.subtotal %}
+                            R$ {{ '%.2f'|format(i.subtotal) }}
+                        {% else %}
+                            <span class="muted">--</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+
+    <div class="next-step-info">
+        <h4>Em breve nesta tela</h4>
+        <p>
+            Timeline com etapas (aceite, comprovante, pagamento, entrega, confirmacao)
+            e avaliacao da rodada por fornecedor.
+        </p>
+    </div>
+</div>
+{% endblock %}

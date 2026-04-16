@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Minhas Rodadas - PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h2>Minhas Rodadas</h2>
+            <p class="page-sub">Historico de rodadas em que <strong>{{ lanchonete.nome_fantasia }}</strong> participou.</p>
+        </div>
+    </div>
+
+    {# Filtros (chips) #}
+    <div class="filter-chips">
+        <a href="{{ url_for('historico.listar', status='todas') }}"
+           class="chip {% if filtro_status == 'todas' %}chip-active{% endif %}">
+            Todas <span class="chip-count">{{ contagem.get('todas', 0) }}</span>
+        </a>
+        <a href="{{ url_for('historico.listar', status='aberta') }}"
+           class="chip {% if filtro_status == 'aberta' %}chip-active{% endif %}">
+            Em aberto <span class="chip-count">{{ contagem.get('aberta', 0) }}</span>
+        </a>
+        <a href="{{ url_for('historico.listar', status='finalizada') }}"
+           class="chip {% if filtro_status == 'finalizada' %}chip-active{% endif %}">
+            Finalizadas <span class="chip-count">{{ contagem.get('finalizada', 0) }}</span>
+        </a>
+        <a href="{{ url_for('historico.listar', status='cancelada') }}"
+           class="chip {% if filtro_status == 'cancelada' %}chip-active{% endif %}">
+            Canceladas <span class="chip-count">{{ contagem.get('cancelada', 0) }}</span>
+        </a>
+    </div>
+
+    {% if not rodadas %}
+        <div class="empty-state">
+            Nenhuma rodada encontrada para este filtro.
+        </div>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Rodada</th>
+                    <th>Data</th>
+                    <th>Itens pedidos</th>
+                    <th>Produtos diferentes</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r, qtd_itens, qtd_produtos in rodadas %}
+                <tr>
+                    <td><strong>{{ r.nome }}</strong></td>
+                    <td>{{ r.data_abertura.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ qtd_itens }}</td>
+                    <td>{{ qtd_produtos }}</td>
+                    <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+                    <td>
+                        <a href="{{ url_for('historico.detalhe', rodada_id=r.id) }}"
+                           class="btn btn-sm btn-outline">Ver detalhe</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</div>
+{% endblock %}
