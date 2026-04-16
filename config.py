@@ -22,6 +22,15 @@ class DevelopmentConfig(Config):
     DEBUG = True
 
 
+class TestingConfig(Config):
+    """Configuracao para suite de testes pytest."""
+    TESTING = True
+    DEBUG = False
+    SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
+    WTF_CSRF_ENABLED = False
+    SECRET_KEY = "test-secret-never-use-in-prod"
+
+
 class ProductionConfig(Config):
     DEBUG = False
     # Em producao, SECRET_KEY DEVE vir do ambiente. Sem fallback aceitavel.
@@ -34,6 +43,7 @@ class ProductionConfig(Config):
 
 config = {
     "development": DevelopmentConfig,
+    "testing": TestingConfig,
     "production": ProductionConfig,
     "default": DevelopmentConfig,
 }
