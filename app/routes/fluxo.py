@@ -93,13 +93,13 @@ def _so_fornecedor_da_rodada(rodada_id):
 def aceitar_proposta(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     if not _ja_aceita_fase_aceite(rodada):
-        flash("Rodada nao esta disponivel para aceite.", "error")
+        flash("Rodada não está disponível para aceite.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
     try:
         p = _obter_ou_criar_participacao(rodada_id, lanchonete.id)
         if p.aceite_proposta is True:
-            flash("Voce ja havia aceitado esta proposta.", "warning")
+            flash("Você já havia aceitado esta proposta.", "warning")
         else:
             p.aceite_proposta = True
             p.aceite_em = _agora()
@@ -120,7 +120,7 @@ def aceitar_proposta(rodada_id):
 def recusar_proposta(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     if not _ja_aceita_fase_aceite(rodada):
-        flash("Rodada nao esta disponivel para recusa.", "error")
+        flash("Rodada não está disponível para recusa.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
     try:
@@ -148,7 +148,7 @@ def enviar_comprovante(rodada_id):
         rodada_id=rodada_id, lanchonete_id=lanchonete.id,
     ).first()
     if not p or p.aceite_proposta is not True:
-        flash("Voce precisa aceitar a proposta antes de enviar o comprovante.", "error")
+        flash("Você precisa aceitar a proposta antes de enviar o comprovante.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
     arquivo = request.files.get("comprovante")
@@ -159,7 +159,7 @@ def enviar_comprovante(rodada_id):
     # Valida extensao
     ext = arquivo.filename.rsplit(".", 1)[-1].lower() if "." in arquivo.filename else ""
     if ext not in COMPROVANTE_EXT:
-        flash("Formato nao aceito. Envie PDF, JPG ou PNG.", "error")
+        flash("Formato não aceito. Envie PDF, JPG ou PNG.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
     # Valida magic bytes (defesa em profundidade — extensao pode ser falsificada)
@@ -167,7 +167,7 @@ def enviar_comprovante(rodada_id):
     arquivo.stream.seek(0)
     tipo_real = next((t for prefixo, t in MAGIC_BYTES.items() if head.startswith(prefixo)), None)
     if not tipo_real:
-        flash("Arquivo nao parece ser PDF/JPG/PNG valido.", "error")
+        flash("Arquivo não parece ser um PDF/JPG/PNG válido.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
     try:
@@ -184,7 +184,7 @@ def enviar_comprovante(rodada_id):
                           "Comprovante de pagamento enviado",
                           lanchonete_id=lanchonete.id, ator_id=current_user.id)
         db.session.commit()
-        flash("Comprovante enviado! Aguardando confirmacao do fornecedor.", "success")
+        flash("Comprovante enviado! Aguardando confirmação do fornecedor.", "success")
     except SQLAlchemyError:
         db.session.rollback()
         flash("Erro ao salvar comprovante. Tente novamente.", "error")
@@ -200,7 +200,7 @@ def confirmar_recebimento(rodada_id):
         rodada_id=rodada_id, lanchonete_id=lanchonete.id,
     ).first()
     if not p or not p.entrega_informada_em:
-        flash("Fornecedor ainda nao informou a entrega.", "error")
+        flash("Fornecedor ainda não informou a entrega.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
     ok = request.form.get("status") == "ok"
@@ -282,7 +282,7 @@ def avaliar(rodada_id):
 
     except SQLAlchemyError:
         db.session.rollback()
-        flash("Erro ao salvar avaliacao.", "error")
+        flash("Erro ao salvar avaliação.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
 
@@ -330,7 +330,7 @@ def avaliar_detalhado(rodada_id):
                               f"Cliente detalhou avaliacao (geral: {p.avaliacao_geral} estrelas)",
                               lanchonete_id=lanchonete.id, ator_id=current_user.id)
             db.session.commit()
-            flash("Avaliacao detalhada registrada. Obrigado pelo feedback!", "success")
+            flash("Avaliação detalhada registrada. Obrigado pelo feedback!", "success")
             return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
         except SQLAlchemyError:
             db.session.rollback()
@@ -351,10 +351,10 @@ def confirmar_pagamento(rodada_id, lanchonete_id):
         rodada_id=rodada_id, lanchonete_id=lanchonete_id,
     ).first_or_404()
     if not p.comprovante_key:
-        flash("Cliente ainda nao enviou o comprovante.", "error")
+        flash("Cliente ainda não enviou o comprovante.", "error")
         return redirect(url_for("fornecedor.dashboard"))
     if p.pagamento_confirmado_em:
-        flash("Pagamento ja foi confirmado anteriormente.", "warning")
+        flash("Pagamento já foi confirmado anteriormente.", "warning")
         return redirect(url_for("fornecedor.dashboard"))
 
     try:
@@ -389,7 +389,7 @@ def informar_entrega(rodada_id, lanchonete_id):
         entrega_dt = (datetime.strptime(data_str, "%Y-%m-%d").date()
                       if data_str else date.today())
     except ValueError:
-        flash("Data de entrega invalida.", "error")
+        flash("Data de entrega inválida.", "error")
         return redirect(url_for("fornecedor.dashboard"))
 
     try:
