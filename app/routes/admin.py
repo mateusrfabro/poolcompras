@@ -1,4 +1,6 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+import csv
+from io import StringIO
+from flask import Blueprint, render_template, redirect, url_for, flash, request, Response
 from flask_login import login_required, current_user
 from datetime import datetime
 from app import db
@@ -96,6 +98,41 @@ def fornecedor_novo():
     return render_template("admin/fornecedor_form.html", fornecedor=None)
 
 
+@admin_bp.route("/fornecedores/<int:fornecedor_id>/editar", methods=["GET", "POST"])
+@login_required
+@admin_required
+def fornecedor_editar(fornecedor_id):
+    fornecedor = Fornecedor.query.get_or_404(fornecedor_id)
+    if request.method == "POST":
+        fornecedor.razao_social = request.form["razao_social"].strip()
+        fornecedor.nome_contato = request.form.get("nome_contato", "").strip()
+        fornecedor.telefone = request.form.get("telefone", "").strip()
+        fornecedor.email = request.form.get("email", "").strip()
+        fornecedor.cidade = request.form.get("cidade", "").strip()
+        fornecedor.ativo = "ativo" in request.form
+        db.session.commit()
+        flash("Fornecedor atualizado!", "success")
+        return redirect(url_for("admin.fornecedores"))
+    return render_template("admin/fornecedor_form.html", fornecedor=fornecedor)
+
+
+@admin_bp.route("/fornecedores/exportar.csv")
+@login_required
+@admin_required
+def fornecedores_exportar():
+    fornecedores = Fornecedor.query.order_by(Fornecedor.razao_social).all()
+    return _csv_response(
+        filename="fornecedores.csv",
+        headers=["id", "razao_social", "nome_contato", "telefone", "email", "cidade", "ativo", "criado_em"],
+        rows=[
+            [f.id, f.razao_social, f.nome_contato or "", f.telefone or "",
+             f.email or "", f.cidade or "", "sim" if f.ativo else "nao",
+             f.criado_em.strftime("%Y-%m-%d %H:%M") if f.criado_em else ""]
+            for f in fornecedores
+        ],
+    )
+
+
 # --- Rodadas ---
 @admin_bp.route("/rodadas/nova", methods=["GET", "POST"])
 @login_required
@@ -133,3 +170,95 @@ def rodada_fechar(rodada_id):
 def lanchonetes():
     lista = Lanchonete.query.order_by(Lanchonete.nome_fantasia).all()
     return render_template("admin/lanchonetes.html", lanchonetes=lista)
+
+
+@admin_bp.route("/lanchonetes/<int:lanchonete_id>/editar", methods=["GET", "POST"])
+@login_required
+@admin_required
+def lanchonete_editar(lanchonete_id):
+    lanchonete = Lanchonete.query.get_or_404(lanchonete_id)
+    if request.method == "POST":
+        lanchonete.nome_fantasia = request.form["nome_fantasia"].strip()
+        lanchonete.cnpj = request.form.get("cnpj", "").strip() or None
+        lanchonete.endereco = request.form.get("endereco", "").strip()
+        lanchonete.bairro = request.form.get("bairro", "").strip()
+        lanchonete.cidade = request.form.get("cidade", "").strip() or "Londrina"
+        lanchonete.ativa = "ativa" in request.form
+        db.session.commit()
+        flash("Lanchonete atualizada!", "success")
+        return redirect(url_for("admin.lanchonetes"))
+    return render_template("admin/lanchonete_form.html", lanchonete=lanchonete)
+
+
+@admin_bp.route("/lanchonetes/exportar.csv")
+@login_required
+@admin_required
+def lanchonetes_exportar():
+    lista = Lanchonete.query.order_by(Lanchonete.nome_fantasia).all()
+    return _csv_response(
+        filename="lanchonetes.csv",
+        headers=["id", "nome_fantasia", "responsavel", "email_responsavel",
+                 "telefone", "cnpj", "endereco", "bairro", "cidade", "ativa", "criado_em"],
+        rows=[
+            [l.id, l.nome_fantasia,
+             l.responsavel.nome_responsavel if l.responsavel else "",
+             l.responsavel.email if l.responsavel else "",
+             l.responsavel.telefone if l.responsavel else "",
+             l.cnpj or "", l.endereco or "", l.bairro or "", l.cidade or "",
+             "sim" if l.ativa else "nao",
+             l.criado_em.strftime("%Y-%m-%d %H:%M") if l.criado_em else ""]
+            for l in lista
+        ],
+    )
+
+
+# --- Produtos: exportar ---
+@admin_bp.route("/produtos/exportar.csv")
+@login_required
+@admin_required
+def produtos_exportar():
+    lista = Produto.query.order_by(Produto.categoria, Produto.nome).all()
+    return _csv_response(
+        filename="produtos.csv",
+        headers=["id", "nome", "categoria", "unidade", "descricao", "ativo", "criado_em"],
+        rows=[
+            [p.id, p.nome, p.categoria, p.unidade, p.descricao or "",
+             "sim" if p.ativo else "nao",
+             p.criado_em.strftime("%Y-%m-%d %H:%M") if p.criado_em else ""]
+            for p in lista
+        ],
+    )
+
+
+# --- Rodadas: exportar ---
+@admin_bp.route("/rodadas/exportar.csv")
+@login_required
+@admin_required
+def rodadas_exportar():
+    lista = Rodada.query.order_by(Rodada.data_abertura.desc()).all()
+    return _csv_response(
+        filename="rodadas.csv",
+        headers=["id", "nome", "status", "data_abertura", "data_fechamento", "criado_em"],
+        rows=[
+            [r.id, r.nome, r.status,
+             r.data_abertura.strftime("%Y-%m-%d %H:%M") if r.data_abertura else "",
+             r.data_fechamento.strftime("%Y-%m-%d %H:%M") if r.data_fechamento else "",
+             r.criado_em.strftime("%Y-%m-%d %H:%M") if r.criado_em else ""]
+            for r in lista
+        ],
+    )
+
+
+# --- Helper: gera resposta CSV com BOM UTF-8 para Excel abrir com acentos OK ---
+def _csv_response(filename: str, headers: list, rows: list) -> Response:
+    buf = StringIO()
+    # BOM para Excel reconhecer como UTF-8 (evita acento quebrado no Windows)
+    buf.write("\ufeff")
+    writer = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(headers)
+    writer.writerows(rows)
+    return Response(
+        buf.getvalue(),
+        mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )

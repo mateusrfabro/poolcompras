@@ -84,7 +84,10 @@ def novo():
 @pedidos_bp.route("/remover/<int:item_id>", methods=["POST"])
 @login_required
 def remover(item_id):
-    item = ItemPedido.query.get_or_404(item_id)
+    item = ItemPedido.query.get(item_id)
+    if item is None:
+        flash("Este item não existe mais (pode ter sido removido em outra sessão).", "warning")
+        return redirect(url_for("pedidos.listar"))
     lanchonete = current_user.lanchonete
 
     if item.lanchonete_id != lanchonete.id:

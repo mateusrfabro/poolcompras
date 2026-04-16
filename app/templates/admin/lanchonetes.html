@@ -1,9 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Lanchonetes - PoolCompras{% endblock %}
+{% block title %}Lanchonetes — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="page">
-    <h2>Lanchonetes Cadastradas</h2>
+    <div class="page-header">
+        <h2>Lanchonetes Cadastradas</h2>
+        <div class="page-header-actions">
+            <a href="{{ url_for('admin.lanchonetes_exportar') }}" class="btn btn-outline btn-sm">Exportar CSV</a>
+        </div>
+    </div>
 
     {% if not lanchonetes %}
         <div class="empty-state">Nenhuma lanchonete cadastrada ainda.</div>
@@ -16,16 +21,25 @@
                     <th>Bairro</th>
                     <th>CNPJ</th>
                     <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for l in lanchonetes %}
                 <tr>
                     <td>{{ l.nome_fantasia }}</td>
-                    <td>{{ l.responsavel.nome_responsavel }}</td>
-                    <td>{{ l.bairro or '-' }}</td>
-                    <td>{{ l.cnpj or '-' }}</td>
-                    <td><span class="badge badge-{{ 'aberta' if l.ativa else 'fechada' }}">{{ 'Ativa' if l.ativa else 'Inativa' }}</span></td>
+                    <td>{{ l.responsavel.nome_responsavel if l.responsavel else '—' }}</td>
+                    <td>{{ l.bairro or '—' }}</td>
+                    <td>{{ l.cnpj or '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'ativo' if l.ativa else 'inativo' }}">
+                            {{ 'Ativa' if l.ativa else 'Inativa' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.lanchonete_editar', lanchonete_id=l.id) }}"
+                           class="btn btn-sm btn-outline">Editar</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

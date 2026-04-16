@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Erro interno — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>500</h1>
+    <h2>Algo deu errado</h2>
+    <p>
+        Tivemos um erro inesperado ao processar seu pedido.
+        Já registramos o incidente. Tente novamente em alguns instantes.
+    </p>
+    <div class="error-page-actions">
+        <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.index') }}"
+           class="btn btn-primary">Voltar</a>
+    </div>
+</div>
+{% endblock %}

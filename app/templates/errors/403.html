@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Acesso negado — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>403</h1>
+    <h2>Acesso negado</h2>
+    <p>Você não tem permissão para acessar este recurso.</p>
+    <div class="error-page-actions">
+        <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Voltar ao painel</a>
+    </div>
+</div>
+{% endblock %}

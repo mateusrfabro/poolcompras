@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Novo Fornecedor - PoolCompras{% endblock %}
+{% block title %}{{ 'Editar' if fornecedor else 'Novo' }} Fornecedor — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="form-page">
@@ -10,28 +10,47 @@
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="razao_social">Razão social</label>
-            <input type="text" id="razao_social" name="razao_social" required>
+            <input type="text" id="razao_social" name="razao_social" required
+                   autocomplete="organization"
+                   value="{{ fornecedor.razao_social if fornecedor else '' }}">
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="nome_contato">Nome do contato</label>
-                <input type="text" id="nome_contato" name="nome_contato">
+                <input type="text" id="nome_contato" name="nome_contato"
+                       autocomplete="name"
+                       value="{{ fornecedor.nome_contato if fornecedor else '' }}">
             </div>
             <div class="form-group">
                 <label for="telefone">Telefone</label>
-                <input type="text" id="telefone" name="telefone">
+                <input type="tel" id="telefone" name="telefone"
+                       autocomplete="tel" inputmode="tel"
+                       placeholder="(43) 99999-9999"
+                       value="{{ fornecedor.telefone if fornecedor else '' }}">
             </div>
         </div>
         <div class="form-row">
             <div class="form-group">
                 <label for="email">E-mail</label>
-                <input type="email" id="email" name="email">
+                <input type="email" id="email" name="email"
+                       autocomplete="email"
+                       value="{{ fornecedor.email if fornecedor else '' }}">
             </div>
             <div class="form-group">
                 <label for="cidade">Cidade</label>
-                <input type="text" id="cidade" name="cidade" value="Londrina">
+                <input type="text" id="cidade" name="cidade"
+                       value="{{ fornecedor.cidade if fornecedor else 'Londrina' }}">
             </div>
         </div>
+
+        {% if fornecedor %}
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="ativo" {{ 'checked' if fornecedor.ativo }}>
+                Fornecedor ativo (participa das rodadas)
+            </label>
+        </div>
+        {% endif %}
 
         <button type="submit" class="btn btn-primary btn-block">Salvar</button>
     </form>

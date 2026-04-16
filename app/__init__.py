@@ -79,6 +79,21 @@ def create_app(config_name="default"):
     from app.routes.fluxo import fluxo_bp
     from app.cli import cron_bp
 
+    # Error handlers amigaveis
+    from flask import render_template
+    @app.errorhandler(404)
+    def erro_404(e):
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(403)
+    def erro_403(e):
+        return render_template("errors/403.html"), 403
+
+    @app.errorhandler(500)
+    def erro_500(e):
+        db.session.rollback()
+        return render_template("errors/500.html"), 500
+
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(pedidos_bp)

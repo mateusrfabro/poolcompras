@@ -6,7 +6,10 @@
     <div class="page-header">
         <h2>Rodadas de Compras</h2>
         {% if current_user.is_admin %}
-            <a href="{{ url_for('admin.rodada_nova') }}" class="btn btn-primary">Nova rodada</a>
+            <div class="page-header-actions">
+                <a href="{{ url_for('admin.rodadas_exportar') }}" class="btn btn-outline btn-sm">Exportar CSV</a>
+                <a href="{{ url_for('admin.rodada_nova') }}" class="btn btn-primary">Nova rodada</a>
+            </div>
         {% endif %}
     </div>
 

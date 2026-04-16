@@ -1,11 +1,14 @@
 {% extends "base.html" %}
-{% block title %}Fornecedores - PoolCompras{% endblock %}
+{% block title %}Fornecedores — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="page">
     <div class="page-header">
         <h2>Fornecedores</h2>
-        <a href="{{ url_for('admin.fornecedor_novo') }}" class="btn btn-primary">Novo fornecedor</a>
+        <div class="page-header-actions">
+            <a href="{{ url_for('admin.fornecedores_exportar') }}" class="btn btn-outline btn-sm">Exportar CSV</a>
+            <a href="{{ url_for('admin.fornecedor_novo') }}" class="btn btn-primary">Novo fornecedor</a>
+        </div>
     </div>
 
     {% if not fornecedores %}
@@ -19,16 +22,27 @@
                     <th>Telefone</th>
                     <th>E-mail</th>
                     <th>Cidade</th>
+                    <th>Status</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
                 {% for f in fornecedores %}
                 <tr>
                     <td>{{ f.razao_social }}</td>
-                    <td>{{ f.nome_contato or '-' }}</td>
-                    <td>{{ f.telefone or '-' }}</td>
-                    <td>{{ f.email or '-' }}</td>
-                    <td>{{ f.cidade or '-' }}</td>
+                    <td>{{ f.nome_contato or '—' }}</td>
+                    <td>{{ f.telefone or '—' }}</td>
+                    <td>{{ f.email or '—' }}</td>
+                    <td>{{ f.cidade or '—' }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'ativo' if f.ativo else 'inativo' }}">
+                            {{ 'Ativo' if f.ativo else 'Inativo' }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.fornecedor_editar', fornecedor_id=f.id) }}"
+                           class="btn btn-sm btn-outline">Editar</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

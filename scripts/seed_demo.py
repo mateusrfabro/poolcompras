@@ -491,11 +491,11 @@ def seed(reset=False):
 
         rodadas_def = [
             # (nome, dias_atras, status_final, quem_pede)
-            (f"Rodada {(hoje - timedelta(days=0)).strftime('%d/%m')} - Manha", 0, "aberta", lanchonetes[:6]),
-            (f"Rodada {(hoje - timedelta(days=1)).strftime('%d/%m')} - Manha", 1, "finalizada", lanchonetes),
-            (f"Rodada {(hoje - timedelta(days=3)).strftime('%d/%m')} - Manha", 3, "finalizada", lanchonetes[:8]),
-            (f"Rodada {(hoje - timedelta(days=5)).strftime('%d/%m')} - Manha", 5, "cancelada", lanchonetes[:3]),
-            (f"Rodada {(hoje - timedelta(days=7)).strftime('%d/%m')} - Manha", 7, "finalizada", lanchonetes[:9]),
+            (f"Rodada {(hoje - timedelta(days=0)).strftime('%d/%m')} - Manh\u00e3", 0, "aberta", lanchonetes[:6]),
+            (f"Rodada {(hoje - timedelta(days=1)).strftime('%d/%m')} - Manh\u00e3", 1, "finalizada", lanchonetes),
+            (f"Rodada {(hoje - timedelta(days=3)).strftime('%d/%m')} - Manh\u00e3", 3, "finalizada", lanchonetes[:8]),
+            (f"Rodada {(hoje - timedelta(days=5)).strftime('%d/%m')} - Manh\u00e3", 5, "cancelada", lanchonetes[:3]),
+            (f"Rodada {(hoje - timedelta(days=7)).strftime('%d/%m')} - Manh\u00e3", 7, "finalizada", lanchonetes[:9]),
         ]
 
         print("--- Rodadas ---")

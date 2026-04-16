@@ -5,7 +5,10 @@
 <div class="page">
     <div class="page-header">
         <h2>Catálogo de Produtos</h2>
-        <a href="{{ url_for('admin.produto_novo') }}" class="btn btn-primary">Novo produto</a>
+        <div class="page-header-actions">
+            <a href="{{ url_for('admin.produtos_exportar') }}" class="btn btn-outline btn-sm">Exportar CSV</a>
+            <a href="{{ url_for('admin.produto_novo') }}" class="btn btn-primary">Novo produto</a>
+        </div>
     </div>
 
     {% if not produtos %}
@@ -29,7 +32,11 @@
                     <td>{{ p.categoria }}</td>
                     <td>{{ p.unidade }}</td>
                     <td>{{ p.descricao or '-' }}</td>
-                    <td><span class="badge badge-{{ 'aberta' if p.ativo else 'fechada' }}">{{ 'Ativo' if p.ativo else 'Inativo' }}</span></td>
+                    <td>
+                        <span class="badge badge-{{ 'ativo' if p.ativo else 'inativo' }}">
+                            {{ 'Ativo' if p.ativo else 'Inativo' }}
+                        </span>
+                    </td>
                     <td><a href="{{ url_for('admin.produto_editar', produto_id=p.id) }}" class="btn btn-sm btn-outline">Editar</a></td>
                 </tr>
                 {% endfor %}
