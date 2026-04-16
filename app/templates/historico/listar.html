@@ -40,9 +40,9 @@
                 <tr>
                     <th>Rodada</th>
                     <th>Data</th>
-                    <th>Itens pedidos</th>
-                    <th>Produtos diferentes</th>
+                    <th>Itens</th>
                     <th>Status</th>
+                    <th>Sua avaliação</th>
                     <th></th>
                 </tr>
             </thead>
@@ -51,9 +51,18 @@
                 <tr>
                     <td><strong>{{ r.nome }}</strong></td>
                     <td>{{ r.data_abertura.strftime('%d/%m/%Y') }}</td>
-                    <td>{{ qtd_itens }}</td>
-                    <td>{{ qtd_produtos }}</td>
+                    <td>{{ qtd_itens }} ({{ qtd_produtos }} produtos)</td>
                     <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
+                    <td>
+                        {% set nota = notas_map.get(r.id) %}
+                        {% if nota %}
+                            <span class="stars-readonly" aria-label="{{ nota }} de 5 estrelas">
+                                {% for i in range(1, 6) %}{% if i <= nota %}★{% else %}☆{% endif %}{% endfor %}
+                            </span>
+                        {% else %}
+                            <span class="muted" aria-hidden="true">—</span>
+                        {% endif %}
+                    </td>
                     <td>
                         <a href="{{ url_for('historico.detalhe', rodada_id=r.id) }}"
                            class="btn btn-sm btn-outline">Ver detalhe</a>

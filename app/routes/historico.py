@@ -50,6 +50,15 @@ def listar():
         .order_by(Rodada.data_abertura.desc())
     )
 
+    # Nota dada pela lanchonete por rodada (map id->estrelas)
+    notas_map = dict(
+        db.session.query(ParticipacaoRodada.rodada_id,
+                         ParticipacaoRodada.avaliacao_geral)
+        .filter(ParticipacaoRodada.lanchonete_id == lanchonete.id,
+                ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .all()
+    )
+
     if filtro_status == "todas":
         # Mostra todas em que ela participou (inclui aberta tambem)
         pass
@@ -76,6 +85,7 @@ def listar():
         filtro_status=filtro_status,
         contagem=contagem,
         lanchonete=lanchonete,
+        notas_map=notas_map,
     )
 
 

@@ -5,7 +5,7 @@
 <div class="page">
     <h2>{{ rodada.nome }}</h2>
     <p class="subtitle">
-        Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status }}</span>
+        Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status|status_label }}</span>
         | {{ rodada.data_abertura.strftime('%d/%m') }} a {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}
     </p>
 

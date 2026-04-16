@@ -644,6 +644,22 @@ body {
 .badge-cotando { background: #cce5ff; color: #004085; }
 .badge-lg { font-size: 0.85rem; padding: 0.35rem 0.9rem; }
 
+/* Badges especificos por dominio (evita acoplamento com status de rodada) */
+.badge-ativo        { background: #d4edda; color: var(--success); }
+.badge-inativo      { background: var(--gray-200); color: var(--gray-700); }
+.badge-selecionada  { background: #d4edda; color: var(--success); }
+
+/* Estrelas readonly (exibicao de nota ja dada) */
+.stars-readonly {
+    color: var(--warning);
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+/* Container de flashes (acessibilidade) */
+.flash-container { margin-bottom: 1rem; }
+
 /* Stat cards (variantes) */
 .stat-card-primary { border-left: 4px solid var(--primary); }
 .stat-card-success { border-left: 4px solid var(--success); }

@@ -70,7 +70,7 @@
                 <tr>
                     <td>{{ r.nome }}</td>
                     <td>{{ r.data_fechamento.strftime('%d/%m/%Y') }}</td>
-                    <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+                    <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
                     <td>
                         <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=r.id) }}" class="btn btn-sm btn-primary">Ver demanda</a>
                     </td>
@@ -104,7 +104,7 @@
                     <td>{{ c.preco_unitario|brl }}</td>
                     <td>
                         {% if c.selecionada %}
-                            <span class="badge badge-aberta">Escolhida</span>
+                            <span class="badge badge-selecionada">Escolhida</span>
                         {% else %}
                             -
                         {% endif %}
