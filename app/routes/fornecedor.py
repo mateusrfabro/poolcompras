@@ -1,8 +1,12 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from app import db
-from app.models import Rodada, ItemPedido, Cotacao, Produto
+from app.models import (
+    Rodada, ItemPedido, Cotacao, Produto,
+    ParticipacaoRodada, Lanchonete,
+)
 
 fornecedor_bp = Blueprint("fornecedor", __name__, url_prefix="/fornecedor")
 
@@ -40,11 +44,36 @@ def dashboard():
         .all()
     ) if fornecedor else []
 
+    # Fase 2: participacoes com acoes pendentes do fornecedor
+    # (rodadas finalizadas em que ele cotou, com clientes em estagio relevante)
+    participacoes_pendentes = []
+    if fornecedor:
+        rodadas_cotadas_ids = [
+            r for (r,) in db.session.query(Cotacao.rodada_id)
+                .filter_by(fornecedor_id=fornecedor.id)
+                .distinct().all()
+        ]
+        if rodadas_cotadas_ids:
+            participacoes_pendentes = (
+                ParticipacaoRodada.query
+                .options(joinedload(ParticipacaoRodada.lanchonete),
+                         joinedload(ParticipacaoRodada.rodada))
+                .filter(ParticipacaoRodada.rodada_id.in_(rodadas_cotadas_ids))
+                # So mostrar quem ja aceitou e tem comprovante ou ja pago
+                .filter(ParticipacaoRodada.aceite_proposta.is_(True))
+                .filter(ParticipacaoRodada.comprovante_key.isnot(None))
+                # Omite as que ja tiveram entrega informada (fluxo completo do lado fornecedor)
+                .filter(ParticipacaoRodada.entrega_informada_em.is_(None))
+                .order_by(ParticipacaoRodada.comprovante_em.asc())
+                .all()
+            )
+
     return render_template(
         "fornecedor/dashboard.html",
         fornecedor=fornecedor,
         rodadas_para_cotar=rodadas_para_cotar,
         minhas_cotacoes=minhas_cotacoes,
+        participacoes_pendentes=participacoes_pendentes,
     )
 
 

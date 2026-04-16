@@ -309,28 +309,73 @@ def popular_fluxo_finalizado(rodada, lanchonetes, fornecedores, cancelada=False)
             criado_em=rodada.data_fechamento + timedelta(days=3),
         ))
 
-    # Pra cada lanchonete: participacao + fluxo completo
+    # Pra cada lanchonete: participacao em estagio variavel (demo realista)
+    # Distribuicao por rodada mais recente (ainda em andamento):
+    #   20% aguardando aceite | 15% aceitou, sem comprovante | 15% comprovante enviado, sem confirmacao
+    #   10% pag confirmado, sem entrega | 5% entrega informada sem recebimento
+    #   35% fluxo completo | 5% problema na entrega
+    # Para rodadas antigas: quase tudo completo.
+    # Comparacao naive: remove tzinfo pra casar com o que SQLite retorna
+    agora_naive = datetime.now(timezone.utc).replace(tzinfo=None)
+    fech = rodada.data_fechamento.replace(tzinfo=None) if rodada.data_fechamento.tzinfo else rodada.data_fechamento
+    eh_recente = fech >= (agora_naive - timedelta(days=2))
+
     for i, lanch in enumerate(lanchonetes):
         if ParticipacaoRodada.query.filter_by(
                 rodada_id=rodada.id, lanchonete_id=lanch.id).first():
             continue
 
-        # Maioria completa todo o fluxo; 10% fica em alguma etapa intermediaria
-        # e 5% marca problema na entrega
         perfil = random.random()
         base_dt = rodada.data_fechamento + timedelta(hours=3)
 
-        part = ParticipacaoRodada(
-            rodada_id=rodada.id,
-            lanchonete_id=lanch.id,
-            aceite_proposta=True,
-            aceite_em=base_dt + timedelta(hours=2),
-            comprovante_key=f"comprovantes/demo/rodada_{rodada.id}_lanch_{lanch.id}.pdf",
-            comprovante_em=base_dt + timedelta(hours=5),
-            pagamento_confirmado_em=base_dt + timedelta(hours=8),
-            entrega_informada_em=base_dt + timedelta(days=1, hours=10),
-            entrega_data=(base_dt + timedelta(days=2)).date(),
-        )
+        part = ParticipacaoRodada(rodada_id=rodada.id, lanchonete_id=lanch.id)
+
+        # Estagio 1: aguardando aceite
+        if eh_recente and perfil < 0.20:
+            db.session.add(part)
+            continue
+        # Estagio 2: aceitou, sem comprovante
+        part.aceite_proposta = True
+        part.aceite_em = base_dt + timedelta(hours=2)
+        if eh_recente and perfil < 0.35:
+            db.session.add(part)
+            db.session.flush()
+            db.session.add(EventoRodada(
+                rodada_id=rodada.id, lanchonete_id=lanch.id,
+                tipo=EventoRodada.TIPO_PROPOSTA_ACEITA,
+                descricao="Cliente aceitou a proposta final",
+                criado_em=part.aceite_em,
+            ))
+            continue
+        # Estagio 3: comprovante enviado, fornecedor nao confirmou
+        part.comprovante_key = f"comprovantes/demo/rodada_{rodada.id}_lanch_{lanch.id}.pdf"
+        part.comprovante_em = base_dt + timedelta(hours=5)
+        if eh_recente and perfil < 0.50:
+            db.session.add(part)
+            db.session.flush()
+            for tipo, desc, dt in [
+                (EventoRodada.TIPO_PROPOSTA_ACEITA, "Cliente aceitou a proposta final", part.aceite_em),
+                (EventoRodada.TIPO_COMPROVANTE_ENVIADO, "Comprovante de pagamento enviado", part.comprovante_em),
+            ]:
+                db.session.add(EventoRodada(rodada_id=rodada.id, lanchonete_id=lanch.id,
+                                             tipo=tipo, descricao=desc, criado_em=dt))
+            continue
+        # Estagio 4: pagamento confirmado, sem entrega
+        part.pagamento_confirmado_em = base_dt + timedelta(hours=8)
+        if eh_recente and perfil < 0.60:
+            db.session.add(part)
+            db.session.flush()
+            for tipo, desc, dt in [
+                (EventoRodada.TIPO_PROPOSTA_ACEITA, "Cliente aceitou a proposta final", part.aceite_em),
+                (EventoRodada.TIPO_COMPROVANTE_ENVIADO, "Comprovante de pagamento enviado", part.comprovante_em),
+                (EventoRodada.TIPO_PAGAMENTO_CONFIRMADO, "Fornecedor confirmou recebimento do pagamento", part.pagamento_confirmado_em),
+            ]:
+                db.session.add(EventoRodada(rodada_id=rodada.id, lanchonete_id=lanch.id,
+                                             tipo=tipo, descricao=desc, criado_em=dt))
+            continue
+        # Estagio 5 em diante: entrega informada
+        part.entrega_informada_em = base_dt + timedelta(days=1, hours=10)
+        part.entrega_data = (base_dt + timedelta(days=2)).date()
 
         # 5% reporta problema, resto confirma OK
         if perfil < 0.05:

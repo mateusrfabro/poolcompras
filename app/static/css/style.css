@@ -303,6 +303,78 @@ body {
     border-top: 1px solid var(--gray-200);
 }
 
+/* === Cards de pendencias do fornecedor === */
+
+.pendencias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+.pendencia-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--warning);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+}
+.pendencia-card-head {
+    margin-bottom: 0.6rem;
+    font-size: 0.95rem;
+}
+.pendencia-card p {
+    font-size: 0.85rem;
+    margin-bottom: 0.6rem;
+    color: var(--gray-700);
+}
+.pendencia-form {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.pendencia-form input[type="date"] {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+}
+
+/* === Card de proxima acao === */
+
+.action-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius);
+    padding: 1.2rem 1.4rem;
+    margin: 1.5rem 0;
+}
+.action-card-title {
+    color: var(--secondary);
+    font-size: 1.05rem;
+    margin-bottom: 0.5rem;
+}
+.action-card p { margin-bottom: 0.8rem; }
+.action-card-buttons {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-top: 0.8rem;
+}
+.action-card-form { margin-top: 0.5rem; }
+.action-card-form input[type="file"] {
+    display: block;
+    padding: 0.5rem;
+    border: 2px dashed var(--gray-300);
+    border-radius: var(--radius);
+    background: var(--gray-100);
+    margin-bottom: 0.8rem;
+    width: 100%;
+    max-width: 400px;
+    cursor: pointer;
+}
+.action-card-form input[type="file"]:hover { border-color: var(--primary); }
+
 /* === Timeline de fases da rodada === */
 
 .timeline {

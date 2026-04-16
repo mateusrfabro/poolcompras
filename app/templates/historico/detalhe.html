@@ -108,6 +108,70 @@
         </table></div>
     {% endif %}
 
+    {# Fase 2: proxima acao pendente para o cliente #}
+    {% if participacao and rodada.status == 'finalizada' %}
+        <div class="action-card">
+            <h3 class="action-card-title">Próxima ação</h3>
+
+            {% if participacao.aceite_proposta is none %}
+                <p>Você recebeu a proposta final consolidada desta rodada. Aceita?</p>
+                <div class="action-card-buttons">
+                    <form method="POST" action="{{ url_for('fluxo.aceitar_proposta', rodada_id=rodada.id) }}" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary">Aceitar proposta</button>
+                    </form>
+                    <form method="POST" action="{{ url_for('fluxo.recusar_proposta', rodada_id=rodada.id) }}" style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline" onclick="return confirm('Recusar a proposta? Você ficará de fora desta rodada.')">Recusar</button>
+                    </form>
+                </div>
+
+            {% elif participacao.aceite_proposta is false %}
+                <p class="muted">Você recusou esta proposta. Sem próximas ações.</p>
+
+            {% elif not participacao.comprovante_key %}
+                <p>Envie o comprovante de pagamento (PDF, JPG ou PNG, até 5 MB).</p>
+                <form method="POST" action="{{ url_for('fluxo.enviar_comprovante', rodada_id=rodada.id) }}"
+                      enctype="multipart/form-data" class="action-card-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="file" name="comprovante" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required>
+                    <button type="submit" class="btn btn-primary">Enviar comprovante</button>
+                </form>
+
+            {% elif not participacao.pagamento_confirmado_em %}
+                <p>Comprovante enviado.
+                    <a href="{{ url_for('uploads.servir', key=participacao.comprovante_key) }}" target="_blank">Ver arquivo</a>.
+                    Aguardando o fornecedor confirmar o recebimento do pagamento.
+                </p>
+
+            {% elif not participacao.entrega_informada_em %}
+                <p>Pagamento confirmado. Aguardando o fornecedor informar a data da entrega.</p>
+
+            {% elif participacao.recebimento_ok is none %}
+                <p>O fornecedor informou a entrega para
+                    <strong>{{ participacao.entrega_data.strftime('%d/%m/%Y') if participacao.entrega_data else '—' }}</strong>.
+                    Como foi o recebimento?</p>
+                <form method="POST" action="{{ url_for('fluxo.confirmar_recebimento', rodada_id=rodada.id) }}" class="action-card-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="observacao">Observação (opcional)</label>
+                        <input type="text" id="observacao" name="observacao" maxlength="500" placeholder="Ex: faltou 1 kg de bacon">
+                    </div>
+                    <div class="action-card-buttons">
+                        <button type="submit" name="status" value="ok" class="btn btn-primary">Tudo certo ✓</button>
+                        <button type="submit" name="status" value="problema" class="btn btn-danger">Tive um problema</button>
+                    </div>
+                </form>
+
+            {% elif not participacao.avaliacao_geral %}
+                <p>Avalie esta rodada para fecharmos o fluxo. <em>(em breve)</em></p>
+
+            {% else %}
+                <p class="muted">Fluxo concluído. Obrigado pela avaliação!</p>
+            {% endif %}
+        </div>
+    {% endif %}
+
     {# Fase 2: linha do tempo do fluxo da rodada #}
     {% if fases %}
         <h3 class="section-title">Linha do tempo</h3>
