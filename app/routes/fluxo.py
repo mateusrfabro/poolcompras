@@ -13,7 +13,7 @@ from flask import Blueprint, request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import db
+from app import db, limiter
 from app.models import (
     Rodada, ParticipacaoRodada, EventoRodada, Cotacao, Fornecedor,
     AvaliacaoRodada,
@@ -141,6 +141,7 @@ def recusar_proposta(rodada_id):
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/comprovante", methods=["POST"])
 @login_required
+@limiter.limit("20 per hour", error_message="Muitos uploads. Aguarde uma hora.")
 def enviar_comprovante(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     p = ParticipacaoRodada.query.filter_by(

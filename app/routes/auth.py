@@ -1,13 +1,15 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from app import db
+from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
 
 auth_bp = Blueprint("auth", __name__)
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
+@limiter.limit("5 per minute", methods=["POST"],
+               error_message="Muitas tentativas de login. Aguarde 1 minuto.")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))
@@ -28,6 +30,8 @@ def login():
 
 
 @auth_bp.route("/registro", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"],
+               error_message="Muitos cadastros recentes. Aguarde antes de tentar novamente.")
 def registro():
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))
@@ -74,6 +78,8 @@ def registro():
 
 
 @auth_bp.route("/registro/fornecedor", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"],
+               error_message="Muitos cadastros recentes. Aguarde antes de tentar novamente.")
 def registro_fornecedor():
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))

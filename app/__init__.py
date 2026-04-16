@@ -3,6 +3,8 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from config import config
 
 db = SQLAlchemy()
@@ -11,6 +13,9 @@ login_manager.login_view = "auth.login"
 login_manager.login_message = "Faça login para acessar o sistema."
 csrf = CSRFProtect()
 migrate = Migrate()
+# Rate-limiter: chave = IP do cliente; backend padrao em memoria (suficiente para
+# single-process; para multiplos workers usar Redis no futuro).
+limiter = Limiter(key_func=get_remote_address, default_limits=["200 per hour"])
 
 
 def create_app(config_name="default"):
@@ -30,6 +35,7 @@ def create_app(config_name="default"):
     # Importa models antes do migrate.init_app para o autogenerate enxergar tudo
     from app import models  # noqa: F401
     migrate.init_app(app, db, render_as_batch=True)  # batch=True para SQLite ALTER COLUMN
+    limiter.init_app(app)
 
     # Storage de uploads (comprovantes etc.). Implementacao local agora; trocar por S3 no futuro.
     from app.services.storage import init_storage
