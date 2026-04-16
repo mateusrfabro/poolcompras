@@ -24,9 +24,8 @@
                 <tr>
                     <th>Produto</th>
                     <th>Categoria</th>
-                    <th>Quantidade</th>
-                    <th>Unidade</th>
-                    <th>Obs.</th>
+                    <th>Volume</th>
+                    <th>Observação</th>
                     <th></th>
                 </tr>
             </thead>
@@ -35,9 +34,8 @@
                 <tr>
                     <td>{{ item.produto.nome }}</td>
                     <td>{{ item.produto.categoria }}</td>
-                    <td>{{ item.quantidade|qtd }}</td>
-                    <td>{{ item.produto.unidade }}</td>
-                    <td>{{ item.observacao or '-' }}</td>
+                    <td>{{ item.quantidade|fmt_un(item.produto.unidade) }}</td>
+                    <td>{{ item.observacao or '—' }}</td>
                     <td>
                         {% if rodada.status == 'aberta' %}
                         <form method="POST" action="{{ url_for('pedidos.remover', item_id=item.id) }}" style="display:inline">

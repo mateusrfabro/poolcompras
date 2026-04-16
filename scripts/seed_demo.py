@@ -62,26 +62,26 @@ FORNECEDORES = [
      "comercial@embalatudo.demo", "Londrina"),
 ]
 
-# Quem cota o que (por categoria de produto)
+# Quem cota o que (por categoria de produto — acentos batem com o seed.py)
 FORNECEDOR_CATEGORIAS = {
     "Distribuidora Sul Carnes Ltda": ["Carne", "Bacon/Embutido", "Queijo"],
-    "Padaria Industrial Pao Real":   ["Pao"],
+    "Padaria Industrial Pao Real":   ["P\u00e3o"],
     "Atacadao Hortifruti Norte":     ["Vegetal", "Outro"],
     "Bebidas & Cia Distribuidora":   ["Bebida", "Molho"],
-    "EmbalaTudo Descartaveis":       ["Embalagem", "Descartavel"],
+    "EmbalaTudo Descartaveis":       ["Embalagem", "Descart\u00e1vel"],
 }
 
 # Faixa de preco base por categoria (BRL/unidade da tabela produtos)
 PRECO_BASE = {
     "Carne":           (35.00, 65.00),
-    "Pao":             (0.80,  1.80),
+    "P\u00e3o":        (0.80,  1.80),
     "Queijo":          (40.00, 70.00),
     "Bacon/Embutido":  (32.00, 55.00),
     "Molho":           (12.00, 28.00),
     "Vegetal":         (5.00,  18.00),
     "Bebida":          (28.00, 55.00),
     "Embalagem":       (0.45,  1.20),
-    "Descartavel":     (0.10,  6.00),
+    "Descart\u00e1vel": (0.10,  6.00),
     "Outro":           (15.00, 30.00),
 }
 
@@ -166,16 +166,16 @@ def quantidade_realista(categoria, unidade):
     Respeita o tipo da unidade: discreta -> inteiro; continua (kg/litro) -> 1 casa.
     """
     faixas = {
-        "Carne":           (5, 25),     # kg
-        "Pao":             (50, 300),   # unidades
-        "Queijo":          (2, 10),     # kg
-        "Bacon/Embutido":  (3, 12),     # kg
-        "Molho":           (2, 8),      # kg/litro
-        "Vegetal":         (5, 20),     # kg
-        "Bebida":          (2, 8),      # caixa/fardo
-        "Embalagem":       (100, 500),  # unidades
-        "Descartavel":     (50, 300),   # unidades/pacote
-        "Outro":           (5, 20),     # kg
+        "Carne":            (5, 25),    # kg
+        "P\u00e3o":         (50, 300),  # unidades
+        "Queijo":           (2, 10),    # kg
+        "Bacon/Embutido":   (3, 12),    # kg
+        "Molho":            (2, 8),     # kg/litro
+        "Vegetal":          (5, 20),    # kg
+        "Bebida":           (2, 8),     # caixa/fardo
+        "Embalagem":        (100, 500), # unidades
+        "Descart\u00e1vel": (50, 300),  # unidades/pacote
+        "Outro":            (5, 20),    # kg
     }
     lo, hi = faixas.get(categoria, (1, 10))
     valor = random.uniform(lo, hi)

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ rodada.nome }} - PoolCompras{% endblock %}
+{% block title %}{{ rodada.nome }} — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="page">
@@ -11,18 +11,18 @@
         <div>
             <h2>{{ rodada.nome }}</h2>
             <p class="page-sub">
-                Aberta em {{ rodada.data_abertura.strftime('%d/%m/%Y as %H:%M') }}
-                &middot; Fechamento {{ rodada.data_fechamento.strftime('%d/%m/%Y as %H:%M') }}
+                Aberta em {{ rodada.data_abertura.strftime('%d/%m/%Y às %H:%M') }}
+                &middot; Fechamento {{ rodada.data_fechamento.strftime('%d/%m/%Y às %H:%M') }}
             </p>
         </div>
         <div>
-            <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status }}</span>
+            <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
         </div>
     </div>
 
     {% if rodada.status == 'cancelada' %}
         <div class="alert alert-warning">
-            Esta rodada foi cancelada. Nao houve cotacoes finais e nada foi comprado.
+            Esta rodada foi cancelada. Não houve cotações finais e nada foi comprado.
         </div>
     {% endif %}
 
@@ -30,21 +30,21 @@
     {% if total_estimado and total_estimado > 0 %}
     <div class="stats-grid">
         <div class="stat-card">
-            <div class="stat-label">Total preco partida</div>
-            <div class="stat-number">R$ {{ '%.2f'|format(total_partida) }}</div>
-            <div class="stat-hint">Soma do maior preco por produto</div>
+            <div class="stat-label">Total preço de partida</div>
+            <div class="stat-number">R$ {{ '%.2f'|format(total_partida)|replace('.', ',') }}</div>
+            <div class="stat-hint">Soma do maior preço por produto</div>
         </div>
         <div class="stat-card stat-card-primary">
             <div class="stat-label">Total via pool</div>
-            <div class="stat-number">R$ {{ '%.2f'|format(total_estimado) }}</div>
+            <div class="stat-number">R$ {{ '%.2f'|format(total_estimado)|replace('.', ',') }}</div>
             <div class="stat-hint">Negociado pela compra agregada</div>
         </div>
         <div class="stat-card stat-card-success">
             <div class="stat-label">Sua economia</div>
-            <div class="stat-number">R$ {{ '%.2f'|format(economia) }}</div>
+            <div class="stat-number">R$ {{ '%.2f'|format(economia)|replace('.', ',') }}</div>
             <div class="stat-hint">
                 {% if total_partida > 0 %}
-                    {{ '%.1f'|format(economia / total_partida * 100) }}% sobre o preco de partida
+                    {{ '%.1f'|format(economia / total_partida * 100)|replace('.', ',') }}% sobre o preço de partida
                 {% endif %}
             </div>
         </div>
@@ -54,7 +54,7 @@
     <h3 class="section-title">Seus produtos nesta rodada</h3>
 
     {% if not itens %}
-        <div class="empty-state">Voce nao pediu nenhum item nesta rodada.</div>
+        <div class="empty-state">Você não pediu nenhum item nesta rodada.</div>
     {% else %}
         <table class="table">
             <thead>
@@ -62,8 +62,8 @@
                     <th>Produto</th>
                     <th>Categoria</th>
                     <th>Volume pedido</th>
-                    <th>Preco partida</th>
-                    <th>Preco final</th>
+                    <th>Preço de partida</th>
+                    <th>Preço final</th>
                     <th>Fornecedor</th>
                     <th>Subtotal</th>
                 </tr>
@@ -73,33 +73,33 @@
                 <tr>
                     <td><strong>{{ i.produto.nome }}</strong></td>
                     <td><span class="tag">{{ i.produto.categoria }}</span></td>
-                    <td>{{ i.quantidade|qtd }} {{ i.produto.unidade }}</td>
+                    <td>{{ i.quantidade|fmt_un(i.produto.unidade) }}</td>
                     <td>
                         {% if i.preco_partida %}
-                            R$ {{ '%.2f'|format(i.preco_partida) }}
+                            R$ {{ '%.2f'|format(i.preco_partida)|replace('.', ',') }}
                         {% else %}
-                            <span class="muted">--</span>
+                            <span class="muted">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if i.preco_final %}
-                            <strong>R$ {{ '%.2f'|format(i.preco_final) }}</strong>
+                            <strong>R$ {{ '%.2f'|format(i.preco_final)|replace('.', ',') }}</strong>
                         {% else %}
-                            <span class="muted">--</span>
+                            <span class="muted">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if i.fornecedor %}
                             {{ i.fornecedor.razao_social }}
                         {% else %}
-                            <span class="muted">--</span>
+                            <span class="muted">—</span>
                         {% endif %}
                     </td>
                     <td>
                         {% if i.subtotal %}
-                            R$ {{ '%.2f'|format(i.subtotal) }}
+                            R$ {{ '%.2f'|format(i.subtotal)|replace('.', ',') }}
                         {% else %}
-                            <span class="muted">--</span>
+                            <span class="muted">—</span>
                         {% endif %}
                     </td>
                 </tr>
@@ -111,8 +111,8 @@
     <div class="next-step-info">
         <h4>Em breve nesta tela</h4>
         <p>
-            Timeline com etapas (aceite, comprovante, pagamento, entrega, confirmacao)
-            e avaliacao da rodada por fornecedor.
+            Linha do tempo com etapas (aceite da proposta, comprovante, pagamento,
+            entrega e confirmação) e avaliação por fornecedor ao final da rodada.
         </p>
     </div>
 </div>

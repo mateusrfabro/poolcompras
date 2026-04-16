@@ -1,12 +1,12 @@
 {% extends "base.html" %}
-{% block title %}Minhas Rodadas - PoolCompras{% endblock %}
+{% block title %}Minhas Rodadas — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="page">
     <div class="page-header">
         <div>
             <h2>Minhas Rodadas</h2>
-            <p class="page-sub">Historico de rodadas em que <strong>{{ lanchonete.nome_fantasia }}</strong> participou.</p>
+            <p class="page-sub">Histórico de rodadas em que <strong>{{ lanchonete.nome_fantasia }}</strong> participou.</p>
         </div>
     </div>
 
@@ -53,7 +53,7 @@
                     <td>{{ r.data_abertura.strftime('%d/%m/%Y') }}</td>
                     <td>{{ qtd_itens }}</td>
                     <td>{{ qtd_produtos }}</td>
-                    <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+                    <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
                     <td>
                         <a href="{{ url_for('historico.detalhe', rodada_id=r.id) }}"
                            class="btn btn-sm btn-outline">Ver detalhe</a>

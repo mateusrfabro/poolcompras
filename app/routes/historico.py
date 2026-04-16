@@ -23,7 +23,7 @@ STATUS_HISTORICO = ("finalizada", "cancelada", "fechada", "cotando")
 def listar():
     """Listagem de rodadas em que a lanchonete logada participou."""
     if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta area e apenas para lanchonetes.", "warning")
+        flash("Esta área é apenas para lanchonetes.", "warning")
         return redirect(url_for("main.dashboard"))
 
     lanchonete = current_user.lanchonete
@@ -81,7 +81,7 @@ def listar():
 def detalhe(rodada_id):
     """Detalhe expandido de uma rodada da lanchonete logada."""
     if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta area e apenas para lanchonetes.", "warning")
+        flash("Esta área é apenas para lanchonetes.", "warning")
         return redirect(url_for("main.dashboard"))
 
     lanchonete = current_user.lanchonete
@@ -98,7 +98,7 @@ def detalhe(rodada_id):
         .first()
     )
     if not participou:
-        flash("Voce nao participou desta rodada.", "warning")
+        flash("Você não participou desta rodada.", "warning")
         return redirect(url_for("historico.listar"))
 
     # Itens da lanchonete nesta rodada (com produto)
