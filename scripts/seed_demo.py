@@ -19,6 +19,7 @@ from app import create_app, db
 from app.models import (
     Usuario, Lanchonete, Fornecedor, Produto,
     Rodada, ItemPedido, Cotacao,
+    ParticipacaoRodada, AvaliacaoRodada, EventoRodada,
 )
 
 app = create_app("development")
@@ -242,11 +243,172 @@ def popular_pedidos_e_cotacoes(rodada, lanchonetes, fornecedores, produtos, stat
 
 
 def reset_pedidos_e_cotacoes():
-    """Apaga todos ItemPedido e Cotacao (preserva usuarios, lanchonetes, fornecedores, produtos, rodadas)."""
+    """Apaga ItemPedido, Cotacao, Participacao, Avaliacao, Evento.
+    Preserva usuarios, lanchonetes, fornecedores, produtos, rodadas.
+    """
+    n_eve = EventoRodada.query.delete()
+    n_ava = AvaliacaoRodada.query.delete()
+    n_par = ParticipacaoRodada.query.delete()
     n_cot = Cotacao.query.delete()
     n_ped = ItemPedido.query.delete()
     db.session.commit()
-    print(f"Reset: {n_ped} ItemPedido(s) e {n_cot} Cotacao(s) removidos.")
+    print(f"Reset: {n_ped} pedidos, {n_cot} cotacoes, {n_par} participacoes, "
+          f"{n_ava} avaliacoes, {n_eve} eventos removidos.")
+
+
+def popular_fluxo_finalizado(rodada, lanchonetes, fornecedores, cancelada=False):
+    """Cria ParticipacaoRodada + EventoRodada + AvaliacaoRodada para rodadas finalizadas.
+    Se cancelada=True: fluxo interrompido cedo; sem avaliacao, sem comprovante, etc.
+    """
+    from datetime import date
+    hoje = datetime.now(timezone.utc)
+
+    # Evento global: pedido_enviado
+    if not EventoRodada.query.filter_by(rodada_id=rodada.id,
+                                         tipo=EventoRodada.TIPO_RODADA_FECHADA).first():
+        db.session.add(EventoRodada(
+            rodada_id=rodada.id,
+            tipo=EventoRodada.TIPO_RODADA_FECHADA,
+            descricao="Rodada fechada para pedidos",
+            criado_em=rodada.data_fechamento,
+        ))
+
+    if cancelada:
+        if not EventoRodada.query.filter_by(rodada_id=rodada.id,
+                                             tipo=EventoRodada.TIPO_RODADA_CANCELADA).first():
+            db.session.add(EventoRodada(
+                rodada_id=rodada.id,
+                tipo=EventoRodada.TIPO_RODADA_CANCELADA,
+                descricao="Rodada cancelada por volume insuficiente",
+                criado_em=rodada.data_fechamento + timedelta(hours=2),
+            ))
+        # Cria participacoes sem avancar fases
+        for lanch in lanchonetes:
+            if not ParticipacaoRodada.query.filter_by(
+                    rodada_id=rodada.id, lanchonete_id=lanch.id).first():
+                db.session.add(ParticipacaoRodada(
+                    rodada_id=rodada.id,
+                    lanchonete_id=lanch.id,
+                ))
+        return
+
+    # Rodada finalizada: fluxo completo
+    # Evento: cotacao_enviada
+    if not EventoRodada.query.filter_by(rodada_id=rodada.id,
+                                         tipo=EventoRodada.TIPO_PROPOSTA_CONSOLIDADA).first():
+        db.session.add(EventoRodada(
+            rodada_id=rodada.id,
+            tipo=EventoRodada.TIPO_PROPOSTA_CONSOLIDADA,
+            descricao=f"Proposta consolidada com {len(fornecedores)} fornecedores",
+            criado_em=rodada.data_fechamento + timedelta(hours=3),
+        ))
+        db.session.add(EventoRodada(
+            rodada_id=rodada.id,
+            tipo=EventoRodada.TIPO_RODADA_FINALIZADA,
+            descricao="Rodada finalizada com sucesso",
+            criado_em=rodada.data_fechamento + timedelta(days=3),
+        ))
+
+    # Pra cada lanchonete: participacao + fluxo completo
+    for i, lanch in enumerate(lanchonetes):
+        if ParticipacaoRodada.query.filter_by(
+                rodada_id=rodada.id, lanchonete_id=lanch.id).first():
+            continue
+
+        # Maioria completa todo o fluxo; 10% fica em alguma etapa intermediaria
+        # e 5% marca problema na entrega
+        perfil = random.random()
+        base_dt = rodada.data_fechamento + timedelta(hours=3)
+
+        part = ParticipacaoRodada(
+            rodada_id=rodada.id,
+            lanchonete_id=lanch.id,
+            aceite_proposta=True,
+            aceite_em=base_dt + timedelta(hours=2),
+            comprovante_key=f"comprovantes/demo/rodada_{rodada.id}_lanch_{lanch.id}.pdf",
+            comprovante_em=base_dt + timedelta(hours=5),
+            pagamento_confirmado_em=base_dt + timedelta(hours=8),
+            entrega_informada_em=base_dt + timedelta(days=1, hours=10),
+            entrega_data=(base_dt + timedelta(days=2)).date(),
+        )
+
+        # 5% reporta problema, resto confirma OK
+        if perfil < 0.05:
+            part.recebimento_ok = False
+            part.recebimento_em = base_dt + timedelta(days=2, hours=14)
+            part.recebimento_observacao = "Faltou 1 kg de bacon fatiado no recebimento"
+            part.avaliacao_geral = 2  # problema = nota baixa
+            part.avaliacao_em = base_dt + timedelta(days=2, hours=15)
+        elif perfil < 0.90:
+            # 85% confirma OK e avalia entre 4 e 5
+            part.recebimento_ok = True
+            part.recebimento_em = base_dt + timedelta(days=2, hours=14)
+            part.avaliacao_geral = random.choice([4, 4, 4, 5, 5])
+            part.avaliacao_em = base_dt + timedelta(days=2, hours=15)
+        # 10% restante: confirma OK mas nao avalia ainda
+        else:
+            part.recebimento_ok = True
+            part.recebimento_em = base_dt + timedelta(days=2, hours=14)
+
+        db.session.add(part)
+        db.session.flush()
+
+        # Cria eventos correspondentes para timeline
+        eventos = [
+            (EventoRodada.TIPO_PROPOSTA_ACEITA,
+             "Cliente aceitou a proposta final", part.aceite_em),
+            (EventoRodada.TIPO_COMPROVANTE_ENVIADO,
+             "Comprovante de pagamento enviado", part.comprovante_em),
+            (EventoRodada.TIPO_PAGAMENTO_CONFIRMADO,
+             "Fornecedor confirmou recebimento do pagamento", part.pagamento_confirmado_em),
+            (EventoRodada.TIPO_ENTREGA_INFORMADA,
+             f"Fornecedor informou entrega para {part.entrega_data.strftime('%d/%m/%Y')}",
+             part.entrega_informada_em),
+        ]
+        if part.recebimento_em:
+            if part.recebimento_ok:
+                eventos.append((EventoRodada.TIPO_RECEBIMENTO_CONFIRMADO,
+                                "Cliente confirmou recebimento OK", part.recebimento_em))
+            else:
+                eventos.append((EventoRodada.TIPO_RECEBIMENTO_PROBLEMA,
+                                part.recebimento_observacao, part.recebimento_em))
+        if part.avaliacao_em:
+            eventos.append((EventoRodada.TIPO_AVALIACAO_ENVIADA,
+                            f"Cliente avaliou com {part.avaliacao_geral} estrelas",
+                            part.avaliacao_em))
+
+        for tipo, desc, dt in eventos:
+            db.session.add(EventoRodada(
+                rodada_id=rodada.id,
+                lanchonete_id=lanch.id,
+                tipo=tipo,
+                descricao=desc,
+                criado_em=dt,
+            ))
+
+        # AvaliacaoRodada: se nota geral >= 4, replica pra todos fornecedores (opcao D)
+        # se nota <= 3, cria nota individual por fornecedor (aqui simulado com variacao)
+        if part.avaliacao_geral:
+            if part.avaliacao_geral >= 4:
+                for forn in fornecedores:
+                    db.session.add(AvaliacaoRodada(
+                        rodada_id=rodada.id,
+                        lanchonete_id=lanch.id,
+                        fornecedor_id=forn.id,
+                        estrelas=part.avaliacao_geral,
+                    ))
+            else:
+                # Opcao D detalhada: 1 fornecedor "problematico" recebe nota baixa
+                forn_ruim = random.choice(fornecedores)
+                for forn in fornecedores:
+                    estrelas = part.avaliacao_geral if forn.id == forn_ruim.id else 4
+                    db.session.add(AvaliacaoRodada(
+                        rodada_id=rodada.id,
+                        lanchonete_id=lanch.id,
+                        fornecedor_id=forn.id,
+                        estrelas=estrelas,
+                        comentario="Problema na entrega" if forn.id == forn_ruim.id else None,
+                    ))
 
 
 def seed(reset=False):
@@ -297,6 +459,11 @@ def seed(reset=False):
             fechamento = abertura.replace(hour=12, minute=0)  # padrao: fecha 12:00
             rod, criada = get_or_create_rodada(nome, abertura, fechamento, status_final)
             popular_pedidos_e_cotacoes(rod, quem, fornecedores, produtos, status_final)
+            # Fase 2: popular fluxo (participacoes, eventos, avaliacoes) em rodadas finalizadas/canceladas
+            if status_final == "finalizada":
+                popular_fluxo_finalizado(rod, quem, fornecedores, cancelada=False)
+            elif status_final == "cancelada":
+                popular_fluxo_finalizado(rod, quem, fornecedores, cancelada=True)
             marca = "criada" if criada else "ja existia"
             print(f"  {nome}  status={status_final}  ({marca})")
 

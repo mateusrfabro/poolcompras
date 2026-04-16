@@ -72,8 +72,16 @@ class Rodada(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     data_abertura = db.Column(db.DateTime, nullable=False)
     data_fechamento = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), default="aberta")  # aberta, fechada, cotando, finalizada
+    status = db.Column(db.String(20), default="aberta")  # aberta, fechada, cotando, finalizada, cancelada
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Deadlines por fase do fluxo (opcional — se null, usa data_fechamento como padrao)
+    deadline_pedido       = db.Column(db.DateTime)  # ate quando lanchonete envia pedido
+    deadline_cotacao      = db.Column(db.DateTime)  # ate quando fornecedor envia cotacao
+    deadline_aceite       = db.Column(db.DateTime)  # ate quando lanchonete aceita proposta final
+    deadline_pagamento    = db.Column(db.DateTime)  # ate quando lanchonete paga
+    deadline_entrega      = db.Column(db.DateTime)  # ate quando fornecedor entrega
+    deadline_confirmacao  = db.Column(db.DateTime)  # ate quando lanchonete confirma recebimento
 
     itens = db.relationship("ItemPedido", backref="rodada")
     cotacoes = db.relationship("Cotacao", backref="rodada")
@@ -138,3 +146,126 @@ class Cotacao(db.Model):
         UniqueConstraint("rodada_id", "fornecedor_id", "produto_id",
                          name="uq_cotacao_rodada_fornecedor_produto"),
     )
+
+
+# ---------- Fase 2: controle de fluxo por lanchonete ----------
+
+
+class ParticipacaoRodada(db.Model):
+    """Agregador do fluxo de uma lanchonete dentro de uma rodada.
+
+    Uma linha por (rodada, lanchonete). Concentra o progresso nas fases:
+    aceite da proposta -> comprovante -> confirmacao de pagamento -> entrega ->
+    recebimento -> avaliacao. Campos ficam null enquanto nao acontecem.
+    """
+    __tablename__ = "participacoes_rodada"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), nullable=False, index=True)
+
+    # Fase: aceite da proposta consolidada
+    # null = pendente | True = aceitou | False = recusou
+    aceite_proposta    = db.Column(db.Boolean)
+    aceite_em          = db.Column(db.DateTime)
+
+    # Fase: comprovante de pagamento (chave opaca de storage — caminho no disco/S3)
+    comprovante_key    = db.Column(db.String(255))
+    comprovante_em     = db.Column(db.DateTime)
+
+    # Fase: fornecedor confirma recebimento do pagamento
+    pagamento_confirmado_em      = db.Column(db.DateTime)
+    pagamento_confirmado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+
+    # Fase: fornecedor informa entrega
+    entrega_informada_em   = db.Column(db.DateTime)
+    entrega_informada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    entrega_data           = db.Column(db.Date)  # data real da entrega
+
+    # Fase: cliente confirma recebimento
+    # null = pendente | True = recebeu OK | False = problema
+    recebimento_ok           = db.Column(db.Boolean)
+    recebimento_em           = db.Column(db.DateTime)
+    recebimento_observacao   = db.Column(db.String(500))
+
+    # Avaliacao geral da rodada (opcao D: 1-5 estrelas; se <=3 cliente detalha por fornecedor)
+    avaliacao_geral   = db.Column(db.Integer)  # 1-5
+    avaliacao_em      = db.Column(db.DateTime)
+
+    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    # Relationships para queries
+    rodada      = db.relationship("Rodada", backref="participacoes")
+    lanchonete  = db.relationship("Lanchonete", backref="participacoes")
+
+    __table_args__ = (
+        UniqueConstraint("rodada_id", "lanchonete_id",
+                         name="uq_participacao_rodada_lanchonete"),
+    )
+
+
+class AvaliacaoRodada(db.Model):
+    """Avaliacao por fornecedor dentro de uma rodada (opcao D — so preenche se nota geral <= 3).
+
+    Uma linha por (rodada, lanchonete, fornecedor). Se a lanchonete deu nota geral >= 4,
+    o sistema cria AvaliacaoRodada com a mesma nota pra todos os fornecedores da rodada.
+    Se nota <= 3, a lanchonete detalha individualmente aqui.
+    """
+    __tablename__ = "avaliacoes_rodada"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rodada_id      = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    lanchonete_id  = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), nullable=False, index=True)
+    fornecedor_id  = db.Column(db.Integer, db.ForeignKey("fornecedores.id"), nullable=False, index=True)
+
+    estrelas   = db.Column(db.Integer, nullable=False)  # 1-5
+    comentario = db.Column(db.String(500))
+    criado_em  = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    rodada      = db.relationship("Rodada")
+    lanchonete  = db.relationship("Lanchonete")
+    fornecedor  = db.relationship("Fornecedor")
+
+    __table_args__ = (
+        UniqueConstraint("rodada_id", "lanchonete_id", "fornecedor_id",
+                         name="uq_avaliacao_rodada_lanchonete_fornecedor"),
+    )
+
+
+class EventoRodada(db.Model):
+    """Log imutavel de eventos para timeline e auditoria.
+
+    Cada transicao de estado no fluxo de uma rodada (por lanchonete ou global)
+    gera uma linha aqui. Usado para renderizar a timeline e investigar
+    incidentes em producao (quem fez o que, quando).
+    """
+    __tablename__ = "eventos_rodada"
+
+    # Tipos conhecidos de evento. Usar constantes reduz typos no codigo chamador.
+    TIPO_PEDIDO_ENVIADO          = "pedido_enviado"
+    TIPO_RODADA_FECHADA          = "rodada_fechada"
+    TIPO_COTACAO_ENVIADA         = "cotacao_enviada"
+    TIPO_PROPOSTA_CONSOLIDADA    = "proposta_consolidada"
+    TIPO_PROPOSTA_ACEITA         = "proposta_aceita"
+    TIPO_PROPOSTA_RECUSADA       = "proposta_recusada"
+    TIPO_COMPROVANTE_ENVIADO     = "comprovante_enviado"
+    TIPO_PAGAMENTO_CONFIRMADO    = "pagamento_confirmado"
+    TIPO_ENTREGA_INFORMADA       = "entrega_informada"
+    TIPO_RECEBIMENTO_CONFIRMADO  = "recebimento_confirmado"
+    TIPO_RECEBIMENTO_PROBLEMA    = "recebimento_problema"
+    TIPO_AVALIACAO_ENVIADA       = "avaliacao_enviada"
+    TIPO_RODADA_FINALIZADA       = "rodada_finalizada"
+    TIPO_RODADA_CANCELADA        = "rodada_cancelada"
+    TIPO_DEADLINE_VENCIDO        = "deadline_vencido"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), index=True)  # null = evento global
+    ator_id       = db.Column(db.Integer, db.ForeignKey("usuarios.id"))  # quem fez (null = sistema)
+    tipo          = db.Column(db.String(40), nullable=False)
+    descricao     = db.Column(db.String(500))
+    criado_em     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    rodada     = db.relationship("Rodada", backref="eventos")
+    lanchonete = db.relationship("Lanchonete")
+    ator       = db.relationship("Usuario")
