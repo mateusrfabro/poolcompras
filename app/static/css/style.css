@@ -303,6 +303,88 @@ body {
     border-top: 1px solid var(--gray-200);
 }
 
+/* === Menu mobile (CSS-only, hamburger via :checked) === */
+
+.nav-toggle { display: none; }  /* Checkbox sempre invisivel */
+.nav-toggle-label {
+    display: none;  /* Escondido em desktop */
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--white);
+    user-select: none;
+}
+.nav-toggle-icon,
+.nav-toggle-icon::before,
+.nav-toggle-icon::after {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--white);
+    transition: transform 0.2s, top 0.2s, opacity 0.2s;
+    position: relative;
+}
+.nav-toggle-icon::before,
+.nav-toggle-icon::after {
+    content: "";
+    position: absolute;
+    left: 0;
+}
+.nav-toggle-icon::before { top: -7px; }
+.nav-toggle-icon::after  { top: 7px; }
+
+/* Quando aberto: anima icone para 'X' */
+.nav-toggle:checked ~ .nav-toggle-label .nav-toggle-icon {
+    background: transparent;
+}
+.nav-toggle:checked ~ .nav-toggle-label .nav-toggle-icon::before {
+    top: 0;
+    transform: rotate(45deg);
+}
+.nav-toggle:checked ~ .nav-toggle-label .nav-toggle-icon::after {
+    top: 0;
+    transform: rotate(-45deg);
+}
+
+/* === Acessibilidade === */
+
+/* Foco visivel para navegacao por teclado (WCAG 2.4.7) */
+*:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+/* Remove o outline so quando NAO eh navegacao por teclado */
+*:focus:not(:focus-visible) {
+    outline: none;
+}
+
+/* Texto so para screen readers */
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* === Tabelas responsivas === */
+
+/* Wrapper para tabelas largas: scroll horizontal sem estourar viewport */
+.table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1.5rem;
+    border-radius: var(--radius);
+}
+.table-wrapper .table {
+    margin-bottom: 0;
+    min-width: 600px;  /* Tabela nao colapsa abaixo desse minimo */
+}
+
 /* === Historico de rodadas === */
 
 .page-sub {
@@ -416,8 +498,29 @@ body {
     .form-row { flex-direction: column; gap: 0; }
     .hero h1 { font-size: 2rem; }
     .hero-actions { flex-direction: column; align-items: center; }
-    .navbar { padding: 0 1rem; }
-    .nav-links { gap: 0.6rem; font-size: 0.8rem; }
+
+    /* Navbar vira hamburger */
+    .navbar {
+        padding: 0 1rem;
+        flex-wrap: wrap;
+    }
+    .nav-toggle-label { display: block; }
+    .nav-links {
+        display: none;
+        flex-basis: 100%;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        padding: 0.5rem 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .nav-toggle:checked ~ .nav-links { display: flex; }
+    .nav-links a {
+        padding: 0.8rem 0.5rem;
+        font-size: 0.95rem;
+    }
+    .nav-links a:hover { background: rgba(255, 255, 255, 0.05); }
+
     .filter-chips { gap: 0.3rem; }
     .chip { font-size: 0.8rem; padding: 0.35rem 0.7rem; }
 }

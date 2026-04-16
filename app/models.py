@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 from flask_login import UserMixin
+from sqlalchemy import Numeric, UniqueConstraint, Index
 from app import db, login_manager
 
 
@@ -83,14 +84,19 @@ class ItemPedido(db.Model):
     __tablename__ = "itens_pedido"
 
     id = db.Column(db.Integer, primary_key=True)
-    rodada_id = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False)
-    lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), nullable=False)
-    produto_id = db.Column(db.Integer, db.ForeignKey("produtos.id"), nullable=False)
-    quantidade = db.Column(db.Float, nullable=False)
+    rodada_id = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), nullable=False, index=True)
+    produto_id = db.Column(db.Integer, db.ForeignKey("produtos.id"), nullable=False, index=True)
+    # Numeric(10,3) suporta ate 3 casas (suficiente para kg/litro fracionario)
+    quantidade = db.Column(Numeric(10, 3), nullable=False)
     observacao = db.Column(db.String(200))
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     produto = db.relationship("Produto")
+
+    __table_args__ = (
+        Index("ix_itens_pedido_rodada_lanchonete", "rodada_id", "lanchonete_id"),
+    )
 
 
 class Fornecedor(db.Model):
@@ -115,13 +121,20 @@ class Cotacao(db.Model):
     __tablename__ = "cotacoes"
 
     id = db.Column(db.Integer, primary_key=True)
-    rodada_id = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False)
-    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"), nullable=False)
-    produto_id = db.Column(db.Integer, db.ForeignKey("produtos.id"), nullable=False)
-    preco_unitario = db.Column(db.Float, nullable=False)
-    quantidade_minima = db.Column(db.Float)
+    rodada_id = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"), nullable=False, index=True)
+    produto_id = db.Column(db.Integer, db.ForeignKey("produtos.id"), nullable=False, index=True)
+    # Numeric(12,2) suporta ate ~10 bilhoes; perfeito para precos em BRL
+    preco_unitario = db.Column(Numeric(12, 2), nullable=False)
+    quantidade_minima = db.Column(Numeric(10, 3))
     validade = db.Column(db.DateTime)
     selecionada = db.Column(db.Boolean, default=False)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     produto = db.relationship("Produto")
+
+    __table_args__ = (
+        # Cada fornecedor envia 1 cotacao por (rodada, produto). Evita duplicatas.
+        UniqueConstraint("rodada_id", "fornecedor_id", "produto_id",
+                         name="uq_cotacao_rodada_fornecedor_produto"),
+    )

@@ -31,6 +31,7 @@
             <div class="card-actions">
                 <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada_aberta.id) }}" class="btn btn-outline">Ver detalhes</a>
                 <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" onclick="return confirm('Fechar esta rodada?')">Fechar rodada</button>
                 </form>
             </div>

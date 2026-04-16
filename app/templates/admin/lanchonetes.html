@@ -8,7 +8,7 @@
     {% if not lanchonetes %}
         <div class="empty-state">Nenhuma lanchonete cadastrada ainda.</div>
     {% else %}
-        <table class="table">
+        <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
                     <th>Nome Fantasia</th>
@@ -29,7 +29,7 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+        </table></div>
     {% endif %}
 </div>
 {% endblock %}

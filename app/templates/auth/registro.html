@@ -5,6 +5,7 @@
 <div class="form-page">
     <h2>Cadastrar Lanchonete</h2>
     <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <h3>Dados do responsável</h3>
         <div class="form-row">
             <div class="form-group">

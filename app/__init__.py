@@ -1,20 +1,39 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+from flask_migrate import Migrate
 from config import config
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Faça login para acessar o sistema."
+csrf = CSRFProtect()
+migrate = Migrate()
 
 
 def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+    # Em producao, SECRET_KEY tem que vir do ambiente. Sem fallback.
+    if config_name == "production" and not app.config.get("SECRET_KEY"):
+        raise RuntimeError(
+            "SECRET_KEY nao configurada em producao. "
+            "Defina no .env ou variavel de ambiente antes de iniciar."
+        )
+
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
+    # Importa models antes do migrate.init_app para o autogenerate enxergar tudo
+    from app import models  # noqa: F401
+    migrate.init_app(app, db, render_as_batch=True)  # batch=True para SQLite ALTER COLUMN
+
+    # Storage de uploads (comprovantes etc.). Implementacao local agora; trocar por S3 no futuro.
+    from app.services.storage import init_storage
+    init_storage(app)
 
     from app.routes.auth import auth_bp
     from app.routes.main import main_bp
@@ -59,6 +78,27 @@ def create_app(config_name="default"):
             return str(int(v))
         return f"{v:.1f}".replace(".", ",")
 
+    # Filter: formata valor monetario em BRL (R$ 1.234,56)
+    @app.template_filter("brl")
+    def format_brl(valor):
+        if valor is None:
+            return "—"
+        try:
+            v = float(valor)
+        except (TypeError, ValueError):
+            return str(valor)
+        # 1234.5 -> "1.234,50"
+        inteiro, decimal = f"{v:.2f}".split(".")
+        sinal = "-" if inteiro.startswith("-") else ""
+        inteiro = inteiro.lstrip("-")
+        # Insere separador de milhar
+        with_sep = ""
+        for i, ch in enumerate(reversed(inteiro)):
+            if i and i % 3 == 0:
+                with_sep = "." + with_sep
+            with_sep = ch + with_sep
+        return f"R$ {sinal}{with_sep},{decimal}"
+
     # Filter: traduz status interno do banco em label PT-BR profissional para exibicao
     STATUS_LABELS = {
         "aberta":     "Em aberto",
@@ -92,8 +132,5 @@ def create_app(config_name="default"):
         else:
             un_fmt = PLURAIS.get(unidade.lower(), unidade + "s")
         return f"{num} {un_fmt}"
-
-    with app.app_context():
-        db.create_all()
 
     return app

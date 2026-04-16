@@ -7,6 +7,7 @@
     <p class="subtitle">Rodada: {{ rodada.nome }}</p>
 
     <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="produto_id">Produto</label>
             <select id="produto_id" name="produto_id" required>

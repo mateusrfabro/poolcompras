@@ -13,7 +13,7 @@
     {% if not agregado %}
         <div class="empty-state">Nenhum pedido nesta rodada ainda.</div>
     {% else %}
-        <table class="table">
+        <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
                     <th>Produto</th>
@@ -34,13 +34,13 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+        </table></div>
     {% endif %}
 
     {% if current_user.is_admin and rodada.status in ('fechada', 'cotada') %}
         <h3>Cotações</h3>
         {% if cotacoes %}
-            <table class="table">
+            <div class="table-wrapper"><table class="table">
                 <thead>
                     <tr>
                         <th>Fornecedor</th>
@@ -53,11 +53,11 @@
                     <tr>
                         <td>{{ c.fornecedor.razao_social }}</td>
                         <td>{{ c.produto.nome }}</td>
-                        <td>R$ {{ "%.2f"|format(c.preco_unitario) }}</td>
+                        <td>{{ c.preco_unitario|brl }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+            </table></div>
         {% else %}
             <p>Nenhuma cotação registrada ainda.</p>
         {% endif %}

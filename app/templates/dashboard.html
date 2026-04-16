@@ -17,7 +17,7 @@
 
         {% if meus_pedidos %}
             <h3>Meus pedidos nesta rodada</h3>
-            <table class="table">
+            <div class="table-wrapper"><table class="table">
                 <thead>
                     <tr>
                         <th>Produto</th>
@@ -34,7 +34,7 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-            </table>
+            </table></div>
         {% else %}
             <p class="empty-state">Você ainda não fez pedidos nesta rodada.</p>
         {% endif %}

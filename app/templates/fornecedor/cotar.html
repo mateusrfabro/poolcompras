@@ -8,6 +8,7 @@
     <p class="subtitle">Informe seus preços por unidade (R$). Deixe em branco os produtos que não fornece.</p>
 
     <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% for produto in produtos %}
         <div class="form-row" style="align-items: center;">
             <div class="form-group" style="flex:2">

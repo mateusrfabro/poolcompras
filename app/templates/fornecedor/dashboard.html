@@ -10,7 +10,7 @@
 
     {% if rodadas_para_cotar %}
         <h3>Rodadas abertas para cotação</h3>
-        <table class="table">
+        <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
                     <th>Rodada</th>
@@ -31,7 +31,7 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+        </table></div>
     {% else %}
         <div class="card">
             <h3>Nenhuma rodada aberta para cotação</h3>
@@ -41,7 +41,7 @@
 
     {% if minhas_cotacoes %}
         <h3>Últimas cotações enviadas</h3>
-        <table class="table">
+        <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
                     <th>Rodada</th>
@@ -55,7 +55,7 @@
                 <tr>
                     <td>{{ c.rodada.nome }}</td>
                     <td>{{ c.produto.nome }}</td>
-                    <td>R$ {{ "%.2f"|format(c.preco_unitario) }}</td>
+                    <td>{{ c.preco_unitario|brl }}</td>
                     <td>
                         {% if c.selecionada %}
                             <span class="badge badge-aberta">Escolhida</span>
@@ -66,7 +66,7 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+        </table></div>
     {% endif %}
 </div>
 {% endblock %}

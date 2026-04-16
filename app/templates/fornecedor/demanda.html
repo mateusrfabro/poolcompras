@@ -12,7 +12,7 @@
     {% if not agregado %}
         <div class="empty-state">Nenhum pedido nesta rodada.</div>
     {% else %}
-        <table class="table">
+        <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
                     <th>Produto</th>
@@ -31,7 +31,7 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+        </table></div>
 
         {% if rodada.status in ('fechada', 'cotando') %}
             <a href="{{ url_for('fornecedor.enviar_cotacao', rodada_id=rodada.id) }}" class="btn btn-primary">Enviar meus preços</a>
@@ -40,7 +40,7 @@
 
     {% if minhas_cotacoes %}
         <h3>Minha cotação nesta rodada</h3>
-        <table class="table">
+        <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
                     <th>Produto</th>
@@ -51,11 +51,11 @@
                 {% for c in minhas_cotacoes %}
                 <tr>
                     <td>{{ c.produto.nome }}</td>
-                    <td>R$ {{ "%.2f"|format(c.preco_unitario) }}</td>
+                    <td>{{ c.preco_unitario|brl }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+        </table></div>
     {% endif %}
 
     <a href="{{ url_for('fornecedor.dashboard') }}" class="back-link">Voltar ao painel</a>

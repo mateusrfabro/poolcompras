@@ -6,6 +6,7 @@
     <h2>Criar Nova Rodada</h2>
 
     <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="form-group">
             <label for="nome">Nome da rodada</label>
             <input type="text" id="nome" name="nome" required placeholder="Ex: Semana 16 — Abril 2026">
