@@ -163,6 +163,36 @@ def detalhe(rodada_id):
     )
     economia = total_partida - total_estimado if total_partida and total_estimado else 0
 
+    # Insights pra rodada finalizada
+    insights = []
+    if economia and total_partida:
+        pct = float(economia / total_partida * 100)
+        insights.append(f"Economia total de {pct:.1f}% sobre o preço de partida.")
+
+    # Produto com maior economia (absoluta)
+    itens_com_eco = [
+        i for i in itens_detalhe
+        if i["preco_partida"] and i["preco_final"] and i["preco_partida"] > i["preco_final"]
+    ]
+    if itens_com_eco:
+        top = max(itens_com_eco,
+                  key=lambda i: (i["preco_partida"] - i["preco_final"]) * i["quantidade"])
+        eco_top = (top["preco_partida"] - top["preco_final"]) * top["quantidade"]
+        insights.append(
+            f"Maior economia nesta rodada: {top['produto'].nome} "
+            f"(você economizou R$ {float(eco_top):,.2f} nesse item)."
+            .replace(",", "X").replace(".", ",").replace("X", ".")
+        )
+
+    # Fornecedor mais presente (venceu mais cotações)
+    forn_contagem = defaultdict(int)
+    for i in itens_detalhe:
+        if i.get("fornecedor"):
+            forn_contagem[i["fornecedor"].razao_social] += 1
+    if forn_contagem:
+        top_forn = max(forn_contagem, key=forn_contagem.get)
+        insights.append(f"Fornecedor destaque: {top_forn} (venceu {forn_contagem[top_forn]} produtos).")
+
     # Fase 2: participacao da lanchonete + eventos da timeline
     participacao = (
         ParticipacaoRodada.query
@@ -197,6 +227,7 @@ def detalhe(rodada_id):
         participacao=participacao,
         eventos=eventos,
         fases=fases,
+        insights=insights,
     )
 
 

@@ -4,7 +4,13 @@
 {% block content %}
 <div class="page">
     <a href="{{ url_for('rodadas.listar') }}" class="btn-back">Voltar para Rodadas</a>
-    <h2>{{ rodada.nome }}</h2>
+    <div class="page-header">
+        <h2>{{ rodada.nome }}</h2>
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
+               class="btn btn-outline btn-sm">Exportar CSV</a>
+        {% endif %}
+    </div>
     <p class="subtitle">
         Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status|status_label }}</span>
         | {{ rodada.data_abertura.strftime('%d/%m') }} a {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}

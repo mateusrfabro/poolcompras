@@ -3,8 +3,12 @@ from io import StringIO
 from flask import Blueprint, render_template, redirect, url_for, flash, request, Response
 from flask_login import login_required, current_user
 from datetime import datetime
+from sqlalchemy import func
 from app import db
-from app.models import Produto, Rodada, Fornecedor, Lanchonete
+from app.models import (
+    Produto, Rodada, Fornecedor, Lanchonete,
+    ParticipacaoRodada, AvaliacaoRodada, ItemPedido, Cotacao,
+)
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -247,6 +251,147 @@ def rodadas_exportar():
             for r in lista
         ],
     )
+
+
+# --- Analytics ---
+@admin_bp.route("/analytics")
+@login_required
+@admin_required
+def analytics():
+    """Dashboard de KPIs do PoolCompras para o admin."""
+    # Stats gerais
+    total_lanchonetes = Lanchonete.query.filter_by(ativa=True).count()
+    total_fornecedores = Fornecedor.query.filter_by(ativo=True).count()
+    total_produtos = Produto.query.filter_by(ativo=True).count()
+    total_rodadas = Rodada.query.count()
+    rodadas_finalizadas = Rodada.query.filter_by(status="finalizada").count()
+
+    # Participações
+    total_participacoes = ParticipacaoRodada.query.count()
+    participacoes_completas = ParticipacaoRodada.query.filter(
+        ParticipacaoRodada.avaliacao_geral.isnot(None)
+    ).count()
+
+    # Média de avaliação geral
+    media_avaliacao = (
+        db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
+        .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .scalar()
+    ) or 0
+
+    # Top 5 fornecedores por avaliação média
+    top_fornecedores = (
+        db.session.query(
+            Fornecedor.razao_social,
+            func.avg(AvaliacaoRodada.estrelas).label("media"),
+            func.count(AvaliacaoRodada.id).label("avaliacoes"),
+        )
+        .join(AvaliacaoRodada, AvaliacaoRodada.fornecedor_id == Fornecedor.id)
+        .group_by(Fornecedor.id)
+        .order_by(func.avg(AvaliacaoRodada.estrelas).desc())
+        .limit(5)
+        .all()
+    )
+
+    # Produtos mais pedidos (top 10)
+    top_produtos = (
+        db.session.query(
+            Produto.nome,
+            Produto.categoria,
+            func.sum(ItemPedido.quantidade).label("total"),
+            Produto.unidade,
+        )
+        .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .group_by(Produto.id)
+        .order_by(func.sum(ItemPedido.quantidade).desc())
+        .limit(10)
+        .all()
+    )
+
+    # Lanchonetes mais ativas (top 5 por participações)
+    top_lanchonetes = (
+        db.session.query(
+            Lanchonete.nome_fantasia,
+            func.count(ParticipacaoRodada.id).label("participacoes"),
+        )
+        .join(ParticipacaoRodada, ParticipacaoRodada.lanchonete_id == Lanchonete.id)
+        .group_by(Lanchonete.id)
+        .order_by(func.count(ParticipacaoRodada.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    return render_template(
+        "admin/analytics.html",
+        total_lanchonetes=total_lanchonetes,
+        total_fornecedores=total_fornecedores,
+        total_produtos=total_produtos,
+        total_rodadas=total_rodadas,
+        rodadas_finalizadas=rodadas_finalizadas,
+        total_participacoes=total_participacoes,
+        participacoes_completas=participacoes_completas,
+        media_avaliacao=round(float(media_avaliacao), 1),
+        top_fornecedores=top_fornecedores,
+        top_produtos=top_produtos,
+        top_lanchonetes=top_lanchonetes,
+    )
+
+
+# --- Rodada detalhe: exportar ---
+@admin_bp.route("/rodadas/<int:rodada_id>/exportar.csv")
+@login_required
+@admin_required
+def rodada_detalhe_exportar(rodada_id):
+    """Exporta demanda agregada + cotações da rodada em CSV pra admin."""
+    from sqlalchemy import func
+    from app.models import ItemPedido
+
+    rodada = Rodada.query.get_or_404(rodada_id)
+
+    # Demanda agregada
+    demanda = (
+        db.session.query(
+            Produto.nome,
+            Produto.categoria,
+            Produto.unidade,
+            func.sum(ItemPedido.quantidade).label("total_pedido"),
+            func.count(func.distinct(ItemPedido.lanchonete_id)).label("qtd_lanchonetes"),
+        )
+        .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .filter(ItemPedido.rodada_id == rodada_id)
+        .group_by(Produto.id)
+        .order_by(Produto.categoria, Produto.nome)
+        .all()
+    )
+
+    from app.models import Cotacao
+    cotacoes = (
+        Cotacao.query
+        .filter_by(rodada_id=rodada_id)
+        .order_by(Cotacao.produto_id, Cotacao.preco_unitario)
+        .all()
+    )
+
+    headers = ["produto", "categoria", "unidade", "total_pedido", "lanchonetes",
+               "fornecedor_cotacao", "preco_unitario", "selecionada"]
+    rows = []
+    for d in demanda:
+        cots = [c for c in cotacoes if c.produto.nome == d.nome]
+        if cots:
+            for c in cots:
+                rows.append([
+                    d.nome, d.categoria, d.unidade, str(d.total_pedido),
+                    str(d.qtd_lanchonetes),
+                    c.fornecedor.razao_social if c.fornecedor else "",
+                    str(c.preco_unitario),
+                    "sim" if c.selecionada else "",
+                ])
+        else:
+            rows.append([d.nome, d.categoria, d.unidade, str(d.total_pedido),
+                         str(d.qtd_lanchonetes), "", "", ""])
+
+    nome_arquivo = f"rodada_{rodada_id}_{rodada.nome.replace(' ', '_')}.csv"
+    return _csv_response(filename=nome_arquivo, headers=headers, rows=rows)
 
 
 # --- Helper: gera resposta CSV com BOM UTF-8 para Excel abrir com acentos OK ---

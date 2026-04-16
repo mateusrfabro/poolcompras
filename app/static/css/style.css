@@ -385,6 +385,48 @@ body {
     border-top: 1px solid var(--gray-200);
 }
 
+/* === Analytics grid === */
+.analytics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+.analytics-card {
+    background: var(--white);
+    padding: 1.2rem;
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+}
+.analytics-card h3 {
+    font-size: 1rem;
+    color: var(--secondary);
+    margin-bottom: 0.8rem;
+}
+
+/* === Insights box === */
+.insights-box {
+    background: #edf6ff;
+    border-left: 4px solid #0077cc;
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+    margin: 1.5rem 0;
+}
+.insights-box h4 {
+    color: #004c99;
+    margin-bottom: 0.5rem;
+    font-size: 0.95rem;
+}
+.insights-box ul {
+    margin: 0;
+    padding-left: 1.2rem;
+}
+.insights-box li {
+    font-size: 0.88rem;
+    color: var(--gray-700);
+    margin-bottom: 0.3rem;
+}
+
 /* === Star rating (radio buttons invertidos, CSS-only) ===
    Truque classico: radios em ordem reversa no HTML (5..1) com flex-direction:row-reverse.
    Assim, ~ selector propaga hover/checked da estrela atual para todas as anteriores. */

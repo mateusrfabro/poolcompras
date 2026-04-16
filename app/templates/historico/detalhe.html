@@ -49,6 +49,18 @@
     </div>
     {% endif %}
 
+    {# Insights calculados da rodada (se finalizada com cotacoes) #}
+    {% if insights %}
+        <div class="insights-box">
+            <h4>Resumo e insights</h4>
+            <ul>
+                {% for insight in insights %}
+                    <li>{{ insight }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
     <h3 class="section-title">Seus produtos nesta rodada</h3>
 
     {% if not itens %}
