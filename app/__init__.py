@@ -5,6 +5,7 @@ from flask_wtf.csrf import CSRFProtect
 from flask_migrate import Migrate
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from flask_talisman import Talisman
 from config import config
 
 db = SQLAlchemy()
@@ -36,6 +37,32 @@ def create_app(config_name="default"):
     from app import models  # noqa: F401
     migrate.init_app(app, db, render_as_batch=True)  # batch=True para SQLite ALTER COLUMN
     limiter.init_app(app)
+
+    # Headers de seguranca (Talisman).
+    # CSP permissivo para inline styles (templates atuais tem style=""). Tighten no futuro.
+    # force_https=False em dev; ligado via config em producao.
+    csp = {
+        "default-src": "'self'",
+        "style-src": ["'self'", "'unsafe-inline'"],  # alguns templates usam style=""
+        "script-src": "'self'",
+        "img-src": ["'self'", "data:"],
+        "font-src": "'self'",
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "form-action": "'self'",
+        "frame-ancestors": "'none'",
+    }
+    Talisman(
+        app,
+        content_security_policy=csp,
+        content_security_policy_nonce_in=None,
+        force_https=(config_name == "production"),
+        strict_transport_security=(config_name == "production"),
+        strict_transport_security_max_age=31536000,  # 1 ano
+        referrer_policy="strict-origin-when-cross-origin",
+        frame_options="DENY",
+        session_cookie_secure=(config_name == "production"),
+    )
 
     # Storage de uploads (comprovantes etc.). Implementacao local agora; trocar por S3 no futuro.
     from app.services.storage import init_storage
