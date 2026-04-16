@@ -35,7 +35,7 @@
                 <tr>
                     <td>{{ item.produto.nome }}</td>
                     <td>{{ item.produto.categoria }}</td>
-                    <td>{{ item.quantidade }}</td>
+                    <td>{{ item.quantidade|qtd }}</td>
                     <td>{{ item.produto.unidade }}</td>
                     <td>{{ item.observacao or '-' }}</td>
                     <td>

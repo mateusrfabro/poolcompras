@@ -157,8 +157,14 @@ def get_or_create_rodada(nome, abertura, fechamento, status):
     return rod, True
 
 
-def quantidade_realista(categoria):
-    """Volume tipico de pedido por categoria."""
+# Unidades que NAO aceitam fracao (nao da pra comprar 5.6 fardos de agua)
+UNIDADES_DISCRETAS = {"unidade", "caixa", "fardo", "pacote"}
+
+
+def quantidade_realista(categoria, unidade):
+    """Volume tipico de pedido por categoria.
+    Respeita o tipo da unidade: discreta -> inteiro; continua (kg/litro) -> 1 casa.
+    """
     faixas = {
         "Carne":           (5, 25),     # kg
         "Pao":             (50, 300),   # unidades
@@ -172,7 +178,10 @@ def quantidade_realista(categoria):
         "Outro":           (5, 20),     # kg
     }
     lo, hi = faixas.get(categoria, (1, 10))
-    return round(random.uniform(lo, hi), 1)
+    valor = random.uniform(lo, hi)
+    if unidade in UNIDADES_DISCRETAS:
+        return float(int(round(valor)))  # inteiro mas mantem tipo Float do schema
+    return round(valor, 1)
 
 
 def popular_pedidos_e_cotacoes(rodada, lanchonetes, fornecedores, produtos, status_final):
@@ -187,7 +196,7 @@ def popular_pedidos_e_cotacoes(rodada, lanchonetes, fornecedores, produtos, stat
                     rodada_id=rodada.id,
                     lanchonete_id=lanch.id,
                     produto_id=prod.id,
-                    quantidade=quantidade_realista(prod.categoria),
+                    quantidade=quantidade_realista(prod.categoria, prod.unidade),
                 )
                 db.session.add(item)
 
@@ -232,9 +241,19 @@ def popular_pedidos_e_cotacoes(rodada, lanchonetes, fornecedores, produtos, stat
                 v.selecionada = True
 
 
-def seed():
+def reset_pedidos_e_cotacoes():
+    """Apaga todos ItemPedido e Cotacao (preserva usuarios, lanchonetes, fornecedores, produtos, rodadas)."""
+    n_cot = Cotacao.query.delete()
+    n_ped = ItemPedido.query.delete()
+    db.session.commit()
+    print(f"Reset: {n_ped} ItemPedido(s) e {n_cot} Cotacao(s) removidos.")
+
+
+def seed(reset=False):
     with app.app_context():
         db.create_all()
+        if reset:
+            reset_pedidos_e_cotacoes()
 
         # Pre-check: produtos precisam existir
         produtos = Produto.query.filter_by(ativo=True).all()
@@ -288,4 +307,6 @@ def seed():
 
 
 if __name__ == "__main__":
-    seed()
+    import sys as _sys
+    reset_flag = "--reset-pedidos" in _sys.argv
+    seed(reset=reset_flag)

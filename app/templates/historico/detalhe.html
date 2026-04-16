@@ -73,7 +73,7 @@
                 <tr>
                     <td><strong>{{ i.produto.nome }}</strong></td>
                     <td><span class="tag">{{ i.produto.categoria }}</span></td>
-                    <td>{{ i.quantidade }} {{ i.produto.unidade }}</td>
+                    <td>{{ i.quantidade|qtd }} {{ i.produto.unidade }}</td>
                     <td>
                         {% if i.preco_partida %}
                             R$ {{ '%.2f'|format(i.preco_partida) }}

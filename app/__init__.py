@@ -32,6 +32,19 @@ def create_app(config_name="default"):
     app.register_blueprint(fornecedor_bp)
     app.register_blueprint(historico_bp)
 
+    # Filter: formata quantidade removendo .0 quando inteira (ex: 5.0 -> "5", 11.7 -> "11,7")
+    @app.template_filter("qtd")
+    def format_quantidade(valor):
+        if valor is None:
+            return "-"
+        try:
+            v = float(valor)
+        except (TypeError, ValueError):
+            return str(valor)
+        if v == int(v):
+            return str(int(v))
+        return f"{v:.1f}".replace(".", ",")
+
     with app.app_context():
         db.create_all()
 
