@@ -303,6 +303,60 @@ body {
     border-top: 1px solid var(--gray-200);
 }
 
+/* === Star rating (radio buttons invertidos, CSS-only) ===
+   Truque classico: radios em ordem reversa no HTML (5..1) com flex-direction:row-reverse.
+   Assim, ~ selector propaga hover/checked da estrela atual para todas as anteriores. */
+
+.star-rating {
+    display: inline-flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    border: none;
+    padding: 0;
+    margin: 0.5rem 0;
+}
+.star-rating input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 1px;
+    height: 1px;
+    pointer-events: none;
+}
+.star-rating label {
+    font-size: 2rem;
+    color: var(--gray-300);
+    cursor: pointer;
+    padding: 0 0.1rem;
+    transition: color 0.15s;
+    line-height: 1;
+}
+/* Hover: amarela a estrela E todas a direita dela (que no DOM sao as anteriores) */
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+    color: var(--warning);
+}
+/* Checked: mantem amarela ate onde o usuario clicou */
+.star-rating input[type="radio"]:checked ~ label {
+    color: var(--warning);
+}
+/* Foco do teclado visivel no label adjacente */
+.star-rating input[type="radio"]:focus-visible + label {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Bloco por fornecedor na tela de avaliacao detalhada */
+.avaliacao-fornecedor {
+    border-top: 1px solid var(--gray-200);
+    padding: 1rem 0;
+}
+.avaliacao-fornecedor:first-of-type { border-top: none; }
+.avaliacao-fornecedor h3 {
+    margin-bottom: 0.5rem;
+    color: var(--secondary);
+    font-size: 1rem;
+}
+
 /* === Cards de pendencias do fornecedor === */
 
 .pendencias-grid {

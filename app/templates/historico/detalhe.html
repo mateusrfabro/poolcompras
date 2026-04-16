@@ -164,10 +164,30 @@
                 </form>
 
             {% elif not participacao.avaliacao_geral %}
-                <p>Avalie esta rodada para fecharmos o fluxo. <em>(em breve)</em></p>
+                <p>Como foi esta rodada no geral? Sua avaliação ajuda a melhorar o pool.</p>
+                <form method="POST" action="{{ url_for('fluxo.avaliar', rodada_id=rodada.id) }}" class="action-card-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <fieldset class="star-rating">
+                        <legend class="sr-only">Nota geral da rodada</legend>
+                        {% for n in [5, 4, 3, 2, 1] %}
+                            <input type="radio" id="nota_geral_{{ n }}" name="estrelas" value="{{ n }}" required>
+                            <label for="nota_geral_{{ n }}"
+                                   title="{{ n }} estrela{{ 's' if n > 1 else '' }}"
+                                   aria-label="{{ n }} estrela{{ 's' if n > 1 else '' }}">★</label>
+                        {% endfor %}
+                    </fieldset>
+                    <p class="muted" style="font-size: 0.8rem; margin-top: 0.4rem;">
+                        Se der nota 3 ou menor, vamos pedir para detalhar por fornecedor.
+                    </p>
+                    <button type="submit" class="btn btn-primary">Enviar avaliação</button>
+                </form>
 
             {% else %}
-                <p class="muted">Fluxo concluído. Obrigado pela avaliação!</p>
+                <p class="muted">
+                    Fluxo concluído. Você avaliou com
+                    <strong>{{ participacao.avaliacao_geral }} estrela{{ 's' if participacao.avaliacao_geral > 1 else '' }}</strong>.
+                    Obrigado!
+                </p>
             {% endif %}
         </div>
     {% endif %}

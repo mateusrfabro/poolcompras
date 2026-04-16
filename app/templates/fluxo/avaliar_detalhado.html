@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Avaliar fornecedores — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="breadcrumb">
+        <a href="{{ url_for('historico.detalhe', rodada_id=rodada.id) }}">&larr; Voltar à rodada</a>
+    </div>
+
+    <div class="page-header">
+        <div>
+            <h2>Detalhar avaliação — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Você deu <strong>{{ participacao.avaliacao_geral }} estrela(s)</strong> à rodada.
+                Como os fornecedores se saíram individualmente? Isso nos ajuda a identificar problemas.
+            </p>
+        </div>
+    </div>
+
+    <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {% for forn in fornecedores %}
+            <div class="avaliacao-fornecedor">
+                <h3>{{ forn.razao_social }}</h3>
+
+                <fieldset class="star-rating">
+                    <legend class="sr-only">Nota para {{ forn.razao_social }}</legend>
+                    {% for n in [5, 4, 3, 2, 1] %}
+                        <input type="radio" id="nota_{{ forn.id }}_{{ n }}"
+                               name="estrelas_{{ forn.id }}" value="{{ n }}"
+                               {% if participacao.avaliacao_geral == n %}checked{% endif %}>
+                        <label for="nota_{{ forn.id }}_{{ n }}"
+                               title="{{ n }} estrela{{ 's' if n > 1 else '' }}"
+                               aria-label="{{ n }} estrela{{ 's' if n > 1 else '' }}">★</label>
+                    {% endfor %}
+                </fieldset>
+
+                <div class="form-group">
+                    <label for="coment_{{ forn.id }}">Comentário (opcional)</label>
+                    <input type="text" id="coment_{{ forn.id }}"
+                           name="comentario_{{ forn.id }}" maxlength="500"
+                           placeholder="Ex: entrega atrasada, produto OK">
+                </div>
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary btn-block">Enviar avaliações</button>
+    </form>
+</div>
+{% endblock %}
