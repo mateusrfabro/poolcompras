@@ -46,6 +46,10 @@ def registro():
         endereco = request.form.get("endereco", "").strip()
         bairro = request.form.get("bairro", "").strip()
 
+        if len(senha) < 8:
+            flash("A senha deve ter pelo menos 8 caracteres.", "error")
+            return render_template("auth/registro.html")
+
         if Usuario.query.filter_by(email=email).first():
             flash("Este e-mail já está cadastrado.", "error")
             return render_template("auth/registro.html")
@@ -91,6 +95,10 @@ def registro_fornecedor():
         telefone = request.form.get("telefone", "").strip()
         razao_social = request.form.get("razao_social", "").strip()
         cidade = request.form.get("cidade", "").strip()
+
+        if len(senha) < 8:
+            flash("A senha deve ter pelo menos 8 caracteres.", "error")
+            return render_template("auth/registro_fornecedor.html")
 
         if Usuario.query.filter_by(email=email).first():
             flash("Este e-mail já está cadastrado.", "error")
