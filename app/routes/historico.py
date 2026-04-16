@@ -3,12 +3,15 @@ Historico de rodadas da lanchonete logada.
 Lista as rodadas em que a lanchonete participou (com status e contagem
 de produtos). Detalhe expandido fica em template separado.
 """
+from collections import defaultdict
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto, Lanchonete, Fornecedor,
+    ParticipacaoRodada, EventoRodada,
 )
 
 historico_bp = Blueprint("historico", __name__, url_prefix="/minhas-rodadas")
@@ -101,31 +104,35 @@ def detalhe(rodada_id):
         flash("Você não participou desta rodada.", "warning")
         return redirect(url_for("historico.listar"))
 
-    # Itens da lanchonete nesta rodada (com produto)
+    # Itens da lanchonete nesta rodada (com produto, joinedload p/ evitar N+1 no loop)
     meus_itens = (
         ItemPedido.query
+        .options(joinedload(ItemPedido.produto))
         .filter_by(rodada_id=rodada_id, lanchonete_id=lanchonete.id)
         .join(Produto, ItemPedido.produto_id == Produto.id)
         .order_by(Produto.categoria, Produto.nome)
         .all()
     )
 
-    # Para cada item: preco de partida (mais alto) e preco final (mais baixo / vencedor)
-    # Estrategia simples antes da Fase 2: olha cotacoes da rodada.
+    # Fix N+1: carrega TODAS as cotacoes da rodada em 1 query (com fornecedor) e agrupa
+    cotacoes_por_produto = defaultdict(list)
+    cotacoes_rodada = (
+        Cotacao.query
+        .options(joinedload(Cotacao.fornecedor))
+        .filter_by(rodada_id=rodada_id)
+        .all()
+    )
+    for c in cotacoes_rodada:
+        cotacoes_por_produto[c.produto_id].append(c)
+
+    # Monta detalhe de cada item com lookup O(1)
     itens_detalhe = []
     for item in meus_itens:
-        cotacoes_produto = (
-            Cotacao.query
-            .filter_by(rodada_id=rodada_id, produto_id=item.produto_id)
-            .all()
-        )
-        if cotacoes_produto:
-            preco_partida = max(c.preco_unitario for c in cotacoes_produto)
-            preco_final = min(c.preco_unitario for c in cotacoes_produto)
-            forn_vencedor = next(
-                (c.fornecedor for c in cotacoes_produto if c.selecionada),
-                None,
-            )
+        cots = cotacoes_por_produto.get(item.produto_id, [])
+        if cots:
+            preco_partida = max(c.preco_unitario for c in cots)
+            preco_final = min(c.preco_unitario for c in cots)
+            forn_vencedor = next((c.fornecedor for c in cots if c.selecionada), None)
         else:
             preco_partida = preco_final = None
             forn_vencedor = None
@@ -140,11 +147,34 @@ def detalhe(rodada_id):
             "subtotal": (preco_final * item.quantidade) if preco_final else None,
         })
 
-    total_estimado = sum(i["subtotal"] for i in itens_detalhe if i["subtotal"])
+    total_estimado = sum(i["subtotal"] for i in itens_detalhe if i["subtotal"]) or 0
     total_partida = sum(
         (i["preco_partida"] or 0) * i["quantidade"] for i in itens_detalhe
     )
     economia = total_partida - total_estimado if total_partida and total_estimado else 0
+
+    # Fase 2: participacao da lanchonete + eventos da timeline
+    participacao = (
+        ParticipacaoRodada.query
+        .filter_by(rodada_id=rodada_id, lanchonete_id=lanchonete.id)
+        .first()
+    )
+
+    # Eventos da rodada filtrados para esta lanchonete (inclui eventos globais lanchonete_id=NULL)
+    eventos = (
+        EventoRodada.query
+        .options(joinedload(EventoRodada.ator))
+        .filter(EventoRodada.rodada_id == rodada_id)
+        .filter(
+            (EventoRodada.lanchonete_id == lanchonete.id)
+            | (EventoRodada.lanchonete_id.is_(None))
+        )
+        .order_by(EventoRodada.criado_em.asc())
+        .all()
+    )
+
+    # Monta as fases da timeline com status derivado da participacao (ordem canonica)
+    fases = _montar_fases_timeline(participacao, rodada)
 
     return render_template(
         "historico/detalhe.html",
@@ -154,4 +184,87 @@ def detalhe(rodada_id):
         total_estimado=total_estimado,
         total_partida=total_partida,
         economia=economia,
+        participacao=participacao,
+        eventos=eventos,
+        fases=fases,
     )
+
+
+def _montar_fases_timeline(participacao, rodada):
+    """Deriva o estado das 6 fases do fluxo a partir da ParticipacaoRodada.
+
+    Retorna lista de dicts {icone, status, titulo, descricao, data} onde:
+      status = 'ok' (verde ✓) | 'problema' (vermelho ✗) | 'pendente' (cinza —)
+    """
+    if not participacao:
+        # Rodada aberta ou cancelada sem participacao registrada: tudo pendente
+        return []
+
+    def _fmt(dt):
+        return dt.strftime("%d/%m/%Y às %H:%M") if dt else None
+
+    fases = []
+
+    # 1. Aceite da proposta
+    if participacao.aceite_proposta is True:
+        fases.append({"status": "ok", "titulo": "Proposta aceita",
+                      "descricao": "Você aceitou a proposta final consolidada.",
+                      "data": _fmt(participacao.aceite_em)})
+    elif participacao.aceite_proposta is False:
+        fases.append({"status": "problema", "titulo": "Proposta recusada",
+                      "descricao": "Você recusou a proposta final.",
+                      "data": _fmt(participacao.aceite_em)})
+    else:
+        fases.append({"status": "pendente", "titulo": "Aguardando aceite",
+                      "descricao": "Proposta final ainda não foi aceita.", "data": None})
+
+    # 2. Comprovante
+    if participacao.comprovante_key:
+        fases.append({"status": "ok", "titulo": "Comprovante enviado",
+                      "descricao": "Comprovante de pagamento carregado.",
+                      "data": _fmt(participacao.comprovante_em)})
+    else:
+        fases.append({"status": "pendente", "titulo": "Aguardando comprovante",
+                      "descricao": "Envio do comprovante de pagamento.", "data": None})
+
+    # 3. Pagamento confirmado pelo fornecedor
+    if participacao.pagamento_confirmado_em:
+        fases.append({"status": "ok", "titulo": "Pagamento confirmado",
+                      "descricao": "Fornecedor confirmou o recebimento do pagamento.",
+                      "data": _fmt(participacao.pagamento_confirmado_em)})
+    else:
+        fases.append({"status": "pendente", "titulo": "Aguardando confirmação do fornecedor",
+                      "descricao": "Fornecedor ainda não confirmou o pagamento.", "data": None})
+
+    # 4. Entrega informada
+    if participacao.entrega_informada_em:
+        desc = "Entregue em " + participacao.entrega_data.strftime("%d/%m/%Y") if participacao.entrega_data else "Entrega informada."
+        fases.append({"status": "ok", "titulo": "Entrega informada",
+                      "descricao": desc, "data": _fmt(participacao.entrega_informada_em)})
+    else:
+        fases.append({"status": "pendente", "titulo": "Aguardando entrega",
+                      "descricao": "Fornecedor ainda não informou a entrega.", "data": None})
+
+    # 5. Recebimento confirmado pelo cliente
+    if participacao.recebimento_ok is True:
+        fases.append({"status": "ok", "titulo": "Recebimento confirmado",
+                      "descricao": "Você confirmou o recebimento sem problemas.",
+                      "data": _fmt(participacao.recebimento_em)})
+    elif participacao.recebimento_ok is False:
+        fases.append({"status": "problema", "titulo": "Problema no recebimento",
+                      "descricao": participacao.recebimento_observacao or "Problema reportado.",
+                      "data": _fmt(participacao.recebimento_em)})
+    else:
+        fases.append({"status": "pendente", "titulo": "Aguardando confirmação de recebimento",
+                      "descricao": "Cliente ainda não confirmou o recebimento.", "data": None})
+
+    # 6. Avaliacao
+    if participacao.avaliacao_geral:
+        fases.append({"status": "ok", "titulo": f"Rodada avaliada",
+                      "descricao": f"Você deu {participacao.avaliacao_geral} estrela(s).",
+                      "data": _fmt(participacao.avaliacao_em)})
+    else:
+        fases.append({"status": "pendente", "titulo": "Aguardando avaliação",
+                      "descricao": "Você ainda não avaliou esta rodada.", "data": None})
+
+    return fases

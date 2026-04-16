@@ -108,12 +108,23 @@
         </table></div>
     {% endif %}
 
-    <div class="next-step-info">
-        <h4>Em breve nesta tela</h4>
-        <p>
-            Linha do tempo com etapas (aceite da proposta, comprovante, pagamento,
-            entrega e confirmação) e avaliação por fornecedor ao final da rodada.
-        </p>
-    </div>
+    {# Fase 2: linha do tempo do fluxo da rodada #}
+    {% if fases %}
+        <h3 class="section-title">Linha do tempo</h3>
+        <ol class="timeline">
+            {% for fase in fases %}
+                <li class="timeline-step timeline-step-{{ fase.status }}">
+                    <span class="timeline-icon" aria-hidden="true">
+                        {% if fase.status == 'ok' %}✓{% elif fase.status == 'problema' %}✗{% else %}—{% endif %}
+                    </span>
+                    <div class="timeline-title">{{ fase.titulo }}</div>
+                    <div class="timeline-desc">{{ fase.descricao }}</div>
+                    {% if fase.data %}
+                        <div class="timeline-date">{{ fase.data }}</div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    {% endif %}
 </div>
 {% endblock %}
