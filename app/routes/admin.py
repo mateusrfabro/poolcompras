@@ -423,6 +423,85 @@ def rodada_detalhe_exportar(rodada_id):
 
 
 # --- Helper: gera resposta CSV com BOM UTF-8 para Excel abrir com acentos OK ---
+# --- Relatorio consolidado por periodo ---
+@admin_bp.route("/relatorio", methods=["GET"])
+@login_required
+@admin_required
+def relatorio():
+    """Relatorio consolidado com filtro por periodo. GET renderiza form; com params exporta CSV."""
+    de = request.args.get("de")
+    ate = request.args.get("ate")
+    exportar = request.args.get("exportar") == "csv"
+
+    if not de or not ate:
+        return render_template("admin/relatorio.html", dados=None, de=de, ate=ate)
+
+    try:
+        dt_de = datetime.strptime(de, "%Y-%m-%d")
+        dt_ate = datetime.strptime(ate, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+    except ValueError:
+        flash("Datas inválidas.", "error")
+        return render_template("admin/relatorio.html", dados=None, de=de, ate=ate)
+
+    # Rodadas no periodo
+    rodadas = (
+        Rodada.query
+        .filter(Rodada.data_abertura >= dt_de, Rodada.data_abertura <= dt_ate)
+        .order_by(Rodada.data_abertura.desc())
+        .all()
+    )
+    rod_ids = [r.id for r in rodadas]
+
+    # Totais
+    total_pedidos = ItemPedido.query.filter(ItemPedido.rodada_id.in_(rod_ids)).count() if rod_ids else 0
+    total_cotacoes = Cotacao.query.filter(Cotacao.rodada_id.in_(rod_ids)).count() if rod_ids else 0
+    total_participacoes = ParticipacaoRodada.query.filter(
+        ParticipacaoRodada.rodada_id.in_(rod_ids)).count() if rod_ids else 0
+
+    lanchonetes_ativas = (
+        db.session.query(func.count(func.distinct(ItemPedido.lanchonete_id)))
+        .filter(ItemPedido.rodada_id.in_(rod_ids))
+        .scalar()
+    ) if rod_ids else 0
+
+    media_avaliacao = 0
+    if rod_ids:
+        avg = (
+            db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
+            .filter(ParticipacaoRodada.rodada_id.in_(rod_ids),
+                    ParticipacaoRodada.avaliacao_geral.isnot(None))
+            .scalar()
+        )
+        media_avaliacao = round(float(avg), 1) if avg else 0
+
+    dados = {
+        "rodadas": rodadas,
+        "total_rodadas": len(rodadas),
+        "finalizadas": sum(1 for r in rodadas if r.status == "finalizada"),
+        "canceladas": sum(1 for r in rodadas if r.status == "cancelada"),
+        "total_pedidos": total_pedidos,
+        "total_cotacoes": total_cotacoes,
+        "total_participacoes": total_participacoes,
+        "lanchonetes_ativas": lanchonetes_ativas,
+        "media_avaliacao": media_avaliacao,
+    }
+
+    if exportar:
+        from app.services.csv_export import csv_response
+        return csv_response(
+            filename=f"relatorio_{de}_a_{ate}.csv",
+            headers=["rodada", "data_abertura", "status", "pedidos", "cotacoes"],
+            rows=[
+                [r.nome, r.data_abertura.strftime("%Y-%m-%d"), r.status,
+                 str(ItemPedido.query.filter_by(rodada_id=r.id).count()),
+                 str(Cotacao.query.filter_by(rodada_id=r.id).count())]
+                for r in rodadas
+            ],
+        )
+
+    return render_template("admin/relatorio.html", dados=dados, de=de, ate=ate)
+
+
 def _csv_response(filename: str, headers: list, rows: list) -> Response:
     buf = StringIO()
     # BOM para Excel reconhecer como UTF-8 (evita acento quebrado no Windows)

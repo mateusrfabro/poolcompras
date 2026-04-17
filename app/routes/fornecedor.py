@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from app import db
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto,
-    ParticipacaoRodada, Lanchonete,
+    ParticipacaoRodada, Lanchonete, AvaliacaoRodada,
 )
 
 fornecedor_bp = Blueprint("fornecedor", __name__, url_prefix="/fornecedor")
@@ -182,4 +182,82 @@ def enviar_cotacao(rodada_id):
         rodada=rodada,
         produtos=produtos,
         qtds=qtds,
+    )
+
+
+@fornecedor_bp.route("/analytics")
+@login_required
+@fornecedor_required
+def analytics():
+    """Dashboard de KPIs do fornecedor logado."""
+    fornecedor = current_user.fornecedor
+    if not fornecedor:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    fid = fornecedor.id
+
+    # Cotacoes enviadas
+    total_cotacoes = Cotacao.query.filter_by(fornecedor_id=fid).count()
+    cotacoes_vencedoras = Cotacao.query.filter_by(fornecedor_id=fid, selecionada=True).count()
+    taxa_vitoria = round(cotacoes_vencedoras / total_cotacoes * 100, 1) if total_cotacoes else 0
+
+    # Rodadas que participou
+    rodadas_participou = (
+        db.session.query(func.count(func.distinct(Cotacao.rodada_id)))
+        .filter(Cotacao.fornecedor_id == fid)
+        .scalar()
+    ) or 0
+
+    # Media de avaliacao que recebeu das lanchonetes
+    media_recebida = (
+        db.session.query(func.avg(AvaliacaoRodada.estrelas))
+        .filter(AvaliacaoRodada.fornecedor_id == fid)
+        .scalar()
+    )
+    total_avaliacoes = AvaliacaoRodada.query.filter_by(fornecedor_id=fid).count()
+    media_recebida = round(float(media_recebida), 1) if media_recebida else 0
+
+    # Top 5 produtos que mais cotou (volume de cotacoes)
+    top_produtos = (
+        db.session.query(
+            Produto.nome,
+            func.count(Cotacao.id).label("vezes_cotado"),
+            func.avg(Cotacao.preco_unitario).label("preco_medio"),
+        )
+        .join(Cotacao, Cotacao.produto_id == Produto.id)
+        .filter(Cotacao.fornecedor_id == fid)
+        .group_by(Produto.id)
+        .order_by(func.count(Cotacao.id).desc())
+        .limit(5)
+        .all()
+    )
+
+    # Historico de avaliacoes recebidas (ultimas 10)
+    avaliacoes_recentes = (
+        db.session.query(
+            Rodada.nome,
+            Lanchonete.nome_fantasia,
+            AvaliacaoRodada.estrelas,
+            AvaliacaoRodada.comentario,
+        )
+        .join(AvaliacaoRodada, AvaliacaoRodada.rodada_id == Rodada.id)
+        .join(Lanchonete, AvaliacaoRodada.lanchonete_id == Lanchonete.id)
+        .filter(AvaliacaoRodada.fornecedor_id == fid)
+        .order_by(AvaliacaoRodada.criado_em.desc())
+        .limit(10)
+        .all()
+    )
+
+    return render_template(
+        "fornecedor/analytics.html",
+        fornecedor=fornecedor,
+        total_cotacoes=total_cotacoes,
+        cotacoes_vencedoras=cotacoes_vencedoras,
+        taxa_vitoria=taxa_vitoria,
+        rodadas_participou=rodadas_participou,
+        media_recebida=media_recebida,
+        total_avaliacoes=total_avaliacoes,
+        top_produtos=top_produtos,
+        avaliacoes_recentes=avaliacoes_recentes,
     )

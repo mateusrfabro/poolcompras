@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Meu Desempenho — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('fornecedor.dashboard') }}" class="btn-back">Voltar para o painel</a>
+
+    <div class="page-header">
+        <h2>Meu Desempenho</h2>
+        <p class="page-sub">Indicadores de <strong>{{ fornecedor.razao_social }}</strong> no PoolCompras.</p>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">{{ rodadas_participou }}</span>
+            <span class="stat-label">Rodadas cotadas</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ total_cotacoes }}</span>
+            <span class="stat-label">Cotações enviadas</span>
+        </div>
+        <div class="stat-card stat-card-success">
+            <span class="stat-number">{{ cotacoes_vencedoras }}</span>
+            <span class="stat-label">Cotações vencedoras</span>
+            <span class="stat-hint">Taxa de vitória: {{ taxa_vitoria }}%</span>
+        </div>
+        <div class="stat-card stat-card-primary">
+            <span class="stat-number">{{ media_recebida }}</span>
+            <span class="stat-label">Nota média recebida</span>
+            <span class="stat-hint">
+                <span class="stars-readonly">
+                    {% for i in range(1, 6) %}{% if i <= media_recebida|round %}★{% else %}☆{% endif %}{% endfor %}
+                </span>
+                ({{ total_avaliacoes }} avaliações)
+            </span>
+        </div>
+    </div>
+
+    <div class="analytics-grid">
+        <div class="analytics-card">
+            <h3>Produtos que você mais cota</h3>
+            {% if top_produtos %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr><th>Produto</th><th>Vezes cotado</th><th>Preço médio</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, vezes, preco_medio in top_produtos %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>{{ vezes }}</td>
+                            <td>{{ preco_medio|brl }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Nenhuma cotação enviada ainda.</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-card">
+            <h3>Avaliações recebidas (últimas 10)</h3>
+            {% if avaliacoes_recentes %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr><th>Rodada</th><th>Lanchonete</th><th>Nota</th><th>Comentário</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for rodada, lanch, estrelas, coment in avaliacoes_recentes %}
+                        <tr>
+                            <td>{{ rodada }}</td>
+                            <td>{{ lanch }}</td>
+                            <td>
+                                <span class="stars-readonly">
+                                    {% for i in range(1, 6) %}{% if i <= estrelas %}★{% else %}☆{% endif %}{% endfor %}
+                                </span>
+                            </td>
+                            <td>{{ coment or '—' }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Nenhuma avaliação recebida ainda.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

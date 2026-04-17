@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Relatório por Período — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('main.dashboard') }}" class="btn-back">Voltar ao painel</a>
+
+    <div class="page-header">
+        <h2>Relatório Consolidado</h2>
+    </div>
+
+    <form method="GET" class="form-card" style="margin-bottom: 2rem;">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="de">De</label>
+                <input type="date" id="de" name="de" required value="{{ de or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="ate">Até</label>
+                <input type="date" id="ate" name="ate" required value="{{ ate or '' }}">
+            </div>
+            <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary">Gerar</button>
+                {% if dados %}
+                    <a href="{{ url_for('admin.relatorio', de=de, ate=ate, exportar='csv') }}"
+                       class="btn btn-outline btn-sm">Exportar CSV</a>
+                {% endif %}
+            </div>
+        </div>
+    </form>
+
+    {% if dados %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">{{ dados.total_rodadas }}</span>
+                <span class="stat-label">Rodadas no período</span>
+            </div>
+            <div class="stat-card stat-card-success">
+                <span class="stat-number">{{ dados.finalizadas }}</span>
+                <span class="stat-label">Finalizadas</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ dados.canceladas }}</span>
+                <span class="stat-label">Canceladas</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ dados.total_pedidos }}</span>
+                <span class="stat-label">Pedidos totais</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ dados.total_cotacoes }}</span>
+                <span class="stat-label">Cotações recebidas</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ dados.lanchonetes_ativas }}</span>
+                <span class="stat-label">Lanchonetes ativas</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ dados.total_participacoes }}</span>
+                <span class="stat-label">Participações</span>
+            </div>
+            <div class="stat-card stat-card-primary">
+                <span class="stat-number">{{ dados.media_avaliacao }}</span>
+                <span class="stat-label">Nota média</span>
+            </div>
+        </div>
+
+        <h3 class="section-title">Rodadas no período</h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Rodada</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in dados.rodadas %}
+                <tr>
+                    <td><a href="{{ url_for('rodadas.detalhe', rodada_id=r.id) }}">{{ r.nome }}</a></td>
+                    <td>{{ r.data_abertura.strftime('%d/%m/%Y') }}</td>
+                    <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    {% elif de and ate %}
+        <div class="empty-state">Nenhuma rodada encontrada neste período.</div>
+    {% else %}
+        <div class="empty-state">Selecione o período acima para gerar o relatório.</div>
+    {% endif %}
+</div>
+{% endblock %}

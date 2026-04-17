@@ -1,10 +1,20 @@
-from flask import Blueprint, render_template, redirect, url_for
+from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import func
+from sqlalchemy import func, text
 from app import db
 from app.models import Lanchonete, Rodada, ItemPedido, Cotacao, Produto
 
 main_bp = Blueprint("main", __name__)
+
+
+@main_bp.route("/health")
+def health():
+    """Healthcheck: retorna 200 se app + DB estao ok. Sem auth."""
+    try:
+        db.session.execute(text("SELECT 1"))
+        return jsonify({"status": "ok", "db": "ok"}), 200
+    except Exception as e:
+        return jsonify({"status": "error", "db": str(e)}), 500
 
 
 @main_bp.route("/")

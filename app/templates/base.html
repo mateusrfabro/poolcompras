@@ -32,6 +32,7 @@
                 {% if current_user.is_admin %}
                     <a href="{{ url_for('main.dashboard') }}">Painel</a>
                     <a href="{{ url_for('admin.analytics') }}">Analytics</a>
+                    <a href="{{ url_for('admin.relatorio') }}">Relatório</a>
                     <a href="{{ url_for('rodadas.listar') }}">Rodadas</a>
                     <a href="{{ url_for('admin.produtos') }}">Produtos</a>
                     <a href="{{ url_for('admin.fornecedores') }}">Fornecedores</a>
@@ -39,6 +40,7 @@
 
                 {% elif current_user.is_fornecedor %}
                     <a href="{{ url_for('fornecedor.dashboard') }}">Painel</a>
+                    <a href="{{ url_for('fornecedor.analytics') }}">Meu Desempenho</a>
 
                 {% else %}
                     <a href="{{ url_for('main.dashboard') }}">Painel</a>
