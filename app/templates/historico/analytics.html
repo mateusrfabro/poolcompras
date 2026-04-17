@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}Meu Resumo — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('historico.listar') }}" class="btn-back">Voltar para Minhas Rodadas</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Meu Resumo</h2>
+            <p class="page-sub">Indicadores de <strong>{{ lanchonete.nome_fantasia }}</strong> no PoolCompras.</p>
+        </div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <span class="stat-number">{{ total_rodadas }}</span>
+            <span class="stat-label">Rodadas participadas</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ rodadas_avaliadas }}</span>
+            <span class="stat-label">Rodadas avaliadas</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ total_itens_pedidos }}</span>
+            <span class="stat-label">Itens pedidos (total)</span>
+        </div>
+        <div class="stat-card stat-card-primary">
+            <span class="stat-number">{{ minha_media }}</span>
+            <span class="stat-label">Nota média que você deu</span>
+            <span class="stat-hint">
+                <span class="stars-readonly">
+                    {% for i in range(1, 6) %}{% if i <= minha_media|round %}★{% else %}☆{% endif %}{% endfor %}
+                </span>
+            </span>
+        </div>
+    </div>
+
+    <div class="analytics-grid">
+        <div class="analytics-card">
+            <h3>Seus produtos mais pedidos</h3>
+            {% if meus_top_produtos %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr><th>Produto</th><th>Volume total</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, un, total in meus_top_produtos %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>{{ total|fmt_un(un) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Nenhum pedido registrado ainda.</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-card">
+            <h3>Seus fornecedores (por sua avaliação)</h3>
+            {% if meus_fornecedores %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr><th>Fornecedor</th><th>Sua nota média</th><th>Avaliações</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, media, qtd in meus_fornecedores %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>
+                                <span class="stars-readonly">
+                                    {% for i in range(1, 6) %}{% if i <= media|round %}★{% else %}☆{% endif %}{% endfor %}
+                                </span>
+                                {{ '%.1f'|format(media)|replace('.', ',') }}
+                            </td>
+                            <td>{{ qtd }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Você ainda não avaliou fornecedores.</p>
+            {% endif %}
+        </div>
+
+        {% if historico_notas %}
+        <div class="analytics-card">
+            <h3>Histórico de avaliações (últimas 10)</h3>
+            <div class="table-wrapper"><table class="table">
+                <thead>
+                    <tr><th>Rodada</th><th>Sua nota</th></tr>
+                </thead>
+                <tbody>
+                    {% for nome, nota in historico_notas %}
+                    <tr>
+                        <td>{{ nome }}</td>
+                        <td>
+                            <span class="stars-readonly">
+                                {% for i in range(1, 6) %}{% if i <= nota %}★{% else %}☆{% endif %}{% endfor %}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table></div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

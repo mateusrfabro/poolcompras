@@ -1,9 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Admin - PoolCompras{% endblock %}
+{% block title %}Painel Administrativo — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="dashboard">
     <h2>Painel Administrativo</h2>
+
+    {# Sub-nav separando operacional de analytics #}
+    <div class="sub-nav">
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item sub-nav-active">Operacional</a>
+        <a href="{{ url_for('admin.analytics') }}" class="sub-nav-item">Indicadores e KPIs</a>
+    </div>
 
     <div class="stats-grid">
         <div class="stat-card">
@@ -30,7 +36,7 @@
             <p>Aberta até {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</p>
             <div class="card-actions">
                 <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada_aberta.id) }}" class="btn btn-outline">Ver detalhes</a>
-                <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}" style="display:inline">
+                <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-danger" onclick="return confirm('Fechar esta rodada?')">Fechar rodada</button>
                 </form>

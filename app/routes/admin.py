@@ -162,8 +162,36 @@ def rodada_nova():
 def rodada_fechar(rodada_id):
     rodada = Rodada.query.get_or_404(rodada_id)
     rodada.status = "fechada"
+    from app.models import EventoRodada
+    db.session.add(EventoRodada(
+        rodada_id=rodada_id,
+        tipo=EventoRodada.TIPO_RODADA_FECHADA,
+        ator_id=current_user.id,
+        descricao="Rodada fechada pelo admin para cotação",
+    ))
     db.session.commit()
     flash(f"Rodada '{rodada.nome}' fechada. Hora de cotar!", "success")
+    return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+
+@admin_bp.route("/rodadas/<int:rodada_id>/cancelar", methods=["POST"])
+@login_required
+@admin_required
+def rodada_cancelar(rodada_id):
+    rodada = Rodada.query.get_or_404(rodada_id)
+    if rodada.status == "cancelada":
+        flash("Esta rodada já foi cancelada.", "warning")
+        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+    rodada.status = "cancelada"
+    from app.models import EventoRodada
+    db.session.add(EventoRodada(
+        rodada_id=rodada_id,
+        tipo=EventoRodada.TIPO_RODADA_CANCELADA,
+        ator_id=current_user.id,
+        descricao="Rodada cancelada pelo admin",
+    ))
+    db.session.commit()
+    flash(f"Rodada '{rodada.nome}' cancelada.", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
 

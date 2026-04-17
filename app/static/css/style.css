@@ -385,6 +385,29 @@ body {
     border-top: 1px solid var(--gray-200);
 }
 
+/* === Sub-nav (tabs dentro do painel) === */
+.sub-nav {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid var(--gray-200);
+}
+.sub-nav-item {
+    padding: 0.7rem 1.2rem;
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    transition: all 0.15s;
+}
+.sub-nav-item:hover { color: var(--gray-700); }
+.sub-nav-active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+}
+
 /* === Analytics grid === */
 .analytics-grid {
     display: grid;

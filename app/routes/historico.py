@@ -11,7 +11,7 @@ from sqlalchemy.orm import joinedload
 from app import db
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto, Lanchonete, Fornecedor,
-    ParticipacaoRodada, EventoRodada,
+    ParticipacaoRodada, EventoRodada, AvaliacaoRodada,
 )
 
 historico_bp = Blueprint("historico", __name__, url_prefix="/minhas-rodadas")
@@ -309,3 +309,101 @@ def _montar_fases_timeline(participacao, rodada):
                       "descricao": "Você ainda não avaliou esta rodada.", "data": None})
 
     return fases
+
+
+# ---------- Analytics da lanchonete ----------
+
+@historico_bp.route("/analytics")
+@login_required
+def analytics():
+    """Dashboard de KPIs pessoais da lanchonete logada."""
+    if current_user.is_admin or current_user.is_fornecedor:
+        flash("Esta área é apenas para lanchonetes.", "warning")
+        return redirect(url_for("main.dashboard"))
+
+    lanchonete = current_user.lanchonete
+    if not lanchonete:
+        flash("Complete seu cadastro primeiro.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    lid = lanchonete.id
+
+    # Contagens basicas
+    total_rodadas = (
+        db.session.query(func.count(func.distinct(ItemPedido.rodada_id)))
+        .filter(ItemPedido.lanchonete_id == lid)
+        .scalar()
+    ) or 0
+
+    rodadas_avaliadas = (
+        ParticipacaoRodada.query
+        .filter_by(lanchonete_id=lid)
+        .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .count()
+    )
+
+    total_itens_pedidos = (
+        ItemPedido.query.filter_by(lanchonete_id=lid).count()
+    )
+
+    # Média de avaliação que a lanchonete deu
+    minha_media = (
+        db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
+        .filter(ParticipacaoRodada.lanchonete_id == lid,
+                ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .scalar()
+    ) or 0
+
+    # Produtos mais pedidos pela lanchonete (top 5)
+    meus_top_produtos = (
+        db.session.query(
+            Produto.nome, Produto.unidade,
+            func.sum(ItemPedido.quantidade).label("total"),
+        )
+        .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .filter(ItemPedido.lanchonete_id == lid)
+        .group_by(Produto.id)
+        .order_by(func.sum(ItemPedido.quantidade).desc())
+        .limit(5)
+        .all()
+    )
+
+    # Ranking de fornecedores que a lanchonete avaliou (media das notas que ELA deu)
+    meus_fornecedores = (
+        db.session.query(
+            Fornecedor.razao_social,
+            func.avg(AvaliacaoRodada.estrelas).label("media"),
+            func.count(AvaliacaoRodada.id).label("avaliacoes"),
+        )
+        .join(AvaliacaoRodada, AvaliacaoRodada.fornecedor_id == Fornecedor.id)
+        .filter(AvaliacaoRodada.lanchonete_id == lid)
+        .group_by(Fornecedor.id)
+        .order_by(func.avg(AvaliacaoRodada.estrelas).desc())
+        .all()
+    )
+
+    # Historico de notas por rodada (pra mini grafico textual)
+    historico_notas = (
+        db.session.query(
+            Rodada.nome,
+            ParticipacaoRodada.avaliacao_geral,
+        )
+        .join(ParticipacaoRodada, ParticipacaoRodada.rodada_id == Rodada.id)
+        .filter(ParticipacaoRodada.lanchonete_id == lid,
+                ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .order_by(Rodada.data_abertura.desc())
+        .limit(10)
+        .all()
+    )
+
+    return render_template(
+        "historico/analytics.html",
+        lanchonete=lanchonete,
+        total_rodadas=total_rodadas,
+        rodadas_avaliadas=rodadas_avaliadas,
+        total_itens_pedidos=total_itens_pedidos,
+        minha_media=round(float(minha_media), 1),
+        meus_top_produtos=meus_top_produtos,
+        meus_fornecedores=meus_fornecedores,
+        historico_notas=historico_notas,
+    )

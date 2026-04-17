@@ -7,14 +7,32 @@
     <div class="page-header">
         <h2>{{ rodada.nome }}</h2>
         {% if current_user.is_admin %}
-            <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
-               class="btn btn-outline btn-sm">Exportar CSV</a>
+            <div class="page-header-actions">
+                <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
+                   class="btn btn-outline btn-sm">Exportar CSV</a>
+                {% if rodada.status != 'cancelada' %}
+                    <form method="POST" action="{{ url_for('admin.rodada_cancelar', rodada_id=rodada.id) }}"
+                          style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('Cancelar esta rodada? Essa ação não pode ser desfeita.')">
+                            Cancelar rodada
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
         {% endif %}
     </div>
     <p class="subtitle">
-        Status: <span class="badge badge-{{ rodada.status }}">{{ rodada.status|status_label }}</span>
+        Status: <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
         | {{ rodada.data_abertura.strftime('%d/%m') }} a {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}
     </p>
+
+    {% if rodada.status == 'cancelada' %}
+        <div class="alert alert-error" role="alert">
+            Esta rodada foi cancelada. Nenhuma compra será processada.
+        </div>
+    {% endif %}
 
     <h3>Pedidos agregados</h3>
     {% if not agregado %}

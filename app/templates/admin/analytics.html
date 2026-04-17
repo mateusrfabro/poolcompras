@@ -4,7 +4,12 @@
 {% block content %}
 <div class="page">
     <div class="page-header">
-        <h2>Analytics e KPIs</h2>
+        <h2>Painel Administrativo</h2>
+    </div>
+
+    <div class="sub-nav">
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item">Operacional</a>
+        <a href="{{ url_for('admin.analytics') }}" class="sub-nav-item sub-nav-active">Indicadores e KPIs</a>
     </div>
 
     <div class="stats-grid">
