@@ -17,7 +17,7 @@
                 <div class="pendencia-card">
                     <div class="pendencia-card-head">
                         <strong>{{ p.lanchonete.nome_fantasia }}</strong>
-                        <span class="muted">— {{ p.rodada.nome }}</span>
+                        — <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=p.rodada_id) }}">{{ p.rodada.nome }}</a>
                     </div>
 
                     {% if not p.pagamento_confirmado_em %}
@@ -99,7 +99,7 @@
             <tbody>
                 {% for c in minhas_cotacoes %}
                 <tr>
-                    <td>{{ c.rodada.nome }}</td>
+                    <td><a href="{{ url_for('fornecedor.ver_demanda', rodada_id=c.rodada_id) }}">{{ c.rodada.nome }}</a></td>
                     <td>{{ c.produto.nome }}</td>
                     <td>{{ c.preco_unitario|brl }}</td>
                     <td>
