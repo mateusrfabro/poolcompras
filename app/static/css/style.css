@@ -259,7 +259,7 @@ body {
 }
 .badge-fechada { background: #fff3cd; color: #856404; }
 .badge-cotada { background: #cce5ff; color: #004085; }
-.badge-finalizada { background: var(--gray-200); color: var(--gray-700); }
+.badge-finalizada { background: #d4edda; color: var(--success); font-weight: 600; }
 
 /* Forms */
 .form-page {
