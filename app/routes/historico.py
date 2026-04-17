@@ -70,9 +70,9 @@ def listar():
 
     rodadas = rodadas_q.all()
 
-    # Conta totais p/ filtros (badges)
+    # Conta totais p/ filtros (badges) — DISTINCT pra contar RODADAS, nao itens
     contagem = dict(
-        db.session.query(Rodada.status, func.count(Rodada.id))
+        db.session.query(Rodada.status, func.count(func.distinct(Rodada.id)))
         .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
         .filter(ItemPedido.lanchonete_id == lanchonete.id)
         .group_by(Rodada.status)
