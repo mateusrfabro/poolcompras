@@ -43,19 +43,29 @@
                 <tr>
                     <th>Produto</th>
                     <th>Categoria</th>
-                    <th>Total pedido</th>
-                    <th>Unidade</th>
+                    <th>Total do pool</th>
                     <th>Lanchonetes</th>
+                    {% if meus_pedidos_map %}
+                        <th>Seu pedido</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
                 {% for item in agregado %}
                 <tr>
                     <td>{{ item.nome }}</td>
-                    <td>{{ item.categoria }}</td>
-                    <td><strong>{{ item.total_quantidade }}</strong></td>
-                    <td>{{ item.unidade }}</td>
+                    <td><span class="tag">{{ item.categoria }}</span></td>
+                    <td><strong>{{ item.total_quantidade|fmt_un(item.unidade) }}</strong></td>
                     <td>{{ item.total_lanchonetes }}</td>
+                    {% if meus_pedidos_map %}
+                        <td>
+                            {% if item.id in meus_pedidos_map %}
+                                {{ meus_pedidos_map[item.id]|fmt_un(item.unidade) }}
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>

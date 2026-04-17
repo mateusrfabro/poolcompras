@@ -38,11 +38,22 @@ def detalhe(rodada_id):
 
     cotacoes = Cotacao.query.filter_by(rodada_id=rodada_id).all()
 
+    # Se lanchonete logada: mostra "Seu pedido" ao lado do total agregado
+    meus_pedidos_map = {}
+    if current_user.is_lanchonete and current_user.lanchonete:
+        meus = (
+            ItemPedido.query
+            .filter_by(rodada_id=rodada_id, lanchonete_id=current_user.lanchonete.id)
+            .all()
+        )
+        meus_pedidos_map = {m.produto_id: m.quantidade for m in meus}
+
     return render_template(
         "rodadas/detalhe.html",
         rodada=rodada,
         agregado=agregado,
         cotacoes=cotacoes,
+        meus_pedidos_map=meus_pedidos_map,
     )
 
 
