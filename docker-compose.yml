@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: poolcompras
       POSTGRES_USER: poolcompras
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-poolcompras2026}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
     ports:
@@ -24,11 +24,18 @@ services:
     container_name: poolcompras-app
     restart: always
     environment:
-      DATABASE_URL: postgresql://poolcompras:${DB_PASSWORD:-poolcompras2026}@db:5432/poolcompras
-      SECRET_KEY: ${SECRET_KEY:-troque-em-producao-chave-segura-2026}
-      FLASK_ENV: production
+      DATABASE_URL: postgresql://poolcompras:${DB_PASSWORD}@db:5432/poolcompras
+      SECRET_KEY: ${SECRET_KEY:?Defina SECRET_KEY no .env}
+      FLASK_ENV: ${FLASK_ENV:-production}
+      FLASK_APP: run.py
+      RUN_SEED: ${RUN_SEED:-false}
+      PORT: ${PORT:-5050}
+      WEB_WORKERS: ${WEB_WORKERS:-0}
+    volumes:
+      - uploads:/app/instance/uploads
+      - logs:/var/log
     ports:
-      - "5050:5050"
+      - "${PORT:-5050}:${PORT:-5050}"
     depends_on:
       db:
         condition: service_healthy
@@ -46,3 +53,5 @@ services:
 
 volumes:
   pgdata:
+  uploads:
+  logs:
