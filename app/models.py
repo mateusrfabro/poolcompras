@@ -121,6 +121,12 @@ class Fornecedor(db.Model):
     ativo = db.Column(db.Boolean, default=True)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
+    # Dados para pagamento (lanchonete paga por fora do sistema)
+    chave_pix = db.Column(db.String(150))     # CNPJ/email/telefone/aleatoria
+    banco = db.Column(db.String(80))
+    agencia = db.Column(db.String(20))
+    conta = db.Column(db.String(30))
+
     cotacoes = db.relationship("Cotacao", backref="fornecedor")
 
 

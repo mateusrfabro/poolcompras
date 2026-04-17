@@ -43,6 +43,35 @@
             </div>
         </div>
 
+        <h3 style="margin-top: 1.5rem;">Dados para pagamento</h3>
+        <p class="subtitle" style="font-size: 0.85rem;">
+            Serão exibidos para a lanchonete quando ela for pagar.
+        </p>
+        <div class="form-group">
+            <label for="chave_pix">Chave PIX</label>
+            <input type="text" id="chave_pix" name="chave_pix"
+                   placeholder="CNPJ, e-mail, telefone ou chave aleatória"
+                   value="{{ fornecedor.chave_pix if fornecedor else '' }}">
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="banco">Banco</label>
+                <input type="text" id="banco" name="banco"
+                       placeholder="Ex: Itaú, Bradesco, Nubank"
+                       value="{{ fornecedor.banco if fornecedor else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="agencia">Agência</label>
+                <input type="text" id="agencia" name="agencia"
+                       value="{{ fornecedor.agencia if fornecedor else '' }}">
+            </div>
+            <div class="form-group">
+                <label for="conta">Conta</label>
+                <input type="text" id="conta" name="conta"
+                       value="{{ fornecedor.conta if fornecedor else '' }}">
+            </div>
+        </div>
+
         {% if fornecedor %}
         <div class="form-group">
             <label>

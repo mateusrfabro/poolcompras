@@ -140,7 +140,47 @@
                 <p class="muted">Você recusou esta proposta. Sem próximas ações.</p>
 
             {% elif not participacao.comprovante_key %}
-                <p>Envie o comprovante de pagamento (PDF, JPG ou PNG, até 5 MB).</p>
+                <p><strong>Hora de pagar!</strong> Pague direto para o(s) fornecedor(es) abaixo e depois envie o comprovante.</p>
+
+                {% if pagamento_por_fornecedor %}
+                    <div class="pagamento-list">
+                        {% for bloco in pagamento_por_fornecedor %}
+                            <div class="pagamento-box">
+                                <div class="pagamento-head">
+                                    <strong>{{ bloco.fornecedor.razao_social }}</strong>
+                                    <span class="pagamento-total">Total: {{ bloco.total|brl }}</span>
+                                </div>
+                                {% if bloco.fornecedor.chave_pix or bloco.fornecedor.banco %}
+                                    <div class="pagamento-dados">
+                                        {% if bloco.fornecedor.chave_pix %}
+                                            <div><strong>PIX:</strong> {{ bloco.fornecedor.chave_pix }}</div>
+                                        {% endif %}
+                                        {% if bloco.fornecedor.banco %}
+                                            <div><strong>Banco:</strong> {{ bloco.fornecedor.banco }}
+                                                {% if bloco.fornecedor.agencia %} — Ag.: {{ bloco.fornecedor.agencia }}{% endif %}
+                                                {% if bloco.fornecedor.conta %} — C/C: {{ bloco.fornecedor.conta }}{% endif %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% else %}
+                                    <div class="muted pagamento-dados">
+                                        <em>Dados bancários não cadastrados — contate o administrador.</em>
+                                    </div>
+                                {% endif %}
+                                <details class="pagamento-itens">
+                                    <summary>Ver itens deste fornecedor ({{ bloco.itens|length }})</summary>
+                                    <ul>
+                                        {% for it in bloco.itens %}
+                                            <li>{{ it.nome }} — {{ it.quantidade|fmt_un(it.unidade) }} — {{ it.subtotal|brl }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </details>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <p style="margin-top: 1rem;">Após pagar, envie o comprovante (PDF, JPG ou PNG, até 5 MB):</p>
                 <form method="POST" action="{{ url_for('fluxo.enviar_comprovante', rodada_id=rodada.id) }}"
                       enctype="multipart/form-data" class="action-card-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

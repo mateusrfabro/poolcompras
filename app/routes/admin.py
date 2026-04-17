@@ -93,6 +93,10 @@ def fornecedor_novo():
             telefone=request.form.get("telefone", "").strip(),
             email=request.form.get("email", "").strip(),
             cidade=request.form.get("cidade", "").strip(),
+            chave_pix=request.form.get("chave_pix", "").strip() or None,
+            banco=request.form.get("banco", "").strip() or None,
+            agencia=request.form.get("agencia", "").strip() or None,
+            conta=request.form.get("conta", "").strip() or None,
         )
         db.session.add(fornecedor)
         db.session.commit()
@@ -113,6 +117,10 @@ def fornecedor_editar(fornecedor_id):
         fornecedor.telefone = request.form.get("telefone", "").strip()
         fornecedor.email = request.form.get("email", "").strip()
         fornecedor.cidade = request.form.get("cidade", "").strip()
+        fornecedor.chave_pix = request.form.get("chave_pix", "").strip() or None
+        fornecedor.banco = request.form.get("banco", "").strip() or None
+        fornecedor.agencia = request.form.get("agencia", "").strip() or None
+        fornecedor.conta = request.form.get("conta", "").strip() or None
         fornecedor.ativo = "ativo" in request.form
         db.session.commit()
         flash("Fornecedor atualizado!", "success")

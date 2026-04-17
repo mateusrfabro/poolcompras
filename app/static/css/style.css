@@ -427,6 +427,56 @@ body {
     margin-bottom: 0.8rem;
 }
 
+/* === Lista de pagamentos por fornecedor === */
+.pagamento-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin: 0.8rem 0;
+}
+.pagamento-box {
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-left: 4px solid var(--success);
+    border-radius: var(--radius);
+    padding: 0.9rem 1.1rem;
+}
+.pagamento-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.5rem;
+}
+.pagamento-total {
+    color: var(--success);
+    font-weight: 700;
+    font-size: 1rem;
+}
+.pagamento-dados {
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    padding: 0.4rem 0.6rem;
+    background: var(--gray-100);
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+}
+.pagamento-dados div { margin: 0.15rem 0; }
+.pagamento-itens {
+    font-size: 0.82rem;
+    color: var(--gray-700);
+    margin-top: 0.4rem;
+}
+.pagamento-itens summary {
+    cursor: pointer;
+    color: var(--primary);
+}
+.pagamento-itens ul {
+    margin-top: 0.4rem;
+    padding-left: 1.2rem;
+}
+
 /* === Insights box === */
 .insights-box {
     background: #edf6ff;

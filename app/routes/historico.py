@@ -203,6 +203,26 @@ def detalhe(rodada_id):
     )
     economia = total_partida - total_estimado if total_partida and total_estimado else 0
 
+    # Break-down por fornecedor vencedor: valor a pagar + dados bancarios
+    pagamento_por_fornecedor = {}
+    for i in itens_detalhe:
+        forn = i.get("fornecedor")
+        if forn and i.get("subtotal"):
+            if forn.id not in pagamento_por_fornecedor:
+                pagamento_por_fornecedor[forn.id] = {
+                    "fornecedor": forn,
+                    "total": 0,
+                    "itens": [],
+                }
+            pagamento_por_fornecedor[forn.id]["total"] += float(i["subtotal"])
+            pagamento_por_fornecedor[forn.id]["itens"].append({
+                "nome": i["produto"].nome,
+                "quantidade": i["quantidade"],
+                "unidade": i["produto"].unidade,
+                "subtotal": float(i["subtotal"]),
+            })
+    pagamento_por_fornecedor = list(pagamento_por_fornecedor.values())
+
     # Insights pra rodada finalizada
     insights = []
     if economia and total_partida:
@@ -269,6 +289,7 @@ def detalhe(rodada_id):
         fases=fases,
         insights=insights,
         media_geral=_media_geral_rodada(rodada_id),
+        pagamento_por_fornecedor=pagamento_por_fornecedor,
     )
 
 

@@ -137,6 +137,10 @@ def get_or_create_fornecedor(razao, contato, tel, email, cidade):
         email=email,
         cidade=cidade,
         ativo=True,
+        chave_pix=email,  # demo: PIX = email
+        banco="Ita\u00fa" if "sul" in email.lower() else "Bradesco",
+        agencia="1234",
+        conta="56789-0",
     )
     db.session.add(forn)
     db.session.flush()
