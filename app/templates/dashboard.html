@@ -16,7 +16,10 @@
         </div>
 
         {% if meus_pedidos %}
-            <h3>Meus pedidos nesta rodada</h3>
+            <div class="page-header">
+                <h3>Meus pedidos nesta rodada</h3>
+                <a href="{{ url_for('pedidos.exportar') }}" class="btn btn-outline btn-sm">Exportar CSV</a>
+            </div>
             <div class="table-wrapper"><table class="table">
                 <thead>
                     <tr>

@@ -13,6 +13,7 @@ from app.models import (
     Rodada, ItemPedido, Cotacao, Produto, Lanchonete, Fornecedor,
     ParticipacaoRodada, EventoRodada, AvaliacaoRodada,
 )
+from app.services.csv_export import csv_response
 
 historico_bp = Blueprint("historico", __name__, url_prefix="/minhas-rodadas")
 
@@ -86,6 +87,45 @@ def listar():
         contagem=contagem,
         lanchonete=lanchonete,
         notas_map=notas_map,
+    )
+
+
+@historico_bp.route("/exportar.csv")
+@login_required
+def exportar():
+    """Exporta histórico de rodadas da lanchonete logada."""
+    if current_user.is_admin or current_user.is_fornecedor:
+        flash("Esta área é apenas para lanchonetes.", "warning")
+        return redirect(url_for("main.dashboard"))
+    lanchonete = current_user.lanchonete
+    if not lanchonete:
+        return redirect(url_for("main.dashboard"))
+
+    rodadas = (
+        db.session.query(
+            Rodada,
+            func.count(ItemPedido.id).label("qtd_itens"),
+        )
+        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
+        .filter(ItemPedido.lanchonete_id == lanchonete.id)
+        .group_by(Rodada.id)
+        .order_by(Rodada.data_abertura.desc())
+        .all()
+    )
+    notas = dict(
+        db.session.query(ParticipacaoRodada.rodada_id, ParticipacaoRodada.avaliacao_geral)
+        .filter(ParticipacaoRodada.lanchonete_id == lanchonete.id,
+                ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .all()
+    )
+    return csv_response(
+        filename=f"minhas_rodadas_{lanchonete.nome_fantasia.replace(' ', '_')}.csv",
+        headers=["rodada", "data", "status", "itens_pedidos", "avaliacao"],
+        rows=[
+            [r.nome, r.data_abertura.strftime("%Y-%m-%d"), r.status,
+             str(qtd), str(notas.get(r.id, ""))]
+            for r, qtd in rodadas
+        ],
     )
 
 
@@ -228,7 +268,19 @@ def detalhe(rodada_id):
         eventos=eventos,
         fases=fases,
         insights=insights,
+        media_geral=_media_geral_rodada(rodada_id),
     )
+
+
+def _media_geral_rodada(rodada_id):
+    """Media de avaliacao de TODAS as lanchonetes nesta rodada."""
+    media = (
+        db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
+        .filter(ParticipacaoRodada.rodada_id == rodada_id,
+                ParticipacaoRodada.avaliacao_geral.isnot(None))
+        .scalar()
+    )
+    return round(float(media), 1) if media else None
 
 
 def _montar_fases_timeline(participacao, rodada):

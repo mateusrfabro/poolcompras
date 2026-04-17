@@ -8,6 +8,9 @@
             <h2>Minhas Rodadas</h2>
             <p class="page-sub">Histórico de rodadas em que <strong>{{ lanchonete.nome_fantasia }}</strong> participou.</p>
         </div>
+        <div class="page-header-actions">
+            <a href="{{ url_for('historico.exportar') }}" class="btn btn-outline btn-sm">Exportar CSV</a>
+        </div>
     </div>
 
     {# Filtros (chips) #}

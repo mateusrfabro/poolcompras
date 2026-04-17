@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy.orm import joinedload
 from app import db
 from app.models import Produto, Rodada, ItemPedido
+from app.services.csv_export import csv_response
 
 pedidos_bp = Blueprint("pedidos", __name__, url_prefix="/pedidos")
 
@@ -27,6 +29,35 @@ def listar():
         "pedidos/listar.html",
         rodada=rodada_aberta,
         pedidos=meus_pedidos,
+    )
+
+
+@pedidos_bp.route("/exportar.csv")
+@login_required
+def exportar():
+    """Exporta os pedidos da lanchonete na rodada aberta."""
+    lanchonete = current_user.lanchonete
+    if not lanchonete:
+        flash("Complete seu cadastro primeiro.", "error")
+        return redirect(url_for("pedidos.listar"))
+    rodada = Rodada.query.filter_by(status="aberta").first()
+    if not rodada:
+        flash("Nenhuma rodada aberta.", "warning")
+        return redirect(url_for("pedidos.listar"))
+    itens = (
+        ItemPedido.query
+        .options(joinedload(ItemPedido.produto))
+        .filter_by(rodada_id=rodada.id, lanchonete_id=lanchonete.id)
+        .all()
+    )
+    return csv_response(
+        filename=f"meus_pedidos_{rodada.nome.replace(' ', '_')}.csv",
+        headers=["produto", "categoria", "quantidade", "unidade", "observacao"],
+        rows=[
+            [i.produto.nome, i.produto.categoria, str(i.quantidade),
+             i.produto.unidade, i.observacao or ""]
+            for i in itens
+        ],
     )
 
 
