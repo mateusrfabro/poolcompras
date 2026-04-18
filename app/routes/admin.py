@@ -357,6 +357,12 @@ def analytics():
         .all()
     )
 
+    # Taxa de conclusao do fluxo (completas / participacoes)
+    taxa_conclusao = (
+        round(participacoes_completas / total_participacoes * 100, 1)
+        if total_participacoes else 0
+    )
+
     return render_template(
         "admin/analytics.html",
         total_lanchonetes=total_lanchonetes,
@@ -366,6 +372,7 @@ def analytics():
         rodadas_finalizadas=rodadas_finalizadas,
         total_participacoes=total_participacoes,
         participacoes_completas=participacoes_completas,
+        taxa_conclusao=taxa_conclusao,
         media_avaliacao=round(float(media_avaliacao), 1),
         top_fornecedores=top_fornecedores,
         top_produtos=top_produtos,

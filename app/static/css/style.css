@@ -179,12 +179,18 @@ body {
 .card-actions form { margin: 0; }
 .card-actions .btn { box-sizing: border-box; }
 
-/* Stats Grid */
+/* Stats Grid (4 colunas fixas em desktop; 2 em tablet; 1 em mobile) */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 1rem;
     margin-bottom: 2rem;
+}
+@media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 480px) {
+    .stats-grid { grid-template-columns: 1fr; }
 }
 .stat-card {
     background: var(--white);
