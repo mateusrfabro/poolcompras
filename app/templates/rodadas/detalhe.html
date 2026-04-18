@@ -20,6 +20,26 @@
                         Aprovar produtos ({{ pendentes_aprovacao }})
                     </a>
                 {% endif %}
+                {% if rodada.status == 'aberta' %}
+                    <form method="POST" action="{{ url_for('admin.rodada_encerrar_coleta', rodada_id=rodada.id) }}"
+                          style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary btn-sm"
+                                onclick="return confirm('Encerrar coleta e iniciar negociação?')">
+                            Encerrar coleta
+                        </button>
+                    </form>
+                {% endif %}
+                {% if rodada.status == 'em_negociacao' %}
+                    <form method="POST" action="{{ url_for('admin.rodada_finalizar', rodada_id=rodada.id) }}"
+                          style="display:inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-primary btn-sm"
+                                onclick="return confirm('Finalizar a rodada? Lanchonetes poderão aceitar a proposta.')">
+                            Finalizar rodada
+                        </button>
+                    </form>
+                {% endif %}
                 <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
                    class="btn btn-outline btn-sm">Exportar CSV</a>
                 {% if rodada.status != 'cancelada' %}

@@ -44,9 +44,8 @@ def dashboard():
         .all()
     ) if fornecedor else []
 
-    # Fase 2: participacoes com acoes pendentes do fornecedor
-    # (rodadas finalizadas em que ele cotou, com clientes em estagio relevante)
-    participacoes_pendentes = []
+    # Pendencias agrupadas POR RODADA (nao por lanchonete)
+    pendencias_por_rodada = []
     if fornecedor:
         rodadas_cotadas_ids = [
             r for (r,) in db.session.query(Cotacao.rodada_id)
@@ -54,19 +53,38 @@ def dashboard():
                 .distinct().all()
         ]
         if rodadas_cotadas_ids:
-            participacoes_pendentes = (
+            participacoes = (
                 ParticipacaoRodada.query
                 .options(joinedload(ParticipacaoRodada.lanchonete),
                          joinedload(ParticipacaoRodada.rodada))
                 .filter(ParticipacaoRodada.rodada_id.in_(rodadas_cotadas_ids))
-                # So mostrar quem ja aceitou e tem comprovante ou ja pago
                 .filter(ParticipacaoRodada.aceite_proposta.is_(True))
                 .filter(ParticipacaoRodada.comprovante_key.isnot(None))
-                # Omite as que ja tiveram entrega informada (fluxo completo do lado fornecedor)
                 .filter(ParticipacaoRodada.entrega_informada_em.is_(None))
                 .order_by(ParticipacaoRodada.comprovante_em.asc())
                 .all()
             )
+            # Agrupa por rodada
+            por_rodada = {}
+            for p in participacoes:
+                rid = p.rodada_id
+                if rid not in por_rodada:
+                    por_rodada[rid] = {
+                        "rodada": p.rodada,
+                        "aguardando_pagamento": [],
+                        "aguardando_entrega": [],
+                    }
+                if not p.pagamento_confirmado_em:
+                    por_rodada[rid]["aguardando_pagamento"].append(p)
+                elif not p.entrega_informada_em:
+                    por_rodada[rid]["aguardando_entrega"].append(p)
+            pendencias_por_rodada = list(por_rodada.values())
+
+    # Manter backward-compat: template ainda recebe participacoes_pendentes (lista flat)
+    participacoes_pendentes = [
+        p for bloco in pendencias_por_rodada
+        for p in (bloco["aguardando_pagamento"] + bloco["aguardando_entrega"])
+    ]
 
     return render_template(
         "fornecedor/dashboard.html",
@@ -74,6 +92,7 @@ def dashboard():
         rodadas_para_cotar=rodadas_para_cotar,
         minhas_cotacoes=minhas_cotacoes,
         participacoes_pendentes=participacoes_pendentes,
+        pendencias_por_rodada=pendencias_por_rodada,
     )
 
 

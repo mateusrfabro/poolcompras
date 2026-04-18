@@ -248,6 +248,71 @@ def rodada_fechar(rodada_id):
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
 
+@admin_bp.route("/rodadas/<int:rodada_id>/encerrar-coleta", methods=["POST"])
+@login_required
+@admin_required
+def rodada_encerrar_coleta(rodada_id):
+    """Admin encerra coleta de pedidos das lanchonetes -> status em_negociacao."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+    if rodada.status != "aberta":
+        flash("Só é possível encerrar coleta de rodadas abertas.", "warning")
+        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+    rodada.status = "em_negociacao"
+    from app.models import EventoRodada
+    db.session.add(EventoRodada(
+        rodada_id=rodada_id,
+        tipo="rodada_em_negociacao",
+        ator_id=current_user.id,
+        descricao="Admin encerrou a coleta de pedidos e iniciou a negociação",
+    ))
+    db.session.commit()
+    flash("Coleta encerrada! A rodada está agora em negociação.", "success")
+    return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+
+@admin_bp.route("/rodadas/<int:rodada_id>/finalizar", methods=["POST"])
+@login_required
+@admin_required
+def rodada_finalizar(rodada_id):
+    """Admin finaliza a negociação -> rodada 'finalizada' (lanchonetes aceitam)."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+    if rodada.status != "em_negociacao":
+        flash("Só é possível finalizar rodadas em negociação.", "warning")
+        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+    # Marca cotacao selecionada = menor preco de partida por produto (simples)
+    rps = RodadaProduto.query.filter_by(rodada_id=rodada_id).filter(
+        RodadaProduto.preco_partida.isnot(None)
+    ).all()
+    for rp in rps:
+        # Cria Cotacao se nao existir (liga fornecedor ao produto via preco_partida)
+        forn_id = rp.adicionado_por_fornecedor_id
+        if forn_id and rp.preco_partida:
+            existe = Cotacao.query.filter_by(
+                rodada_id=rodada_id, fornecedor_id=forn_id,
+                produto_id=rp.produto_id,
+            ).first()
+            if not existe:
+                db.session.add(Cotacao(
+                    rodada_id=rodada_id,
+                    fornecedor_id=forn_id,
+                    produto_id=rp.produto_id,
+                    preco_unitario=rp.preco_partida,
+                    selecionada=True,
+                ))
+    rodada.status = "finalizada"
+    from app.models import EventoRodada
+    db.session.add(EventoRodada(
+        rodada_id=rodada_id,
+        tipo="rodada_finalizada",
+        ator_id=current_user.id,
+        descricao="Rodada finalizada pelo admin",
+    ))
+    db.session.commit()
+    flash("Rodada finalizada! Lanchonetes podem agora aceitar a proposta.", "success")
+    return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+
 @admin_bp.route("/rodadas/<int:rodada_id>/cancelar", methods=["POST"])
 @login_required
 @admin_required

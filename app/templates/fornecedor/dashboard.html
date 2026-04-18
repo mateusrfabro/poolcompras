@@ -8,46 +8,58 @@
         <p class="subtitle">{{ fornecedor.razao_social }}</p>
     {% endif %}
 
-    {# Fase 2: acoes pendentes (confirmar pagamento / informar entrega) #}
-    {% if participacoes_pendentes %}
+    {# Acoes pendentes AGRUPADAS POR RODADA (nao mais por lanchonete individual) #}
+    {% if pendencias_por_rodada %}
         <h3>Ações pendentes</h3>
-        <p class="subtitle">Clientes esperando sua confirmação.</p>
+        <p class="subtitle">Rodadas esperando sua ação.</p>
         <div class="pendencias-grid">
-            {% for p in participacoes_pendentes %}
+            {% for bloco in pendencias_por_rodada %}
                 <div class="pendencia-card">
                     <div class="pendencia-card-head">
-                        <strong>{{ p.lanchonete.nome_fantasia }}</strong>
-                        — <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=p.rodada_id) }}">{{ p.rodada.nome }}</a>
+                        <strong><a href="{{ url_for('fornecedor.ver_demanda', rodada_id=bloco.rodada.id) }}">{{ bloco.rodada.nome }}</a></strong>
+                        <span class="muted">{{ bloco.rodada.data_fechamento.strftime('%d/%m/%Y') }}</span>
                     </div>
 
-                    {% if not p.pagamento_confirmado_em %}
-                        {# Acao 1: confirmar pagamento #}
+                    {% if bloco.aguardando_pagamento %}
                         <p>
-                            Comprovante enviado em
-                            {{ p.comprovante_em.strftime('%d/%m/%Y às %H:%M') if p.comprovante_em else '—' }}.
-                            <a href="{{ url_for('uploads.servir', key=p.comprovante_key) }}" target="_blank">Ver comprovante</a>.
+                            <strong>{{ bloco.aguardando_pagamento|length }}</strong> lanchonete(s)
+                            com comprovante enviado aguardando sua confirmação:
                         </p>
-                        <form method="POST"
-                              action="{{ url_for('fluxo.confirmar_pagamento', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
-                              style="display:inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-primary btn-sm">Confirmar recebimento</button>
-                        </form>
+                        <ul class="pendencia-lista">
+                            {% for p in bloco.aguardando_pagamento %}
+                                <li>
+                                    {{ p.lanchonete.nome_fantasia }}
+                                    — <a href="{{ url_for('uploads.servir', key=p.comprovante_key) }}" target="_blank">Ver comprovante</a>
+                                    <form method="POST"
+                                          action="{{ url_for('fluxo.confirmar_pagamento', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
+                                          style="display:inline; margin-left: 0.5rem;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-primary btn-sm">Confirmar pagamento</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
 
-                    {% elif not p.entrega_informada_em %}
-                        {# Acao 2: informar entrega #}
-                        <p>
-                            Pagamento confirmado em
-                            {{ p.pagamento_confirmado_em.strftime('%d/%m/%Y às %H:%M') }}.
-                            Informe a data da entrega:
+                    {% if bloco.aguardando_entrega %}
+                        <p style="margin-top: 0.8rem;">
+                            <strong>{{ bloco.aguardando_entrega|length }}</strong> lanchonete(s)
+                            com pagamento confirmado aguardando data de entrega:
                         </p>
-                        <form method="POST"
-                              action="{{ url_for('fluxo.informar_entrega', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
-                              class="pendencia-form">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="date" name="entrega_data" required>
-                            <button type="submit" class="btn btn-primary btn-sm">Informar entrega</button>
-                        </form>
+                        <ul class="pendencia-lista">
+                            {% for p in bloco.aguardando_entrega %}
+                                <li>
+                                    {{ p.lanchonete.nome_fantasia }}
+                                    <form method="POST"
+                                          action="{{ url_for('fluxo.informar_entrega', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
+                                          class="pendencia-form" style="margin-top: 0.3rem;">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <input type="date" name="entrega_data" required>
+                                        <button type="submit" class="btn btn-primary btn-sm">Informar entrega</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
                     {% endif %}
                 </div>
             {% endfor %}

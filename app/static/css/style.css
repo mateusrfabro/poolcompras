@@ -699,6 +699,19 @@ body {
     font-size: 1rem;
 }
 
+/* Lista de lanchonetes dentro de um card de pendencia */
+.pendencia-lista {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+}
+.pendencia-lista li {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--gray-200);
+    font-size: 0.85rem;
+}
+.pendencia-lista li:last-child { border-bottom: none; }
+
 /* === Cards de pendencias do fornecedor === */
 
 .pendencias-grid {
