@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from sqlalchemy import func
 from app import db
-from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto
+from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada
 
 rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")
 
@@ -20,6 +20,8 @@ def listar():
 def detalhe(rodada_id):
     rodada = Rodada.query.get_or_404(rodada_id)
 
+    # Pool unificado: SOMENTE pedidos aprovados pelo admin
+    # (pendentes/rascunho/devolvidos/reprovados nao entram no agregado da rodada)
     agregado = (
         db.session.query(
             Produto.id,
@@ -30,7 +32,11 @@ def detalhe(rodada_id):
             func.count(func.distinct(ItemPedido.lanchonete_id)).label("total_lanchonetes"),
         )
         .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .join(ParticipacaoRodada,
+              (ParticipacaoRodada.rodada_id == ItemPedido.rodada_id) &
+              (ParticipacaoRodada.lanchonete_id == ItemPedido.lanchonete_id))
         .filter(ItemPedido.rodada_id == rodada_id)
+        .filter(ParticipacaoRodada.pedido_aprovado_em.isnot(None))
         .group_by(Produto.id, Produto.nome, Produto.categoria, Produto.unidade)
         .order_by(Produto.categoria, Produto.nome)
         .all()

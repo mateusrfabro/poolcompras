@@ -567,7 +567,7 @@ def rodada_detalhe_exportar(rodada_id):
 
     rodada = Rodada.query.get_or_404(rodada_id)
 
-    # Demanda agregada
+    # Demanda agregada — pool unificado: somente pedidos aprovados
     demanda = (
         db.session.query(
             Produto.nome,
@@ -577,7 +577,11 @@ def rodada_detalhe_exportar(rodada_id):
             func.count(func.distinct(ItemPedido.lanchonete_id)).label("qtd_lanchonetes"),
         )
         .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .join(ParticipacaoRodada,
+              (ParticipacaoRodada.rodada_id == ItemPedido.rodada_id) &
+              (ParticipacaoRodada.lanchonete_id == ItemPedido.lanchonete_id))
         .filter(ItemPedido.rodada_id == rodada_id)
+        .filter(ParticipacaoRodada.pedido_aprovado_em.isnot(None))
         .group_by(Produto.id)
         .order_by(Produto.categoria, Produto.nome)
         .all()
