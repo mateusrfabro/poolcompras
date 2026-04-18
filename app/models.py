@@ -328,3 +328,63 @@ class RodadaProduto(db.Model):
         UniqueConstraint("rodada_id", "produto_id",
                          name="uq_rodada_produto"),
     )
+
+
+# ---------- Submissao da cotacao final (fornecedor -> admin aprova/devolve) ----------
+class SubmissaoCotacao(db.Model):
+    """Agrega os precos finais enviados por um fornecedor numa rodada.
+
+    Fluxo:
+    1. Fornecedor preenche precos finais em Cotacao (existente)
+    2. Fornecedor clica 'Enviar pra aprovacao' -> enviada_em=now
+    3. Admin aprova (aprovada_em=now) OU devolve (devolvida_em=now)
+    4. Se devolvida: admin e fornecedor trocam notas (NotaNegociacao) ate reenviar
+    5. Quando aprovada, precos ficam visiveis pras lanchonetes
+    """
+    __tablename__ = "submissoes_cotacao"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"), nullable=False, index=True)
+
+    enviada_em         = db.Column(db.DateTime)
+    aprovada_em        = db.Column(db.DateTime)
+    aprovada_por_id    = db.Column(db.Integer, db.ForeignKey("usuarios.id", name="fk_submissao_aprovada_por"))
+    devolvida_em       = db.Column(db.DateTime)
+
+    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    rodada     = db.relationship("Rodada")
+    fornecedor = db.relationship("Fornecedor")
+
+    __table_args__ = (
+        UniqueConstraint("rodada_id", "fornecedor_id",
+                         name="uq_submissao_rodada_fornecedor"),
+    )
+
+
+class NotaNegociacao(db.Model):
+    """Anotacoes append-only entre admin e fornecedor numa submissao de cotacao.
+
+    Quando admin devolve a cotacao, ambos podem adicionar notas. Cada nota
+    tem autor (admin ou fornecedor) + texto + timestamp, exibidas em ordem
+    cronologica como historico da negociacao.
+    """
+    __tablename__ = "notas_negociacao"
+
+    AUTOR_ADMIN      = "admin"
+    AUTOR_FORNECEDOR = "fornecedor"
+
+    id = db.Column(db.Integer, primary_key=True)
+    submissao_id = db.Column(db.Integer,
+        db.ForeignKey("submissoes_cotacao.id", name="fk_nota_submissao"),
+        nullable=False, index=True)
+    autor_tipo       = db.Column(db.String(20), nullable=False)  # admin | fornecedor
+    autor_usuario_id = db.Column(db.Integer,
+        db.ForeignKey("usuarios.id", name="fk_nota_autor"),
+        nullable=False)
+    texto     = db.Column(db.String(1000), nullable=False)
+    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+
+    submissao    = db.relationship("SubmissaoCotacao", backref="notas")
+    autor_usuario = db.relationship("Usuario")

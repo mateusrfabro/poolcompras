@@ -9,7 +9,7 @@ from app import db
 from app.models import (
     Produto, Rodada, Fornecedor, Lanchonete,
     ParticipacaoRodada, AvaliacaoRodada, ItemPedido, Cotacao, RodadaProduto,
-    EventoRodada,
+    EventoRodada, SubmissaoCotacao, NotaNegociacao,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -895,6 +895,98 @@ def moderar_pedidos(rodada_id):
         reprovados=reprovados,
         itens_por_participacao=itens_por_participacao,
     )
+
+
+# --- Aprovacao das cotacoes finais enviadas pelos fornecedores ---
+@admin_bp.route("/rodadas/<int:rodada_id>/aprovar-cotacoes", methods=["GET", "POST"])
+@login_required
+@admin_required
+def aprovar_cotacoes(rodada_id):
+    """Admin aprova/devolve cotacoes finais enviadas pelos fornecedores."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+
+    if request.method == "POST":
+        submissao_id = request.form.get("submissao_id", type=int)
+        acao = request.form.get("acao")
+        sub = db.session.get(SubmissaoCotacao, submissao_id)
+        if not sub or sub.rodada_id != rodada_id:
+            flash("Submissao nao encontrada.", "error")
+            return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
+
+        nome_forn = sub.fornecedor.razao_social if sub.fornecedor else f"#{sub.fornecedor_id}"
+
+        if acao == "aprovar":
+            sub.aprovada_em = datetime.utcnow()
+            sub.aprovada_por_id = current_user.id
+            sub.devolvida_em = None
+            flash(f"Cotacao de {nome_forn} aprovada.", "success")
+        elif acao == "devolver":
+            sub.devolvida_em = datetime.utcnow()
+            sub.enviada_em = None
+            sub.aprovada_em = None
+            flash(f"Cotacao de {nome_forn} devolvida pra negociacao.", "success")
+        elif acao == "reverter":
+            sub.aprovada_em = None
+            sub.aprovada_por_id = None
+            flash(f"Aprovacao de {nome_forn} revertida.", "info")
+
+        db.session.commit()
+        return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
+
+    submissoes = (
+        SubmissaoCotacao.query
+        .options(joinedload(SubmissaoCotacao.fornecedor))
+        .filter_by(rodada_id=rodada_id)
+        .filter(SubmissaoCotacao.enviada_em.isnot(None))
+        .all()
+    )
+    enviadas = [s for s in submissoes if s.aprovada_em is None]
+    aprovadas = [s for s in submissoes if s.aprovada_em is not None]
+
+    resumo_por_sub = {}
+    notas_por_sub = {}
+    for s in submissoes:
+        cots = (
+            db.session.query(Cotacao, Produto)
+            .join(Produto, Cotacao.produto_id == Produto.id)
+            .filter(Cotacao.rodada_id == rodada_id, Cotacao.fornecedor_id == s.fornecedor_id)
+            .all()
+        )
+        resumo_por_sub[s.id] = cots
+        notas_por_sub[s.id] = NotaNegociacao.query.filter_by(submissao_id=s.id)\
+            .order_by(NotaNegociacao.criado_em.asc()).all()
+
+    return render_template(
+        "admin/aprovar_cotacoes.html",
+        rodada=rodada,
+        enviadas=enviadas,
+        aprovadas=aprovadas,
+        resumo_por_sub=resumo_por_sub,
+        notas_por_sub=notas_por_sub,
+    )
+
+
+@admin_bp.route("/submissoes/<int:submissao_id>/nota", methods=["POST"])
+@login_required
+@admin_required
+def adicionar_nota_negociacao_admin(submissao_id):
+    sub = db.session.get(SubmissaoCotacao, submissao_id)
+    if not sub:
+        flash("Submissao nao encontrada.", "error")
+        return redirect(url_for("main.dashboard"))
+    texto = request.form.get("texto", "").strip()
+    if not texto:
+        flash("Escreva uma mensagem antes de enviar.", "warning")
+        return redirect(url_for("admin.aprovar_cotacoes", rodada_id=sub.rodada_id))
+    db.session.add(NotaNegociacao(
+        submissao_id=sub.id,
+        autor_tipo=NotaNegociacao.AUTOR_ADMIN,
+        autor_usuario_id=current_user.id,
+        texto=texto[:1000],
+    ))
+    db.session.commit()
+    flash("Mensagem adicionada.", "success")
+    return redirect(url_for("admin.aprovar_cotacoes", rodada_id=sub.rodada_id))
 
 
 # --- Historico de produtos sugeridos/aprovados por fornecedores ---

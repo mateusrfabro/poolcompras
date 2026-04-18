@@ -6,6 +6,7 @@ from app import db
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto,
     ParticipacaoRodada, Lanchonete, AvaliacaoRodada, RodadaProduto,
+    SubmissaoCotacao, NotaNegociacao,
 )
 
 fornecedor_bp = Blueprint("fornecedor", __name__, url_prefix="/fornecedor")
@@ -233,11 +234,22 @@ def cotar_final(rodada_id):
         ).all()
     }
 
+    # Submissao (status do envio pra aprovacao)
+    submissao = SubmissaoCotacao.query.filter_by(
+        rodada_id=rodada_id, fornecedor_id=fornecedor.id,
+    ).first()
+    bloqueado = bool(submissao and submissao.aprovada_em)
+
     if request.method == "POST":
+        if bloqueado:
+            flash("Cotacao ja foi aprovada pelo admin — nao eh mais editavel.", "error")
+            return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
+
+        acao = request.form.get("acao", "salvar")
         count = 0
         for rp in rodada_produtos:
             pid = rp.produto_id
-            if pid not in volumes:  # so cota o que foi pedido
+            if pid not in volumes:
                 continue
             preco_str = request.form.get(f"preco_final_{pid}", "").strip()
             if not preco_str:
@@ -261,16 +273,44 @@ def cotar_final(rodada_id):
                 ))
             count += 1
 
+        # Garante SubmissaoCotacao (cria no primeiro save)
+        if not submissao:
+            submissao = SubmissaoCotacao(
+                rodada_id=rodada_id, fornecedor_id=fornecedor.id,
+            )
+            db.session.add(submissao)
+            db.session.flush()
+
+        if acao == "enviar":
+            # Validar: pelo menos 1 preco preenchido
+            total_precos = Cotacao.query.filter_by(
+                rodada_id=rodada_id, fornecedor_id=fornecedor.id,
+            ).count()
+            if total_precos == 0:
+                db.session.rollback()
+                flash("Voce precisa preencher ao menos 1 preco antes de enviar.", "error")
+                return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
+
+            submissao.enviada_em = datetime.utcnow()
+            # Se estava devolvida, limpa pra nova avaliacao do admin
+            submissao.devolvida_em = None
+            db.session.commit()
+            flash("Cotacao enviada pra aprovacao do admin.", "success")
+            return redirect(url_for("fornecedor.dashboard"))
+
         db.session.commit()
-        flash(f"Cotacao final salva. {count} preco(s) enviado(s).", "success")
+        flash(f"Cotacao salva (rascunho). {count} preco(s). Clique em 'Enviar pra aprovacao' quando finalizar.", "success")
         return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
     # Monta linhas pra tela: so produtos que tiveram demanda
     linhas = []
+    total_partida = 0.0
+    total_final = 0.0
     for rp in rodada_produtos:
         pid = rp.produto_id
         if pid not in volumes:
             continue
+        vol = float(volumes[pid])
         partida = float(rp.preco_partida) if rp.preco_partida else None
         cot = cotacoes_existentes.get(pid)
         final = float(cot.preco_unitario) if cot else None
@@ -278,22 +318,75 @@ def cotar_final(rodada_id):
         economia_rs = None
         if partida and final and partida > 0:
             economia_pct = round((partida - final) / partida * 100, 1)
-            economia_rs = round((partida - final) * float(volumes[pid]), 2)
+            economia_rs = round((partida - final) * vol, 2)
+            total_partida += partida * vol
+            total_final += final * vol
         linhas.append({
             "rodada_produto": rp,
             "produto": rp.produto,
-            "volume": float(volumes[pid]),
+            "volume": vol,
             "partida": partida,
             "final": final,
             "economia_pct": economia_pct,
             "economia_rs": economia_rs,
         })
 
+    economia_total_rs = round(total_partida - total_final, 2) if total_partida else 0
+    economia_total_pct = round((total_partida - total_final) / total_partida * 100, 1) if total_partida else 0
+
+    notas = []
+    if submissao:
+        notas = NotaNegociacao.query.filter_by(submissao_id=submissao.id)\
+            .order_by(NotaNegociacao.criado_em.asc()).all()
+
     return render_template(
         "fornecedor/cotar_final.html",
         rodada=rodada,
         linhas=linhas,
+        submissao=submissao,
+        bloqueado=bloqueado,
+        economia_total_rs=economia_total_rs,
+        economia_total_pct=economia_total_pct,
+        total_partida=total_partida,
+        total_final=total_final,
+        notas=notas,
     )
+
+
+@fornecedor_bp.route("/rodada/<int:rodada_id>/cotacao-final/nota", methods=["POST"])
+@login_required
+@fornecedor_required
+def adicionar_nota_negociacao(rodada_id):
+    """Fornecedor adiciona nota na negociacao (permitido so se devolvida e nao aprovada)."""
+    fornecedor = current_user.fornecedor
+    if not fornecedor:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    submissao = SubmissaoCotacao.query.filter_by(
+        rodada_id=rodada_id, fornecedor_id=fornecedor.id,
+    ).first()
+    if not submissao:
+        flash("Voce ainda nao enviou cotacao pra esta rodada.", "error")
+        return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
+    if submissao.aprovada_em:
+        flash("Cotacao ja foi aprovada — sem negociacao ativa.", "warning")
+        return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
+
+    texto = request.form.get("texto", "").strip()
+    if not texto:
+        flash("Escreva uma mensagem antes de enviar.", "warning")
+        return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
+
+    db.session.add(NotaNegociacao(
+        submissao_id=submissao.id,
+        autor_tipo=NotaNegociacao.AUTOR_FORNECEDOR,
+        autor_usuario_id=current_user.id,
+        texto=texto[:1000],
+    ))
+    db.session.commit()
+    flash("Mensagem adicionada.", "success")
+    return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
 
 @fornecedor_bp.route("/rodada/<int:rodada_id>/cotar", methods=["GET", "POST"])

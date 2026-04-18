@@ -35,6 +35,10 @@
                     </form>
                 {% endif %}
                 {% if rodada.status == 'em_negociacao' %}
+                    <a href="{{ url_for('admin.aprovar_cotacoes', rodada_id=rodada.id) }}"
+                       class="btn btn-outline btn-sm">
+                        Aprovar cotações{% if cotacoes_pendentes_aprovacao %} ({{ cotacoes_pendentes_aprovacao }}){% endif %}
+                    </a>
                     <form method="POST" action="{{ url_for('admin.rodada_finalizar', rodada_id=rodada.id) }}"
                           style="display:inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

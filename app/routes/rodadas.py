@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from sqlalchemy import func
 from app import db
-from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada, RodadaProduto
+from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada, RodadaProduto, SubmissaoCotacao
 
 rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")
 
@@ -62,6 +62,13 @@ def detalhe(rodada_id):
             .filter(ParticipacaoRodada.pedido_reprovado_em.is_(None))
             .count()
         )
+        cotacoes_pendentes_aprovacao = (
+            SubmissaoCotacao.query
+            .filter_by(rodada_id=rodada_id)
+            .filter(SubmissaoCotacao.enviada_em.isnot(None))
+            .filter(SubmissaoCotacao.aprovada_em.is_(None))
+            .count()
+        )
 
     # Se lanchonete logada: mostra "Seu pedido" ao lado do total agregado
     meus_pedidos_map = {}
@@ -81,6 +88,7 @@ def detalhe(rodada_id):
         meus_pedidos_map=meus_pedidos_map,
         pendentes_aprovacao=pendentes_aprovacao,
         pedidos_pendentes_moderacao=pedidos_pendentes_moderacao,
+        cotacoes_pendentes_aprovacao=cotacoes_pendentes_aprovacao,
     )
 
 
