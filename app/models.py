@@ -276,3 +276,42 @@ class EventoRodada(db.Model):
     rodada     = db.relationship("Rodada", backref="eventos")
     lanchonete = db.relationship("Lanchonete")
     ator       = db.relationship("Usuario")
+
+
+# ---------- Fase A.1: catalogo da rodada (produtos selecionados + preco de partida) ----------
+
+
+class RodadaProduto(db.Model):
+    """Produto que faz parte do catálogo de uma rodada específica.
+
+    Admin sobe a lista de produtos (preco_partida = null).
+    Fornecedor preenche preco_partida.
+    Fornecedor pode sugerir produto novo (adicionado_por_fornecedor_id preenchido +
+    aprovado = None). Admin aprova (aprovado=True) ou recusa (aprovado=False).
+    Se todos os produtos estão aprovados (ou nao ha produto sugerido), a rodada é
+    liberada para as lanchonetes marcarem quantidades.
+    """
+    __tablename__ = "rodada_produtos"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rodada_id  = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
+    produto_id = db.Column(db.Integer, db.ForeignKey("produtos.id"), nullable=False, index=True)
+
+    # Preco de partida (fornecedor preenche depois que admin monta o catalogo)
+    preco_partida = db.Column(Numeric(12, 2))
+
+    # Quem sugeriu: null = admin (durante montagem); fornecedor_id = sugerido durante cotacao
+    adicionado_por_fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"))
+
+    # Aprovacao: None = aprovado automaticamente (admin adicionou); True = admin aprovou; False = admin recusou
+    aprovado = db.Column(db.Boolean, default=None)
+    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    produto    = db.relationship("Produto")
+    rodada     = db.relationship("Rodada", backref="catalogo")
+    fornecedor_sugeriu = db.relationship("Fornecedor")
+
+    __table_args__ = (
+        UniqueConstraint("rodada_id", "produto_id",
+                         name="uq_rodada_produto"),
+    )

@@ -443,6 +443,58 @@ body {
     margin-bottom: 0.8rem;
 }
 
+/* === Catalogo da rodada (admin monta) === */
+.catalogo-stats {
+    padding: 0.8rem 1rem;
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+.catalogo-categoria {
+    margin-bottom: 1.2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+.catalogo-categoria:last-child { border-bottom: none; }
+.catalogo-categoria-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+}
+.catalogo-categoria-head h3 {
+    color: var(--primary);
+    font-size: 1rem;
+    margin: 0;
+}
+.catalogo-produtos {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.5rem;
+}
+.catalogo-produto {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0.8rem;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.1s;
+}
+.catalogo-produto:hover {
+    border-color: var(--primary);
+    background: var(--gray-100);
+}
+.catalogo-produto input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+.catalogo-produto-info { flex: 1; font-size: 0.85rem; }
+
 /* === Cards de ultimas rodadas (dashboard lanchonete) === */
 .ultimas-rodadas-grid {
     display: grid;
@@ -887,6 +939,15 @@ body {
 /* Badges adicionais */
 .badge-cancelada { background: #f8d7da; color: var(--danger); }
 .badge-cotando { background: #cce5ff; color: #004085; }
+.badge-preparando { background: var(--gray-200); color: var(--gray-700); }
+.badge-aguardando_cotacao { background: #cce5ff; color: #004085; }
+.badge-aguardando_aprovacao { background: #fff3cd; color: #856404; font-weight: 700; }
+.badge-em_negociacao {
+    background: #d1ecf1;
+    color: #0c5460;
+    font-weight: 700;
+    animation: pulse-badge 2s ease-in-out infinite;
+}
 .badge-lg { font-size: 0.85rem; padding: 0.35rem 0.9rem; }
 
 /* Badges especificos por dominio (evita acoplamento com status de rodada) */

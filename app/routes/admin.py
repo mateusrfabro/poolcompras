@@ -7,7 +7,7 @@ from sqlalchemy import func
 from app import db
 from app.models import (
     Produto, Rodada, Fornecedor, Lanchonete,
-    ParticipacaoRodada, AvaliacaoRodada, ItemPedido, Cotacao,
+    ParticipacaoRodada, AvaliacaoRodada, ItemPedido, Cotacao, RodadaProduto,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -157,13 +157,77 @@ def rodada_nova():
             nome=request.form["nome"].strip(),
             data_abertura=datetime.strptime(request.form["data_abertura"], "%Y-%m-%d"),
             data_fechamento=datetime.strptime(request.form["data_fechamento"], "%Y-%m-%d"),
+            status="preparando",
         )
         db.session.add(rodada)
         db.session.commit()
-        flash("Rodada criada!", "success")
-        return redirect(url_for("rodadas.listar"))
+        flash("Rodada criada! Agora monte o catálogo de produtos.", "success")
+        return redirect(url_for("admin.rodada_catalogo", rodada_id=rodada.id))
 
     return render_template("admin/rodada_form.html")
+
+
+@admin_bp.route("/rodadas/<int:rodada_id>/catalogo", methods=["GET", "POST"])
+@login_required
+@admin_required
+def rodada_catalogo(rodada_id):
+    """Tela onde o admin seleciona os produtos que farao parte da rodada."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+    produtos_ativos = (
+        Produto.query.filter_by(ativo=True)
+        .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
+        .all()
+    )
+
+    if request.method == "POST":
+        ids_selecionados = set(request.form.getlist("produto_id", type=int))
+        # Produtos ja no catalogo desta rodada
+        atuais = RodadaProduto.query.filter_by(rodada_id=rodada_id).all()
+        atuais_ids = {rp.produto_id for rp in atuais}
+
+        # Adicionar novos
+        novos = ids_selecionados - atuais_ids
+        for pid in novos:
+            db.session.add(RodadaProduto(
+                rodada_id=rodada_id,
+                produto_id=pid,
+                adicionado_por_fornecedor_id=None,  # admin adicionou
+                aprovado=None,  # admin nao precisa aprovar o proprio
+            ))
+
+        # Remover os desmarcados (se nao tiver preco preenchido ainda)
+        remover = atuais_ids - ids_selecionados
+        for rp in atuais:
+            if rp.produto_id in remover and rp.preco_partida is None:
+                db.session.delete(rp)
+
+        # Decide acao
+        acao = request.form.get("acao")
+        if acao == "enviar":
+            rodada.status = "aguardando_cotacao"
+            flash(f"Catálogo enviado aos fornecedores! {len(ids_selecionados)} produtos.", "success")
+            db.session.commit()
+            return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+        else:
+            db.session.commit()
+            flash(f"Catálogo salvo. {len(ids_selecionados)} produtos selecionados.", "success")
+            return redirect(url_for("admin.rodada_catalogo", rodada_id=rodada_id))
+
+    # Carrega selecao atual
+    selecionados = {rp.produto_id for rp in RodadaProduto.query.filter_by(rodada_id=rodada_id).all()}
+
+    # Agrupa por categoria pra UX
+    by_cat = {}
+    for p in produtos_ativos:
+        by_cat.setdefault(p.categoria, []).append(p)
+
+    return render_template(
+        "admin/rodada_catalogo.html",
+        rodada=rodada,
+        produtos_por_categoria=by_cat,
+        selecionados=selecionados,
+        total_selecionados=len(selecionados),
+    )
 
 
 @admin_bp.route("/rodadas/<int:rodada_id>/fechar", methods=["POST"])

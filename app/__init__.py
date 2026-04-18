@@ -155,11 +155,15 @@ def create_app(config_name="default"):
 
     # Filter: traduz status interno do banco em label PT-BR profissional para exibicao
     STATUS_LABELS = {
-        "aberta":     "Em aberto",
-        "fechada":    "Fechada",
-        "cotando":    "Em cotação",
-        "finalizada": "Finalizada",
-        "cancelada":  "Cancelada",
+        "preparando":           "Preparando catálogo",
+        "aguardando_cotacao":   "Aguardando cotação",
+        "aguardando_aprovacao": "Aguardando aprovação",
+        "aberta":               "Em aberto",
+        "fechada":              "Fechada",
+        "cotando":              "Em cotação",
+        "em_negociacao":        "Em negociação",
+        "finalizada":           "Finalizada",
+        "cancelada":            "Cancelada",
     }
 
     @app.template_filter("status_label")

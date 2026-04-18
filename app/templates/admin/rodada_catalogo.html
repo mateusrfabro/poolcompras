@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Catálogo — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Montar catálogo — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Selecione os produtos que farão parte desta rodada. Os fornecedores
+                preencherão o preço de partida depois que você enviar.
+            </p>
+        </div>
+        <div>
+            <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
+        </div>
+    </div>
+
+    <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="catalogo-stats">
+            <strong id="counter">{{ total_selecionados }}</strong> produto(s) selecionado(s)
+        </div>
+
+        {% for categoria, produtos in produtos_por_categoria.items() %}
+            <div class="catalogo-categoria">
+                <div class="catalogo-categoria-head">
+                    <h3>{{ categoria }}</h3>
+                    <button type="button" class="btn btn-outline btn-sm"
+                            data-toggle-cat="{{ categoria|replace('/', '_') }}">
+                        Marcar/desmarcar todos
+                    </button>
+                </div>
+                <div class="catalogo-produtos" data-cat="{{ categoria|replace('/', '_') }}">
+                    {% for p in produtos %}
+                        <label class="catalogo-produto">
+                            <input type="checkbox" name="produto_id" value="{{ p.id }}"
+                                   {% if p.id in selecionados %}checked{% endif %}>
+                            <div class="catalogo-produto-info">
+                                <strong>{{ p.nome }}</strong>
+                                {% if p.subcategoria %}<span class="tag">{{ p.subcategoria }}</span>{% endif %}
+                                <span class="muted"> — {{ p.unidade }}</span>
+                            </div>
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endfor %}
+
+        <div class="form-row" style="margin-top: 1.5rem;">
+            <button type="submit" name="acao" value="salvar" class="btn btn-outline">Salvar rascunho</button>
+            <button type="submit" name="acao" value="enviar" class="btn btn-primary"
+                    onclick="return confirm('Enviar o catálogo aos fornecedores para cotação?')">
+                Enviar para fornecedores
+            </button>
+        </div>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/catalogo.js') }}"></script>
+{% endblock %}

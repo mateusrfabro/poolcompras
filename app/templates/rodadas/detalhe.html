@@ -8,6 +8,12 @@
         <h2>{{ rodada.nome }}</h2>
         {% if current_user.is_admin %}
             <div class="page-header-actions">
+                {% if rodada.status in ('preparando', 'aguardando_cotacao') %}
+                    <a href="{{ url_for('admin.rodada_catalogo', rodada_id=rodada.id) }}"
+                       class="btn btn-primary btn-sm">
+                        {% if rodada.status == 'preparando' %}Montar catálogo{% else %}Editar catálogo{% endif %}
+                    </a>
+                {% endif %}
                 <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
                    class="btn btn-outline btn-sm">Exportar CSV</a>
                 {% if rodada.status != 'cancelada' %}
