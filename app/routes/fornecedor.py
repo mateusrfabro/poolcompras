@@ -5,7 +5,7 @@ from sqlalchemy.orm import joinedload
 from app import db
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto,
-    ParticipacaoRodada, Lanchonete, AvaliacaoRodada,
+    ParticipacaoRodada, Lanchonete, AvaliacaoRodada, RodadaProduto,
 )
 
 fornecedor_bp = Blueprint("fornecedor", __name__, url_prefix="/fornecedor")
@@ -30,9 +30,9 @@ def fornecedor_required(f):
 def dashboard():
     fornecedor = current_user.fornecedor
 
-    # Rodadas com status "fechada" (prontas para cotação)
+    # Rodadas prontas para cotação (novo fluxo: aguardando_cotacao; legado: fechada/cotando)
     rodadas_para_cotar = Rodada.query.filter(
-        Rodada.status.in_(["fechada", "cotando"])
+        Rodada.status.in_(["aguardando_cotacao", "fechada", "cotando"])
     ).order_by(Rodada.data_fechamento.desc()).all()
 
     # Cotações já enviadas por este fornecedor
@@ -182,6 +182,116 @@ def enviar_cotacao(rodada_id):
         rodada=rodada,
         produtos=produtos,
         qtds=qtds,
+    )
+
+
+@fornecedor_bp.route("/rodada/<int:rodada_id>/cotar-catalogo", methods=["GET", "POST"])
+@login_required
+@fornecedor_required
+def cotar_catalogo(rodada_id):
+    """Fornecedor preenche preço de partida nos produtos do catálogo + sugere novos."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+    if rodada.status != "aguardando_cotacao":
+        flash("Esta rodada não está mais aberta para cotação.", "warning")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    fornecedor = current_user.fornecedor
+    if not fornecedor:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    catalogo = (
+        RodadaProduto.query
+        .filter_by(rodada_id=rodada_id)
+        .filter((RodadaProduto.aprovado.is_(None))
+                | (RodadaProduto.aprovado.is_(True)))
+        .join(Produto)
+        .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
+        .all()
+    )
+
+    if request.method == "POST":
+        # 1. Atualiza precos de partida dos produtos existentes
+        count_precos = 0
+        for rp in catalogo:
+            preco_str = request.form.get(f"preco_{rp.id}", "").strip()
+            if preco_str:
+                try:
+                    preco = float(preco_str.replace(",", "."))
+                    if preco > 0:
+                        rp.preco_partida = preco
+                        count_precos += 1
+                except ValueError:
+                    pass
+
+        # 2. Produto sugerido (opcional — novo produto que nao esta no catalogo)
+        nome_novo = request.form.get("novo_nome", "").strip()
+        if nome_novo:
+            categoria_nova = request.form.get("novo_categoria", "").strip() or "Outro"
+            subcategoria_nova = request.form.get("novo_subcategoria", "").strip() or None
+            unidade_nova = request.form.get("novo_unidade", "").strip() or "unidade"
+            preco_novo_str = request.form.get("novo_preco", "").strip()
+
+            try:
+                preco_novo = float(preco_novo_str.replace(",", ".")) if preco_novo_str else None
+            except ValueError:
+                preco_novo = None
+
+            # Cria produto marcado como inativo (só ativa se admin aprovar? Simples: cria ativo
+            # mas o RodadaProduto tem aprovado=None pra sinalizar pendencia)
+            produto_novo = Produto(
+                nome=nome_novo,
+                categoria=categoria_nova,
+                subcategoria=subcategoria_nova,
+                unidade=unidade_nova,
+                ativo=True,
+                descricao=f"Sugerido por {fornecedor.razao_social}",
+            )
+            db.session.add(produto_novo)
+            db.session.flush()
+
+            db.session.add(RodadaProduto(
+                rodada_id=rodada_id,
+                produto_id=produto_novo.id,
+                preco_partida=preco_novo,
+                adicionado_por_fornecedor_id=fornecedor.id,
+                aprovado=None,  # aguarda admin
+            ))
+            flash(f"Produto '{nome_novo}' sugerido. Aguardando aprovação do admin.", "success")
+
+        # 3. Se nao ha produtos pendentes, auto-libera
+        pendentes = RodadaProduto.query.filter_by(
+            rodada_id=rodada_id, aprovado=None,
+        ).filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None)).count()
+
+        db.session.commit()
+
+        if pendentes == 0 and not nome_novo:
+            # Verifica se todos tem preco preenchido
+            sem_preco = RodadaProduto.query.filter_by(
+                rodada_id=rodada_id, preco_partida=None,
+            ).count()
+            if sem_preco == 0:
+                rodada.status = "aberta"
+                db.session.commit()
+                flash(f"Cotação salva! {count_precos} preços atualizados. Rodada liberada para lanchonetes.", "success")
+            else:
+                flash(f"Cotação salva. {sem_preco} produto(s) ainda sem preço.", "success")
+        else:
+            flash(f"Cotação salva. {count_precos} preços atualizados.", "success")
+
+        return redirect(url_for("fornecedor.cotar_catalogo", rodada_id=rodada_id))
+
+    # Agrupa por categoria para UI
+    by_cat = {}
+    for rp in catalogo:
+        by_cat.setdefault(rp.produto.categoria, []).append(rp)
+
+    return render_template(
+        "fornecedor/cotar_catalogo.html",
+        rodada=rodada,
+        catalogo_por_categoria=by_cat,
+        fornecedor=fornecedor,
     )
 
 

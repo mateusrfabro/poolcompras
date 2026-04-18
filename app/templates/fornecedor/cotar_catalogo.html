@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Cotar — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('fornecedor.dashboard') }}" class="btn-back">Voltar ao painel</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Cotar preços — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Preencha o preço de partida de cada produto. Se faltar algum produto,
+                pode sugerir um novo no final (será aprovado pelo admin).
+            </p>
+        </div>
+        <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
+    </div>
+
+    <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {% for categoria, lista in catalogo_por_categoria.items() %}
+            <div class="catalogo-categoria">
+                <h3 class="catalogo-categoria-head">{{ categoria }}</h3>
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Subcategoria</th>
+                            <th>Unidade</th>
+                            <th>Preço de partida (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rp in lista %}
+                        <tr>
+                            <td>{{ rp.produto.nome }}</td>
+                            <td>
+                                {% if rp.produto.subcategoria %}
+                                    <span class="tag">{{ rp.produto.subcategoria }}</span>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ rp.produto.unidade }}</td>
+                            <td>
+                                <input type="number" name="preco_{{ rp.id }}"
+                                       step="0.01" min="0"
+                                       placeholder="0,00"
+                                       value="{{ rp.preco_partida|float if rp.preco_partida is not none else '' }}"
+                                       style="width: 140px;">
+                                {% if rp.adicionado_por_fornecedor_id and rp.aprovado is none %}
+                                    <span class="badge badge-aguardando_aprovacao">Aguardando aprovação</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            </div>
+        {% endfor %}
+
+        <h3 class="section-title">Sugerir produto novo (opcional)</h3>
+        <p class="muted" style="font-size: 0.85rem;">
+            Se você tem um produto que não está na lista, sugira aqui. Será aprovado pelo admin
+            antes de ir pros clientes.
+        </p>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="novo_nome">Nome do produto</label>
+                <input type="text" id="novo_nome" name="novo_nome" placeholder="Ex: Blend bovino 200g">
+            </div>
+            <div class="form-group">
+                <label for="novo_categoria">Categoria</label>
+                <select id="novo_categoria" name="novo_categoria">
+                    <option value="">Selecione...</option>
+                    {% for cat in ['Carne','Pão','Queijo','Bacon/Embutido','Molho','Vegetal','Bebida','Embalagem','Descartável','Outro'] %}
+                        <option value="{{ cat }}">{{ cat }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="novo_subcategoria">Subcategoria</label>
+                <input type="text" id="novo_subcategoria" name="novo_subcategoria" placeholder="Ex: Hambúrguer">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="novo_unidade">Unidade</label>
+                <select id="novo_unidade" name="novo_unidade">
+                    {% for un in ['kg','unidade','caixa','pacote','litro','fardo'] %}
+                        <option value="{{ un }}">{{ un }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="novo_preco">Preço de partida</label>
+                <input type="number" id="novo_preco" name="novo_preco" step="0.01" min="0" placeholder="0,00">
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+            Salvar cotação
+        </button>
+    </form>
+</div>
+{% endblock %}
