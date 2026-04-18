@@ -684,6 +684,146 @@ def rodada_liberar(rodada_id):
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
 
+# --- Historico de precos de um produto ao longo das rodadas ---
+@admin_bp.route("/produtos/<int:produto_id>/historico-precos")
+@login_required
+@admin_required
+def produto_historico_precos(produto_id):
+    """Evolucao do preco de um SKU ao longo das rodadas: preco de partida + cotacoes finais + vencedor."""
+    produto = Produto.query.get_or_404(produto_id)
+
+    # Todas as aparicoes do produto em RodadaProduto (preco de partida)
+    aparicoes = (
+        db.session.query(RodadaProduto, Rodada)
+        .join(Rodada, RodadaProduto.rodada_id == Rodada.id)
+        .filter(RodadaProduto.produto_id == produto_id)
+        .order_by(Rodada.data_abertura.desc())
+        .all()
+    )
+
+    # Pra cada rodada, pegar cotacoes finais (Cotacao)
+    rodada_ids = [r.id for rp, r in aparicoes]
+    cotacoes_por_rodada = {}
+    if rodada_ids:
+        cots = (
+            db.session.query(Cotacao, Fornecedor)
+            .join(Fornecedor, Cotacao.fornecedor_id == Fornecedor.id)
+            .filter(Cotacao.produto_id == produto_id)
+            .filter(Cotacao.rodada_id.in_(rodada_ids))
+            .order_by(Cotacao.preco_unitario)
+            .all()
+        )
+        for c, f in cots:
+            cotacoes_por_rodada.setdefault(c.rodada_id, []).append((c, f))
+
+    # Monta linhas da tabela
+    linhas = []
+    for rp, r in aparicoes:
+        cots = cotacoes_por_rodada.get(r.id, [])
+        vencedora = next((c for c, f in cots if c.selecionada), None)
+        # Menor preco e fornecedor
+        menor_preco = float(cots[0][0].preco_unitario) if cots else None
+        menor_forn = cots[0][1].razao_social if cots else None
+        linhas.append({
+            "rodada": r,
+            "preco_partida": float(rp.preco_partida) if rp.preco_partida else None,
+            "menor_preco": menor_preco,
+            "menor_fornecedor": menor_forn,
+            "qtd_cotacoes": len(cots),
+            "vencedora_preco": float(vencedora.preco_unitario) if vencedora else None,
+            "vencedora_fornecedor": next(
+                (f.razao_social for c, f in cots if c.selecionada), None
+            ),
+        })
+
+    # Estatisticas simples
+    precos_finais = [l["menor_preco"] for l in linhas if l["menor_preco"]]
+    stats = None
+    if precos_finais:
+        stats = {
+            "rodadas": len(linhas),
+            "preco_min": min(precos_finais),
+            "preco_max": max(precos_finais),
+            "preco_medio": sum(precos_finais) / len(precos_finais),
+            "variacao_pct": round((precos_finais[0] - precos_finais[-1]) / precos_finais[-1] * 100, 1)
+                if len(precos_finais) >= 2 and precos_finais[-1] > 0 else 0,
+        }
+
+    return render_template(
+        "admin/produto_historico_precos.html",
+        produto=produto,
+        linhas=linhas,
+        stats=stats,
+    )
+
+
+# --- Funil de conversao da rodada ---
+@admin_bp.route("/rodadas/<int:rodada_id>/funil")
+@login_required
+@admin_required
+def rodada_funil(rodada_id):
+    """Mostra onde os pedidos travam na rodada: convidadas -> iniciaram -> enviaram -> aprovadas -> aceitaram -> pagaram -> receberam."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+
+    # Etapa 1: lanchonetes ativas (convidadas)
+    convidadas = Lanchonete.query.filter_by(ativa=True).count()
+
+    # Etapa 2: iniciaram pedido (tem ItemPedido na rodada)
+    iniciaram_ids = {
+        lid for (lid,) in db.session.query(ItemPedido.lanchonete_id)
+        .filter_by(rodada_id=rodada_id)
+        .distinct().all()
+    }
+    iniciaram = len(iniciaram_ids)
+
+    # Particpacoes com flags de pedido
+    parts = ParticipacaoRodada.query.filter_by(rodada_id=rodada_id).all()
+
+    # Etapa 3: enviaram (pedido_enviado_em preenchido)
+    enviaram = sum(1 for p in parts if p.pedido_enviado_em)
+
+    # Etapa 4: aprovadas
+    aprovadas = sum(1 for p in parts if p.pedido_aprovado_em)
+
+    # Etapa 5: aceitaram proposta (pos-finalizacao)
+    aceitaram = sum(1 for p in parts if p.aceite_proposta is True)
+
+    # Etapa 6: pagaram (comprovante enviado)
+    pagaram = sum(1 for p in parts if p.comprovante_em)
+
+    # Etapa 7: receberam (entrega informada)
+    receberam = sum(1 for p in parts if p.entrega_informada_em)
+
+    # Etapa 8: avaliaram
+    avaliaram = sum(1 for p in parts if p.avaliacao_em)
+
+    etapas = [
+        {"nome": "Lanchonetes ativas", "n": convidadas, "dica": "Universo total disponivel"},
+        {"nome": "Iniciaram pedido", "n": iniciaram, "dica": "Ao menos 1 item salvo (rascunho)"},
+        {"nome": "Enviaram pra moderacao", "n": enviaram, "dica": "Clicaram em 'Enviar pedido'"},
+        {"nome": "Pedidos aprovados", "n": aprovadas, "dica": "Admin aprovou e entrou no pool"},
+        {"nome": "Aceitaram proposta", "n": aceitaram, "dica": "Pos-finalizacao da rodada"},
+        {"nome": "Enviaram comprovante", "n": pagaram, "dica": "Pagaram o fornecedor"},
+        {"nome": "Receberam entrega", "n": receberam, "dica": "Fornecedor confirmou entrega"},
+        {"nome": "Avaliaram a rodada", "n": avaliaram, "dica": "Fluxo completo"},
+    ]
+
+    # Calcula % vs topo do funil e vs etapa anterior
+    topo = etapas[0]["n"] or 1
+    prev = topo
+    for e in etapas:
+        e["pct_topo"] = round(e["n"] / topo * 100, 1) if topo else 0
+        e["pct_prev"] = round(e["n"] / prev * 100, 1) if prev else 0
+        e["drop"] = prev - e["n"]
+        prev = e["n"] if e["n"] else 1
+
+    return render_template(
+        "admin/rodada_funil.html",
+        rodada=rodada,
+        etapas=etapas,
+    )
+
+
 # --- Moderacao de pedidos das lanchonetes ---
 @admin_bp.route("/rodadas/<int:rodada_id>/moderar-pedidos", methods=["GET", "POST"])
 @login_required

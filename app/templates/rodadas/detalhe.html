@@ -44,6 +44,8 @@
                         </button>
                     </form>
                 {% endif %}
+                <a href="{{ url_for('admin.rodada_funil', rodada_id=rodada.id) }}"
+                   class="btn btn-outline btn-sm">Funil</a>
                 <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
                    class="btn btn-outline btn-sm">Exportar CSV</a>
                 {% if rodada.status != 'cancelada' %}

@@ -37,7 +37,10 @@
                             {{ 'Ativo' if p.ativo else 'Inativo' }}
                         </span>
                     </td>
-                    <td><a href="{{ url_for('admin.produto_editar', produto_id=p.id) }}" class="btn btn-sm btn-outline">Editar</a></td>
+                    <td>
+                        <a href="{{ url_for('admin.produto_historico_precos', produto_id=p.id) }}" class="btn btn-sm btn-outline">Histórico</a>
+                        <a href="{{ url_for('admin.produto_editar', produto_id=p.id) }}" class="btn btn-sm btn-outline">Editar</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>

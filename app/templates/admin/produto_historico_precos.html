@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Histórico de preços — {{ produto.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('admin.produtos') }}" class="btn-back">Voltar para Produtos</a>
+
+    <div class="page-header">
+        <div>
+            <h2>{{ produto.nome }}</h2>
+            <p class="page-sub">
+                {{ produto.categoria }}{% if produto.subcategoria %} &middot; {{ produto.subcategoria }}{% endif %}
+                &middot; {{ produto.unidade }}
+            </p>
+        </div>
+    </div>
+
+    {% if stats %}
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.rodadas }}</span>
+                <span class="stat-label">Rodadas com este produto</span>
+            </div>
+            <div class="stat-card stat-card-success">
+                <span class="stat-number">{{ stats.preco_min|brl }}</span>
+                <span class="stat-label">Menor preço cotado</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ stats.preco_medio|brl }}</span>
+                <span class="stat-label">Preço médio histórico</span>
+            </div>
+            <div class="stat-card {% if stats.variacao_pct > 10 %}stat-card-primary{% endif %}">
+                <span class="stat-number">
+                    {% if stats.variacao_pct > 0 %}+{% endif %}{{ '%.1f'|format(stats.variacao_pct)|replace('.', ',') }}%
+                </span>
+                <span class="stat-label">Variação (últ. vs primeira)</span>
+                <span class="stat-hint">
+                    {% if stats.variacao_pct > 0 %}preço aumentou
+                    {% elif stats.variacao_pct < 0 %}preço caiu
+                    {% else %}estável{% endif %}
+                </span>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if not linhas %}
+        <div class="card">
+            <p>Este produto ainda não apareceu em nenhuma rodada.</p>
+        </div>
+    {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Rodada</th>
+                    <th>Data</th>
+                    <th>Preço de partida</th>
+                    <th>Menor cotação final</th>
+                    <th>Fornecedor (menor)</th>
+                    <th>Vencedor</th>
+                    <th># Cotações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in linhas %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('rodadas.detalhe', rodada_id=l.rodada.id) }}">{{ l.rodada.nome }}</a>
+                    </td>
+                    <td>{{ l.rodada.data_abertura.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ l.preco_partida|brl if l.preco_partida else '—' }}</td>
+                    <td>
+                        {% if l.menor_preco %}
+                            <strong>{{ l.menor_preco|brl }}</strong>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ l.menor_fornecedor or '—' }}</td>
+                    <td>
+                        {% if l.vencedora_preco %}
+                            <strong>{{ l.vencedora_preco|brl }}</strong>
+                            <br><span class="muted" style="font-size: 0.85em;">{{ l.vencedora_fornecedor }}</span>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ l.qtd_cotacoes }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    {% endif %}
+</div>
+{% endblock %}

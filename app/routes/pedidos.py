@@ -195,6 +195,19 @@ def catalogo():
     # Listas pra filtro
     categorias = sorted(by_cat.keys())
 
+    # QuickWin: ultima rodada em que a lanchonete pediu algo (pra "Meu pedido usual")
+    ultima_rodada_pedido = None
+    if not pedido_bloqueado:
+        ultima_rodada_pedido = (
+            db.session.query(Rodada)
+            .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
+            .filter(ItemPedido.lanchonete_id == lanchonete.id)
+            .filter(ItemPedido.rodada_id != rodada.id)
+            .group_by(Rodada.id)
+            .order_by(Rodada.data_abertura.desc())
+            .first()
+        )
+
     return render_template(
         "pedidos/catalogo.html",
         rodada=rodada,
@@ -204,7 +217,97 @@ def catalogo():
         total_itens=len(meus_pedidos),
         participacao=participacao,
         pedido_bloqueado=pedido_bloqueado,
+        ultima_rodada_pedido=ultima_rodada_pedido,
     )
+
+
+@pedidos_bp.route("/repetir-ultimo-pedido", methods=["POST"])
+@login_required
+def repetir_ultimo_pedido():
+    """Copia itens da ultima rodada participada pra rodada aberta atual.
+    Nao duplica: se produto ja existe na rodada atual, ignora (nao sobrescreve)."""
+    lanchonete = current_user.lanchonete
+    if not lanchonete:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    rodada = (
+        Rodada.query.filter_by(status="aberta")
+        .order_by(Rodada.data_abertura.desc())
+        .first()
+    )
+    if not rodada:
+        flash("Nenhuma rodada aberta.", "warning")
+        return redirect(url_for("pedidos.listar"))
+
+    # Verifica bloqueio
+    participacao = ParticipacaoRodada.query.filter_by(
+        rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+    ).first()
+    if participacao and (participacao.pedido_aprovado_em or participacao.pedido_reprovado_em):
+        flash("Pedido ja foi moderado e nao pode mais ser editado.", "error")
+        return redirect(url_for("pedidos.catalogo"))
+
+    # Ultima rodada da lanchonete
+    ultima = (
+        db.session.query(Rodada)
+        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
+        .filter(ItemPedido.lanchonete_id == lanchonete.id)
+        .filter(ItemPedido.rodada_id != rodada.id)
+        .group_by(Rodada.id)
+        .order_by(Rodada.data_abertura.desc())
+        .first()
+    )
+    if not ultima:
+        flash("Voce ainda nao tem pedido anterior pra copiar.", "warning")
+        return redirect(url_for("pedidos.catalogo"))
+
+    # Produtos disponiveis no catalogo atual
+    catalogo_atual_ids = {
+        rp.produto_id for rp in RodadaProduto.query
+        .filter_by(rodada_id=rodada.id)
+        .filter((RodadaProduto.aprovado.is_(None))
+                | (RodadaProduto.aprovado.is_(True)))
+        .all()
+    }
+
+    itens_anteriores = ItemPedido.query.filter_by(
+        rodada_id=ultima.id, lanchonete_id=lanchonete.id,
+    ).all()
+
+    # Itens ja salvos na rodada atual
+    itens_atuais = {
+        ip.produto_id: ip for ip in ItemPedido.query.filter_by(
+            rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+        ).all()
+    }
+
+    count_add = 0
+    count_skip_fora_catalogo = 0
+    count_skip_ja_existe = 0
+    for item in itens_anteriores:
+        if item.produto_id not in catalogo_atual_ids:
+            count_skip_fora_catalogo += 1
+            continue
+        if item.produto_id in itens_atuais:
+            count_skip_ja_existe += 1
+            continue
+        db.session.add(ItemPedido(
+            rodada_id=rodada.id,
+            lanchonete_id=lanchonete.id,
+            produto_id=item.produto_id,
+            quantidade=item.quantidade,
+        ))
+        count_add += 1
+
+    db.session.commit()
+    msg = f"Copiei {count_add} item(ns) da rodada anterior '{ultima.nome}'."
+    if count_skip_fora_catalogo:
+        msg += f" {count_skip_fora_catalogo} item(ns) fora do catalogo atual foram ignorados."
+    if count_skip_ja_existe:
+        msg += f" {count_skip_ja_existe} item(ns) ja estavam no pedido atual (nao sobrescrevi)."
+    flash(msg, "success")
+    return redirect(url_for("pedidos.catalogo"))
 
 
 @pedidos_bp.route("/novo", methods=["GET", "POST"])

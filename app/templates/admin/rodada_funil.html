@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Funil — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Funil de conversão — {{ rodada.nome }}</h2>
+            <p class="page-sub">Onde as lanchonetes estão travando no fluxo desta rodada.</p>
+        </div>
+        <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
+    </div>
+
+    <div class="funil">
+        {% for e in etapas %}
+            <div class="funil-etapa">
+                <div class="funil-etapa-head">
+                    <strong>{{ e.nome }}</strong>
+                    <span class="muted" style="font-size: 0.85em;">{{ e.dica }}</span>
+                </div>
+                <div class="funil-bar-wrap">
+                    <div class="funil-bar" style="width: {{ e.pct_topo }}%;">
+                        <span class="funil-n">{{ e.n }}</span>
+                    </div>
+                </div>
+                <div class="funil-etapa-foot">
+                    <span><strong>{{ e.pct_topo }}%</strong> do topo</span>
+                    {% if not loop.first %}
+                        <span class="muted">
+                            {{ e.pct_prev }}% vs etapa anterior
+                            {% if e.drop > 0 %}
+                                — <strong style="color: #c62828;">-{{ e.drop }}</strong> lanchonete(s) caíram
+                            {% endif %}
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

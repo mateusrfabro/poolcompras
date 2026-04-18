@@ -43,6 +43,24 @@
         </span>
     </div>
 
+    {% if ultima_rodada_pedido and not pedido_bloqueado %}
+        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid var(--primary); background: #fff7ed;">
+            <div class="page-header" style="margin: 0;">
+                <div>
+                    <strong>Pedido usual</strong> — você já pediu na rodada <em>{{ ultima_rodada_pedido.nome }}</em>.
+                    <br><span class="muted" style="font-size: 0.85em;">Podemos copiar os itens do último pedido pra você só ajustar o que mudou.</span>
+                </div>
+                <form method="POST" action="{{ url_for('pedidos.repetir_ultimo_pedido') }}" style="display: inline;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-primary btn-sm"
+                            onclick="return confirm('Copiar itens da rodada {{ ultima_rodada_pedido.nome }}? Itens que voce ja tem salvos nao serao sobrescritos.');">
+                        Usar meu último pedido
+                    </button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
     {% if participacao and participacao.pedido_devolvido_em %}
         <div class="card card-urgent" style="margin-bottom: 1rem;">
             <strong>Pedido devolvido pelo admin.</strong> Ajuste abaixo e clique em "Enviar pedido" novamente.
