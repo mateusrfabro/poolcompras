@@ -175,26 +175,42 @@ def detalhe(rodada_id):
     for c in cotacoes_rodada:
         cotacoes_por_produto[c.produto_id].append(c)
 
+    # Carrega precos de partida (RodadaProduto.preco_partida) em 1 query
+    from app.models import RodadaProduto
+    partidas_por_produto = {
+        rp.produto_id: float(rp.preco_partida) if rp.preco_partida else None
+        for rp in RodadaProduto.query.filter_by(rodada_id=rodada_id).all()
+    }
+
     # Monta detalhe de cada item com lookup O(1)
+    # preco_partida = RodadaProduto.preco_partida (preco de referencia do pool, fase 1)
+    # preco_final = menor cotacao final (vencedora) OU cotacao selecionada se existir
     itens_detalhe = []
     for item in meus_itens:
         cots = cotacoes_por_produto.get(item.produto_id, [])
+        preco_partida = partidas_por_produto.get(item.produto_id)
         if cots:
-            preco_partida = max(c.preco_unitario for c in cots)
-            preco_final = min(c.preco_unitario for c in cots)
-            forn_vencedor = next((c.fornecedor for c in cots if c.selecionada), None)
+            selecionada = next((c for c in cots if c.selecionada), None)
+            if selecionada:
+                preco_final = float(selecionada.preco_unitario)
+                forn_vencedor = selecionada.fornecedor
+            else:
+                menor = min(cots, key=lambda c: c.preco_unitario)
+                preco_final = float(menor.preco_unitario)
+                forn_vencedor = menor.fornecedor
         else:
-            preco_partida = preco_final = None
+            preco_final = None
             forn_vencedor = None
 
+        qtd_float = float(item.quantidade)
         itens_detalhe.append({
             "item": item,
             "produto": item.produto,
-            "quantidade": item.quantidade,
+            "quantidade": qtd_float,
             "preco_partida": preco_partida,
             "preco_final": preco_final,
             "fornecedor": forn_vencedor,
-            "subtotal": (preco_final * item.quantidade) if preco_final else None,
+            "subtotal": (preco_final * qtd_float) if preco_final else None,
         })
 
     total_estimado = sum(i["subtotal"] for i in itens_detalhe if i["subtotal"]) or 0
@@ -276,6 +292,14 @@ def detalhe(rodada_id):
     # Monta as fases da timeline com status derivado da participacao (ordem canonica)
     fases = _montar_fases_timeline(participacao, rodada)
 
+    # Proposta disponivel pra aceite: rodada finalizada OU em_negociacao com submissao aprovada
+    from app.models import SubmissaoCotacao
+    proposta_disponivel = rodada.status == "finalizada" or (
+        rodada.status == "em_negociacao" and
+        db.session.query(SubmissaoCotacao.id).filter_by(rodada_id=rodada_id)
+        .filter(SubmissaoCotacao.aprovada_em.isnot(None)).first() is not None
+    )
+
     return render_template(
         "historico/detalhe.html",
         rodada=rodada,
@@ -290,6 +314,7 @@ def detalhe(rodada_id):
         insights=insights,
         media_geral=_media_geral_rodada(rodada_id),
         pagamento_por_fornecedor=pagamento_por_fornecedor,
+        proposta_disponivel=proposta_disponivel,
     )
 
 

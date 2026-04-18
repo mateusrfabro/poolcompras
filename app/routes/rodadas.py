@@ -47,6 +47,7 @@ def detalhe(rodada_id):
     # Produtos sugeridos aguardando aprovacao (admin)
     pendentes_aprovacao = 0
     pedidos_pendentes_moderacao = 0
+    cotacoes_pendentes_aprovacao = 0
     if current_user.is_admin:
         pendentes_aprovacao = (
             RodadaProduto.query
@@ -80,15 +81,66 @@ def detalhe(rodada_id):
         )
         meus_pedidos_map = {m.produto_id: m.quantidade for m in meus}
 
+    # Enriquecer agregado com preco_partida + melhor cotacao + fornecedor + subtotal
+    # (so considera cotacoes de submissoes APROVADAS pelo admin)
+    partidas_por_produto = {
+        rp.produto_id: float(rp.preco_partida) if rp.preco_partida else None
+        for rp in RodadaProduto.query.filter_by(rodada_id=rodada_id).all()
+    }
+    submissoes_aprovadas_ids = {
+        s.fornecedor_id for s in SubmissaoCotacao.query
+        .filter_by(rodada_id=rodada_id)
+        .filter(SubmissaoCotacao.aprovada_em.isnot(None)).all()
+    }
+    # Cotacoes elegiveis: so de submissoes aprovadas (ou todas se nao houver fluxo novo em uso)
+    from sqlalchemy.orm import joinedload as _jl
+    cotacoes_full = (
+        Cotacao.query.options(_jl(Cotacao.fornecedor))
+        .filter_by(rodada_id=rodada_id).all()
+    )
+    melhor_por_produto = {}
+    for c in cotacoes_full:
+        if submissoes_aprovadas_ids and c.fornecedor_id not in submissoes_aprovadas_ids:
+            continue
+        atual = melhor_por_produto.get(c.produto_id)
+        if atual is None or c.preco_unitario < atual.preco_unitario:
+            melhor_por_produto[c.produto_id] = c
+
+    agregado_enriquecido = []
+    for item in agregado:
+        melhor = melhor_por_produto.get(item.id)
+        preco_final = float(melhor.preco_unitario) if melhor else None
+        forn = melhor.fornecedor if melhor else None
+        subtotal = (preco_final * float(item.total_quantidade)) if preco_final else None
+        agregado_enriquecido.append({
+            "id": item.id,
+            "nome": item.nome,
+            "categoria": item.categoria,
+            "unidade": item.unidade,
+            "total_quantidade": item.total_quantidade,
+            "total_lanchonetes": item.total_lanchonetes,
+            "preco_partida": partidas_por_produto.get(item.id),
+            "preco_final": preco_final,
+            "fornecedor": forn,
+            "subtotal": subtotal,
+        })
+
+    # Status das submissoes (visivel a todos perfis)
+    submissoes_todas = (
+        SubmissaoCotacao.query.options(_jl(SubmissaoCotacao.fornecedor))
+        .filter_by(rodada_id=rodada_id).all()
+    )
+
     return render_template(
         "rodadas/detalhe.html",
         rodada=rodada,
-        agregado=agregado,
+        agregado=agregado_enriquecido,
         cotacoes=cotacoes,
         meus_pedidos_map=meus_pedidos_map,
         pendentes_aprovacao=pendentes_aprovacao,
         pedidos_pendentes_moderacao=pedidos_pendentes_moderacao,
         cotacoes_pendentes_aprovacao=cotacoes_pendentes_aprovacao,
+        submissoes_status=submissoes_todas,
     )
 
 

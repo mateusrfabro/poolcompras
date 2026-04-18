@@ -119,7 +119,7 @@
     {% endif %}
 
     {# Fase 2: proxima acao pendente para o cliente #}
-    {% if participacao and rodada.status == 'finalizada' %}
+    {% if participacao and proposta_disponivel %}
         <div class="action-card">
             <h3 class="action-card-title">Próxima ação</h3>
 

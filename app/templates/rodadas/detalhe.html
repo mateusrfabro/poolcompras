@@ -76,7 +76,41 @@
         </div>
     {% endif %}
 
-    <h3>Pedidos agregados</h3>
+    {# Status das submissoes de cotacao final (visivel a todos perfis) #}
+    {% if submissoes_status %}
+        <h3 class="section-title">Status das cotações finais</h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr><th>Fornecedor</th><th>Status</th><th>Última atualização</th></tr>
+            </thead>
+            <tbody>
+                {% for s in submissoes_status %}
+                <tr>
+                    <td>{{ s.fornecedor.razao_social if s.fornecedor else '—' }}</td>
+                    <td>
+                        {% if s.aprovada_em %}
+                            <span class="badge badge-finalizada">Aprovada</span>
+                        {% elif s.devolvida_em %}
+                            <span class="badge badge-cancelada">Em negociação</span>
+                        {% elif s.enviada_em %}
+                            <span class="badge badge-aguardando_aprovacao">Aguardando admin</span>
+                        {% else %}
+                            <span class="badge badge-preparando">Rascunho</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if s.aprovada_em %}{{ s.aprovada_em|datetime_br }}
+                        {% elif s.devolvida_em %}{{ s.devolvida_em|datetime_br }}
+                        {% elif s.enviada_em %}{{ s.enviada_em|datetime_br }}
+                        {% else %}<span class="muted">—</span>{% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    {% endif %}
+
+    <h3 class="section-title">Pedidos agregados</h3>
     {% if not agregado %}
         <div class="empty-state">Nenhum pedido nesta rodada ainda.</div>
     {% else %}
@@ -85,8 +119,12 @@
                 <tr>
                     <th>Produto</th>
                     <th>Categoria</th>
-                    <th>Total do pool</th>
+                    <th>Volume total</th>
                     <th>Lanchonetes</th>
+                    <th>Preço de partida</th>
+                    <th>Preço final</th>
+                    <th>Fornecedor vencedor</th>
+                    <th>Subtotal</th>
                     {% if meus_pedidos_map %}
                         <th>Seu pedido</th>
                     {% endif %}
@@ -95,10 +133,26 @@
             <tbody>
                 {% for item in agregado %}
                 <tr>
-                    <td>{{ item.nome }}</td>
+                    <td><strong>{{ item.nome }}</strong></td>
                     <td><span class="tag">{{ item.categoria }}</span></td>
                     <td><strong>{{ item.total_quantidade|fmt_un(item.unidade) }}</strong></td>
                     <td>{{ item.total_lanchonetes }}</td>
+                    <td>{{ item.preco_partida|brl if item.preco_partida else '—' }}</td>
+                    <td>
+                        {% if item.preco_final %}
+                            <strong>{{ item.preco_final|brl }}</strong>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.fornecedor.razao_social if item.fornecedor else '—' }}</td>
+                    <td>
+                        {% if item.subtotal %}
+                            <strong>{{ item.subtotal|brl }}</strong>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
                     {% if meus_pedidos_map %}
                         <td>
                             {% if item.id in meus_pedidos_map %}
@@ -110,6 +164,15 @@
                     {% endif %}
                 </tr>
                 {% endfor %}
+                {# Total geral #}
+                {% set total_geral = agregado|selectattr('subtotal')|sum(attribute='subtotal') %}
+                {% if total_geral > 0 %}
+                <tr style="background: #fff7ed; font-weight: 600;">
+                    <td colspan="7">Total da rodada</td>
+                    <td><strong>{{ total_geral|brl }}</strong></td>
+                    {% if meus_pedidos_map %}<td></td>{% endif %}
+                </tr>
+                {% endif %}
             </tbody>
         </table></div>
     {% endif %}
