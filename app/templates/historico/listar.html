@@ -23,6 +23,14 @@
            class="chip {% if filtro_status == 'aberta' %}chip-active{% endif %}">
             Em aberto <span class="chip-count">{{ contagem.get('aberta', 0) }}</span>
         </a>
+        <a href="{{ url_for('historico.listar', status='fechada') }}"
+           class="chip {% if filtro_status == 'fechada' %}chip-active{% endif %}">
+            Fechadas <span class="chip-count">{{ contagem.get('fechada', 0) }}</span>
+        </a>
+        <a href="{{ url_for('historico.listar', status='cotando') }}"
+           class="chip {% if filtro_status == 'cotando' %}chip-active{% endif %}">
+            Em cotação <span class="chip-count">{{ contagem.get('cotando', 0) }}</span>
+        </a>
         <a href="{{ url_for('historico.listar', status='finalizada') }}"
            class="chip {% if filtro_status == 'finalizada' %}chip-active{% endif %}">
             Finalizadas <span class="chip-count">{{ contagem.get('finalizada', 0) }}</span>

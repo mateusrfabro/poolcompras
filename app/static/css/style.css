@@ -198,6 +198,8 @@ body {
     font-size: 2rem;
     font-weight: 700;
     color: var(--primary);
+    white-space: nowrap;  /* evita R$ quebrar em 2 linhas */
+    line-height: 1.2;
 }
 .stat-label {
     font-size: 0.85rem;
