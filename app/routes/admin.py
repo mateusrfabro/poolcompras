@@ -44,6 +44,7 @@ def produto_novo():
             nome=request.form["nome"].strip(),
             descricao=request.form.get("descricao", "").strip(),
             categoria=request.form["categoria"].strip(),
+            subcategoria=request.form.get("subcategoria", "").strip() or None,
             unidade=request.form["unidade"].strip(),
         )
         db.session.add(produto)
@@ -64,6 +65,7 @@ def produto_editar(produto_id):
         produto.nome = request.form["nome"].strip()
         produto.descricao = request.form.get("descricao", "").strip()
         produto.categoria = request.form["categoria"].strip()
+        produto.subcategoria = request.form.get("subcategoria", "").strip() or None
         produto.unidade = request.form["unidade"].strip()
         produto.ativo = "ativo" in request.form
         db.session.commit()
@@ -257,12 +259,12 @@ def lanchonetes_exportar():
 @login_required
 @admin_required
 def produtos_exportar():
-    lista = Produto.query.order_by(Produto.categoria, Produto.nome).all()
+    lista = Produto.query.order_by(Produto.categoria, Produto.subcategoria, Produto.nome).all()
     return _csv_response(
         filename="produtos.csv",
-        headers=["id", "nome", "categoria", "unidade", "descricao", "ativo", "criado_em"],
+        headers=["id", "nome", "categoria", "subcategoria", "unidade", "descricao", "ativo", "criado_em"],
         rows=[
-            [p.id, p.nome, p.categoria, p.unidade, p.descricao or "",
+            [p.id, p.nome, p.categoria, p.subcategoria or "", p.unidade, p.descricao or "",
              "sim" if p.ativo else "nao",
              p.criado_em.strftime("%Y-%m-%d %H:%M") if p.criado_em else ""]
             for p in lista

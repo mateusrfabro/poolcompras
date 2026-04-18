@@ -13,54 +13,55 @@ from app.models import Usuario, Produto
 
 app = create_app("development")
 
+# Tupla: (nome, categoria, subcategoria, unidade, descricao)
 PRODUTOS = [
     # Carnes
-    ("Blend bovino 180g (congelado)", "Carne", "kg", "Blend 80/20, padrão smash"),
-    ("Blend bovino 120g (congelado)", "Carne", "kg", "Blend 80/20, padrão clássico"),
-    ("Frango desfiado", "Carne", "kg", "Peito de frango cozido e desfiado"),
-    ("Costela desfiada", "Carne", "kg", "Costela bovina desfiada"),
+    ("Blend bovino 180g (congelado)", "Carne", "Hambúrguer", "kg", "Blend 80/20, padrão smash"),
+    ("Blend bovino 120g (congelado)", "Carne", "Hambúrguer", "kg", "Blend 80/20, padrão clássico"),
+    ("Frango desfiado", "Carne", "Frango", "kg", "Peito de frango cozido e desfiado"),
+    ("Costela desfiada", "Carne", "Costela", "kg", "Costela bovina desfiada"),
 
     # Pães
-    ("Pão brioche", "Pão", "unidade", "Pão brioche 10cm, ideal para smash"),
-    ("Pão australiano", "Pão", "unidade", "Pão australiano escuro"),
-    ("Pão de batata", "Pão", "unidade", "Pão de batata macio"),
+    ("Pão brioche", "Pão", "Brioche", "unidade", "Pão brioche 10cm, ideal para smash"),
+    ("Pão australiano", "Pão", "Australiano", "unidade", "Pão australiano escuro"),
+    ("Pão de batata", "Pão", "De Batata", "unidade", "Pão de batata macio"),
 
     # Queijos
-    ("Queijo cheddar fatiado", "Queijo", "kg", "Cheddar processado, fatias"),
-    ("Queijo prato fatiado", "Queijo", "kg", "Queijo prato, fatias finas"),
-    ("Cream cheese", "Queijo", "kg", "Cream cheese culinário"),
+    ("Queijo cheddar fatiado", "Queijo", "Fatiado", "kg", "Cheddar processado, fatias"),
+    ("Queijo prato fatiado", "Queijo", "Fatiado", "kg", "Queijo prato, fatias finas"),
+    ("Cream cheese", "Queijo", "Cremoso", "kg", "Cream cheese culinário"),
 
     # Bacon e embutidos
-    ("Bacon fatiado", "Bacon/Embutido", "kg", "Bacon suíno fatiado"),
-    ("Bacon em cubos", "Bacon/Embutido", "kg", "Bacon em cubos, para crocante"),
-    ("Calabresa fatiada", "Bacon/Embutido", "kg", "Linguiça calabresa fatiada"),
+    ("Bacon fatiado", "Bacon/Embutido", "Bacon", "kg", "Bacon suíno fatiado"),
+    ("Bacon em cubos", "Bacon/Embutido", "Bacon", "kg", "Bacon em cubos, para crocante"),
+    ("Calabresa fatiada", "Bacon/Embutido", "Calabresa", "kg", "Linguiça calabresa fatiada"),
 
     # Molhos
-    ("Maionese balde", "Molho", "kg", "Maionese para base de molhos"),
-    ("Ketchup balde", "Molho", "kg", "Ketchup tradicional"),
-    ("Mostarda balde", "Molho", "kg", "Mostarda amarela"),
-    ("Barbecue", "Molho", "litro", "Molho barbecue"),
+    ("Maionese balde", "Molho", "Maionese", "kg", "Maionese para base de molhos"),
+    ("Ketchup balde", "Molho", "Ketchup", "kg", "Ketchup tradicional"),
+    ("Mostarda balde", "Molho", "Mostarda", "kg", "Mostarda amarela"),
+    ("Barbecue", "Molho", "Barbecue", "litro", "Molho barbecue"),
 
     # Vegetais
-    ("Alface americana", "Vegetal", "kg", "Alface crespa/americana"),
-    ("Tomate", "Vegetal", "kg", "Tomate fatiado"),
-    ("Cebola roxa", "Vegetal", "kg", "Cebola roxa para anéis"),
-    ("Picles em conserva", "Vegetal", "kg", "Picles fatiado em conserva"),
-    ("Jalapeño em conserva", "Vegetal", "kg", "Pimenta jalapeño"),
+    ("Alface americana", "Vegetal", "Folha", "kg", "Alface crespa/americana"),
+    ("Tomate", "Vegetal", "Tomate", "kg", "Tomate fatiado"),
+    ("Cebola roxa", "Vegetal", "Cebola", "kg", "Cebola roxa para anéis"),
+    ("Picles em conserva", "Vegetal", "Conserva", "kg", "Picles fatiado em conserva"),
+    ("Jalapeño em conserva", "Vegetal", "Conserva", "kg", "Pimenta jalapeño"),
 
     # Bebidas
-    ("Refrigerante lata 350ml (misto)", "Bebida", "caixa", "Caixa 12 latas, sabores variados"),
-    ("Água mineral 500ml", "Bebida", "fardo", "Fardo 12 garrafas"),
+    ("Refrigerante lata 350ml (misto)", "Bebida", "Refrigerante", "caixa", "Caixa 12 latas, sabores variados"),
+    ("Água mineral 500ml", "Bebida", "Água", "fardo", "Fardo 12 garrafas"),
 
     # Embalagens
-    ("Caixa para hambúrguer", "Embalagem", "unidade", "Caixa kraft, tamanho padrão"),
-    ("Saco kraft delivery", "Embalagem", "unidade", "Saco papel kraft com alça"),
-    ("Copo descartável 300ml", "Descartável", "unidade", "Copo plástico transparente"),
-    ("Guardanapo", "Descartável", "pacote", "Pacote 100 guardanapos"),
+    ("Caixa para hambúrguer", "Embalagem", "Caixa", "unidade", "Caixa kraft, tamanho padrão"),
+    ("Saco kraft delivery", "Embalagem", "Kraft", "unidade", "Saco papel kraft com alça"),
+    ("Copo descartável 300ml", "Descartável", "Copo", "unidade", "Copo plástico transparente"),
+    ("Guardanapo", "Descartável", "Guardanapo", "pacote", "Pacote 100 guardanapos"),
 
-    # Batata
-    ("Batata congelada palito", "Outro", "kg", "Batata pré-frita congelada"),
-    ("Onion rings congelado", "Outro", "kg", "Anéis de cebola empanados"),
+    # Batata / Snack
+    ("Batata congelada palito", "Outro", "Batata", "kg", "Batata pré-frita congelada"),
+    ("Onion rings congelado", "Outro", "Snack", "kg", "Anéis de cebola empanados"),
 ]
 
 
@@ -84,16 +85,27 @@ def seed():
         # Produtos
         existentes = Produto.query.count()
         if existentes == 0:
-            for nome, cat, unidade, desc in PRODUTOS:
+            for nome, cat, subcat, unidade, desc in PRODUTOS:
                 db.session.add(Produto(
                     nome=nome,
                     categoria=cat,
+                    subcategoria=subcat,
                     unidade=unidade,
                     descricao=desc,
                 ))
             print(f"{len(PRODUTOS)} produtos cadastrados.")
         else:
-            print(f"Já existem {existentes} produtos. Seed ignorado.")
+            # Atualiza subcategoria dos ja existentes (idempotente)
+            por_nome = {p[0]: p[2] for p in PRODUTOS}
+            n = 0
+            for prod in Produto.query.all():
+                if prod.nome in por_nome and not prod.subcategoria:
+                    prod.subcategoria = por_nome[prod.nome]
+                    n += 1
+            if n > 0:
+                print(f"{n} produtos existentes ganharam subcategoria.")
+            else:
+                print(f"Ja existem {existentes} produtos, todos com subcategoria.")
 
         db.session.commit()
         print("Seed concluído!")

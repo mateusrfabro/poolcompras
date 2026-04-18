@@ -26,6 +26,12 @@
                 </select>
             </div>
             <div class="form-group">
+                <label for="subcategoria">Subcategoria (opcional)</label>
+                <input type="text" id="subcategoria" name="subcategoria"
+                       placeholder="Ex: Contra-filé, Brioche, Fatiado"
+                       value="{{ produto.subcategoria if produto else '' }}">
+            </div>
+            <div class="form-group">
                 <label for="unidade">Unidade</label>
                 <select id="unidade" name="unidade" required>
                     <option value="">Selecione...</option>

@@ -19,8 +19,8 @@
                 <tr>
                     <th>Nome</th>
                     <th>Categoria</th>
+                    <th>Subcategoria</th>
                     <th>Unidade</th>
-                    <th>Descrição</th>
                     <th>Status</th>
                     <th></th>
                 </tr>
@@ -29,9 +29,9 @@
                 {% for p in produtos %}
                 <tr>
                     <td>{{ p.nome }}</td>
-                    <td>{{ p.categoria }}</td>
+                    <td><span class="tag">{{ p.categoria }}</span></td>
+                    <td>{{ p.subcategoria or '—' }}</td>
                     <td>{{ p.unidade }}</td>
-                    <td>{{ p.descricao or '-' }}</td>
                     <td>
                         <span class="badge badge-{{ 'ativo' if p.ativo else 'inativo' }}">
                             {{ 'Ativo' if p.ativo else 'Inativo' }}
