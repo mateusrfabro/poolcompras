@@ -191,21 +191,28 @@ def create_app(config_name="default"):
             un_fmt = PLURAIS.get(unidade.lower(), unidade + "s")
         return f"{num} {un_fmt}"
 
-    # Filter: tempo restante humanizado ("em 3h45min", "em 2 dias", "hoje", "encerrada")
-    @app.template_filter("countdown")
-    def format_countdown(data):
+    def _normaliza_alvo(data):
+        """Converte date/datetime pro alvo efetivo. Se datetime com hora 00:00, trata como fim do dia."""
         from datetime import datetime, date, time as dtime
         if data is None:
-            return "—"
-        agora = datetime.utcnow()
-        # Se vier date, considera fim do dia (23:59)
+            return None
         if isinstance(data, datetime):
-            alvo = data
-        elif isinstance(data, date):
-            alvo = datetime.combine(data, dtime(23, 59))
-        else:
+            # Se hora 00:00:00, assumir fim do dia (23:59)
+            if data.time() == dtime(0, 0):
+                return data.replace(hour=23, minute=59)
+            return data
+        if isinstance(data, date):
+            return datetime.combine(data, dtime(23, 59))
+        return None
+
+    # Filter: tempo restante humanizado ("Fecha em 3h45min", "Fecha em 2 dias", "Encerrada")
+    @app.template_filter("countdown")
+    def format_countdown(data):
+        from datetime import datetime
+        alvo = _normaliza_alvo(data)
+        if alvo is None:
             return "—"
-        delta = alvo - agora
+        delta = alvo - datetime.utcnow()
         total_seg = int(delta.total_seconds())
         if total_seg <= 0:
             return "Encerrada"
@@ -220,20 +227,22 @@ def create_app(config_name="default"):
             return f"Fecha em {horas}h{minutos:02d}min"
         return f"Fecha em {minutos}min"
 
+    # Filter: formata data+hora em PT-BR ("18/04/2026 as 23:59")
+    @app.template_filter("datetime_br")
+    def format_datetime_br(data):
+        alvo = _normaliza_alvo(data)
+        if alvo is None:
+            return "—"
+        return alvo.strftime("%d/%m/%Y às %H:%M")
+
     # Filter: booleano de urgencia (prazo hoje ou amanha)
     @app.template_filter("urgente")
     def is_urgente(data):
-        from datetime import datetime, date, time as dtime
-        if data is None:
+        from datetime import datetime
+        alvo = _normaliza_alvo(data)
+        if alvo is None:
             return False
-        agora = datetime.utcnow()
-        if isinstance(data, datetime):
-            alvo = data
-        elif isinstance(data, date):
-            alvo = datetime.combine(data, dtime(23, 59))
-        else:
-            return False
-        delta = alvo - agora
+        delta = alvo - datetime.utcnow()
         return 0 < delta.total_seconds() <= 86400  # <= 24h
 
     return app

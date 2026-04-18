@@ -122,7 +122,7 @@
                     <td>{{ r.nome }}</td>
                     <td>
                         <strong>{{ r.data_fechamento|countdown }}</strong>
-                        <br><span class="muted" style="font-size: 0.8em;">{{ r.data_fechamento.strftime('%d/%m/%Y') }}</span>
+                        <br><span class="muted" style="font-size: 0.8em;">Encerra em: {{ r.data_fechamento|datetime_br }}</span>
                     </td>
                     <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
                     <td>

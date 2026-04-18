@@ -679,6 +679,46 @@ def rodada_liberar(rodada_id):
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
 
+# --- Historico de produtos sugeridos/aprovados por fornecedores ---
+@admin_bp.route("/historico-aprovacoes")
+@login_required
+@admin_required
+def historico_aprovacoes():
+    """Lista todos os produtos sugeridos por fornecedores, com status de aprovacao."""
+    registros = (
+        db.session.query(RodadaProduto, Produto, Rodada, Fornecedor)
+        .join(Produto, RodadaProduto.produto_id == Produto.id)
+        .join(Rodada, RodadaProduto.rodada_id == Rodada.id)
+        .join(Fornecedor, RodadaProduto.adicionado_por_fornecedor_id == Fornecedor.id)
+        .filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None))
+        .order_by(RodadaProduto.criado_em.desc())
+        .all()
+    )
+
+    # Exportar CSV
+    if request.args.get("exportar") == "csv":
+        buf = StringIO()
+        w = csv.writer(buf)
+        w.writerow(["Data", "Rodada", "Produto", "Categoria", "Subcategoria",
+                    "Unidade", "Preco de partida (R$)", "Fornecedor", "Status"])
+        for rp, p, r, f in registros:
+            status = "Pendente" if rp.aprovado is None else ("Aprovado" if rp.aprovado else "Recusado")
+            w.writerow([
+                rp.criado_em.strftime("%d/%m/%Y %H:%M") if rp.criado_em else "",
+                r.nome, p.nome, p.categoria, p.subcategoria or "",
+                p.unidade,
+                f"{float(rp.preco_partida):.2f}".replace(".", ",") if rp.preco_partida else "",
+                f.razao_social, status,
+            ])
+        return Response(
+            "\ufeff" + buf.getvalue(),
+            mimetype="text/csv; charset=utf-8",
+            headers={"Content-Disposition": "attachment; filename=historico_aprovacoes.csv"},
+        )
+
+    return render_template("admin/historico_aprovacoes.html", registros=registros)
+
+
 # --- Relatorio consolidado por periodo ---
 @admin_bp.route("/relatorio", methods=["GET"])
 @login_required

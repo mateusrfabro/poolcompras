@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Histórico de Aprovações — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('main.dashboard') }}" class="btn-back">Voltar ao painel</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Histórico de produtos sugeridos</h2>
+            <p class="page-sub">Todos os produtos que fornecedores sugeriram ao longo das rodadas, com status de aprovação.</p>
+        </div>
+        {% if registros %}
+            <a href="{{ url_for('admin.historico_aprovacoes', exportar='csv') }}"
+               class="btn btn-outline btn-sm">Exportar CSV</a>
+        {% endif %}
+    </div>
+
+    {% if not registros %}
+        <div class="card">
+            <p>Nenhum produto foi sugerido por fornecedores ainda.</p>
+        </div>
+    {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Rodada</th>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Subcategoria</th>
+                    <th>Unidade</th>
+                    <th>Preço de partida</th>
+                    <th>Fornecedor</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for rp, p, r, f in registros %}
+                <tr>
+                    <td>{{ rp.criado_em.strftime('%d/%m/%Y %H:%M') if rp.criado_em else '—' }}</td>
+                    <td>
+                        <a href="{{ url_for('rodadas.detalhe', rodada_id=r.id) }}">{{ r.nome }}</a>
+                    </td>
+                    <td><strong>{{ p.nome }}</strong></td>
+                    <td><span class="tag">{{ p.categoria }}</span></td>
+                    <td>{{ p.subcategoria or '—' }}</td>
+                    <td>{{ p.unidade }}</td>
+                    <td>{{ rp.preco_partida|brl if rp.preco_partida else '—' }}</td>
+                    <td>{{ f.razao_social }}</td>
+                    <td>
+                        {% if rp.aprovado is none %}
+                            <span class="badge badge-aguardando_aprovacao">Pendente</span>
+                        {% elif rp.aprovado %}
+                            <span class="badge badge-aberta">Aprovado</span>
+                        {% else %}
+                            <span class="badge badge-cancelada">Recusado</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    {% endif %}
+</div>
+{% endblock %}
