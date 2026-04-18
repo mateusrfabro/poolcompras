@@ -19,44 +19,41 @@
     <form method="POST" class="form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
-        {% for categoria, lista in catalogo_por_categoria.items() %}
+        {% for categoria, subcats in catalogo_por_categoria.items() %}
             <div class="catalogo-categoria">
                 <h3 class="catalogo-categoria-head">{{ categoria }}</h3>
-                <div class="table-wrapper"><table class="table">
-                    <thead>
-                        <tr>
-                            <th>Produto</th>
-                            <th>Subcategoria</th>
-                            <th>Unidade</th>
-                            <th>Preço de partida (R$)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for rp in lista %}
-                        <tr>
-                            <td>{{ rp.produto.nome }}</td>
-                            <td>
-                                {% if rp.produto.subcategoria %}
-                                    <span class="tag">{{ rp.produto.subcategoria }}</span>
-                                {% else %}
-                                    <span class="muted">—</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ rp.produto.unidade }}</td>
-                            <td>
-                                <input type="number" name="preco_{{ rp.id }}"
-                                       step="0.01" min="0"
-                                       placeholder="0,00"
-                                       value="{{ rp.preco_partida|float if rp.preco_partida is not none else '' }}"
-                                       style="width: 140px;">
-                                {% if rp.adicionado_por_fornecedor_id and rp.aprovado is none %}
-                                    <span class="badge badge-aguardando_aprovacao">Aguardando aprovação</span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table></div>
+                {% for subcat, lista in subcats.items() %}
+                    {% if subcat != '—' %}
+                        <h4 class="subcategoria-head">{{ subcat }}</h4>
+                    {% endif %}
+                    <div class="table-wrapper"><table class="table">
+                        <thead>
+                            <tr>
+                                <th>Produto</th>
+                                <th>Unidade</th>
+                                <th>Preço de partida (R$)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rp in lista %}
+                            <tr>
+                                <td>{{ rp.produto.nome }}</td>
+                                <td>{{ rp.produto.unidade }}</td>
+                                <td>
+                                    <input type="number" name="preco_{{ rp.id }}"
+                                           step="0.01" min="0"
+                                           placeholder="0,00"
+                                           value="{{ rp.preco_partida|float if rp.preco_partida is not none else '' }}"
+                                           style="width: 140px;">
+                                    {% if rp.adicionado_por_fornecedor_id and rp.aprovado is none %}
+                                        <span class="badge badge-aguardando_aprovacao">Aguardando aprovação</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% endfor %}
             </div>
         {% endfor %}
 
@@ -81,7 +78,17 @@
             </div>
             <div class="form-group">
                 <label for="novo_subcategoria">Subcategoria</label>
-                <input type="text" id="novo_subcategoria" name="novo_subcategoria" placeholder="Ex: Hambúrguer">
+                <input type="text" id="novo_subcategoria" name="novo_subcategoria"
+                       list="subcategorias-sugestoes-fornecedor"
+                       placeholder="Ex: Acém, Hambúrguer, Brioche">
+                <datalist id="subcategorias-sugestoes-fornecedor">
+                    {% for cat, subs in (subcategorias_por_cat or {}).items() %}
+                        {% for sub in subs %}
+                            <option value="{{ sub }}" label="{{ cat }}">
+                        {% endfor %}
+                    {% endfor %}
+                </datalist>
+                <small class="muted">Obrigatório quando sugerir um produto novo.</small>
             </div>
         </div>
         <div class="form-row">

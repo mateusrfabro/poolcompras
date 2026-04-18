@@ -247,7 +247,10 @@ def cotar_catalogo(rodada_id):
         nome_novo = request.form.get("novo_nome", "").strip()
         if nome_novo:
             categoria_nova = request.form.get("novo_categoria", "").strip() or "Outro"
-            subcategoria_nova = request.form.get("novo_subcategoria", "").strip() or None
+            subcategoria_nova = request.form.get("novo_subcategoria", "").strip()
+            if not subcategoria_nova:
+                flash("Ao sugerir um produto novo, preencha também a subcategoria.", "error")
+                return redirect(url_for("fornecedor.cotar_catalogo", rodada_id=rodada_id))
             unidade_nova = request.form.get("novo_unidade", "").strip() or "unidade"
             preco_novo_str = request.form.get("novo_preco", "").strip()
 
@@ -301,16 +304,32 @@ def cotar_catalogo(rodada_id):
 
         return redirect(url_for("fornecedor.cotar_catalogo", rodada_id=rodada_id))
 
-    # Agrupa por categoria para UI
+    # Agrupa por categoria -> subcategoria para UI
     by_cat = {}
     for rp in catalogo:
-        by_cat.setdefault(rp.produto.categoria, []).append(rp)
+        cat = rp.produto.categoria
+        sub = rp.produto.subcategoria or "—"
+        by_cat.setdefault(cat, {}).setdefault(sub, []).append(rp)
+
+    # Datalist de subcategorias existentes
+    rows_sub = (
+        db.session.query(Produto.categoria, Produto.subcategoria)
+        .filter(Produto.subcategoria.isnot(None))
+        .filter(Produto.subcategoria != "")
+        .distinct()
+        .order_by(Produto.categoria, Produto.subcategoria)
+        .all()
+    )
+    subcategorias_por_cat = {}
+    for cat, sub in rows_sub:
+        subcategorias_por_cat.setdefault(cat, []).append(sub)
 
     return render_template(
         "fornecedor/cotar_catalogo.html",
         rodada=rodada,
         catalogo_por_categoria=by_cat,
         fornecedor=fornecedor,
+        subcategorias_por_cat=subcategorias_por_cat,
     )
 
 

@@ -35,24 +35,56 @@ def produtos():
     return render_template("admin/produtos.html", produtos=lista)
 
 
+def _subcategorias_por_categoria():
+    """Retorna dict {categoria: [subcategorias_distintas]} para datalist."""
+    rows = (
+        db.session.query(Produto.categoria, Produto.subcategoria)
+        .filter(Produto.subcategoria.isnot(None))
+        .filter(Produto.subcategoria != "")
+        .distinct()
+        .order_by(Produto.categoria, Produto.subcategoria)
+        .all()
+    )
+    out = {}
+    for cat, sub in rows:
+        out.setdefault(cat, []).append(sub)
+    return out
+
+
 @admin_bp.route("/produtos/novo", methods=["GET", "POST"])
 @login_required
 @admin_required
 def produto_novo():
     if request.method == "POST":
+        nome = request.form["nome"].strip()
+        categoria = request.form["categoria"].strip()
+        subcategoria = request.form.get("subcategoria", "").strip()
+        unidade = request.form["unidade"].strip()
+
+        if not subcategoria:
+            flash("Subcategoria é obrigatória. Ex: Acém, Brioche, Fatiado...", "error")
+            return render_template(
+                "admin/produto_form.html", produto=None,
+                subcategorias_por_cat=_subcategorias_por_categoria(),
+                form_data=request.form,
+            )
+
         produto = Produto(
-            nome=request.form["nome"].strip(),
+            nome=nome,
             descricao=request.form.get("descricao", "").strip(),
-            categoria=request.form["categoria"].strip(),
-            subcategoria=request.form.get("subcategoria", "").strip() or None,
-            unidade=request.form["unidade"].strip(),
+            categoria=categoria,
+            subcategoria=subcategoria,
+            unidade=unidade,
         )
         db.session.add(produto)
         db.session.commit()
         flash("Produto cadastrado!", "success")
         return redirect(url_for("admin.produtos"))
 
-    return render_template("admin/produto_form.html", produto=None)
+    return render_template(
+        "admin/produto_form.html", produto=None,
+        subcategorias_por_cat=_subcategorias_por_categoria(),
+    )
 
 
 @admin_bp.route("/produtos/<int:produto_id>/editar", methods=["GET", "POST"])
@@ -62,17 +94,28 @@ def produto_editar(produto_id):
     produto = Produto.query.get_or_404(produto_id)
 
     if request.method == "POST":
+        subcategoria = request.form.get("subcategoria", "").strip()
+        if not subcategoria:
+            flash("Subcategoria é obrigatória. Ex: Acém, Brioche, Fatiado...", "error")
+            return render_template(
+                "admin/produto_form.html", produto=produto,
+                subcategorias_por_cat=_subcategorias_por_categoria(),
+            )
+
         produto.nome = request.form["nome"].strip()
         produto.descricao = request.form.get("descricao", "").strip()
         produto.categoria = request.form["categoria"].strip()
-        produto.subcategoria = request.form.get("subcategoria", "").strip() or None
+        produto.subcategoria = subcategoria
         produto.unidade = request.form["unidade"].strip()
         produto.ativo = "ativo" in request.form
         db.session.commit()
         flash("Produto atualizado!", "success")
         return redirect(url_for("admin.produtos"))
 
-    return render_template("admin/produto_form.html", produto=produto)
+    return render_template(
+        "admin/produto_form.html", produto=produto,
+        subcategorias_por_cat=_subcategorias_por_categoria(),
+    )
 
 
 # --- Fornecedores ---
@@ -216,10 +259,11 @@ def rodada_catalogo(rodada_id):
     # Carrega selecao atual
     selecionados = {rp.produto_id for rp in RodadaProduto.query.filter_by(rodada_id=rodada_id).all()}
 
-    # Agrupa por categoria pra UX
+    # Agrupa por categoria -> subcategoria pra UX
     by_cat = {}
     for p in produtos_ativos:
-        by_cat.setdefault(p.categoria, []).append(p)
+        sub = p.subcategoria or "—"
+        by_cat.setdefault(p.categoria, {}).setdefault(sub, []).append(p)
 
     return render_template(
         "admin/rodada_catalogo.html",

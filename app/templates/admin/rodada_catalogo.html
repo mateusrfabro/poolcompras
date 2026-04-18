@@ -25,7 +25,7 @@
             <strong id="counter">{{ total_selecionados }}</strong> produto(s) selecionado(s)
         </div>
 
-        {% for categoria, produtos in produtos_por_categoria.items() %}
+        {% for categoria, subcats in produtos_por_categoria.items() %}
             <div class="catalogo-categoria">
                 <div class="catalogo-categoria-head">
                     <h3>{{ categoria }}</h3>
@@ -35,16 +35,24 @@
                     </button>
                 </div>
                 <div class="catalogo-produtos" data-cat="{{ categoria|replace('/', '_') }}">
-                    {% for p in produtos %}
-                        <label class="catalogo-produto">
-                            <input type="checkbox" name="produto_id" value="{{ p.id }}"
-                                   {% if p.id in selecionados %}checked{% endif %}>
-                            <div class="catalogo-produto-info">
-                                <strong>{{ p.nome }}</strong>
-                                {% if p.subcategoria %}<span class="tag">{{ p.subcategoria }}</span>{% endif %}
-                                <span class="muted"> — {{ p.unidade }}</span>
+                    {% for subcat, produtos in subcats.items() %}
+                        <div class="catalogo-subcategoria">
+                            {% if subcat != '—' %}
+                                <h4 class="subcategoria-head">{{ subcat }}</h4>
+                            {% endif %}
+                            <div class="catalogo-subcategoria-produtos">
+                                {% for p in produtos %}
+                                    <label class="catalogo-produto">
+                                        <input type="checkbox" name="produto_id" value="{{ p.id }}"
+                                               {% if p.id in selecionados %}checked{% endif %}>
+                                        <div class="catalogo-produto-info">
+                                            <strong>{{ p.nome }}</strong>
+                                            <span class="muted"> — {{ p.unidade }}</span>
+                                        </div>
+                                    </label>
+                                {% endfor %}
                             </div>
-                        </label>
+                        </div>
                     {% endfor %}
                 </div>
             </div>

@@ -514,9 +514,24 @@ body {
     margin: 0;
 }
 .catalogo-produtos {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+}
+.catalogo-subcategoria-produtos {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
     gap: 0.5rem;
+}
+.subcategoria-head {
+    color: var(--gray-700);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin: 0.4rem 0 0.3rem;
+    padding-left: 0.4rem;
+    border-left: 3px solid var(--primary);
 }
 .catalogo-produto {
     display: flex;

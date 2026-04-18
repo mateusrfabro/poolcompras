@@ -51,7 +51,7 @@
                 {% for subcat, produtos in subcats.items() %}
                     <div class="cliente-subcategoria" data-subcat="{{ subcat }}">
                         {% if subcat != '—' %}
-                            <h4>{{ subcat }}</h4>
+                            <h4 class="subcategoria-head">{{ subcat }}</h4>
                         {% endif %}
                         <div class="table-wrapper"><table class="table">
                             <thead>
