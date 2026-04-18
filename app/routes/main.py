@@ -3,8 +3,8 @@ from flask_login import login_required, current_user
 from sqlalchemy import func, text
 from app import db
 from app.models import (
-    Lanchonete, Rodada, ItemPedido, Cotacao, Produto,
-    ParticipacaoRodada, AvaliacaoRodada, Fornecedor,
+    Lanchonete, Rodada, ItemPedido, Produto,
+    ParticipacaoRodada,
 )
 
 main_bp = Blueprint("main", __name__)
@@ -77,97 +77,16 @@ def dashboard():
             .all()
         )
 
-    # KPIs e pendencias da lanchonete
+    # KPIs + pendencias + ultimas rodadas (logica em service)
     kpis = {}
     pendencias = []
     ultimas_rodadas = []
     if lanchonete:
-        lid = lanchonete.id
-
-        # Pendencias: rodadas finalizadas onde precisa de acao do cliente
-        participacoes = (
-            ParticipacaoRodada.query
-            .filter_by(lanchonete_id=lid)
-            .join(Rodada, ParticipacaoRodada.rodada_id == Rodada.id)
-            .filter(Rodada.status == "finalizada")
-            .all()
-        )
-        for p in participacoes:
-            if p.aceite_proposta is None:
-                pendencias.append({"rodada": p.rodada, "acao": "Aceitar proposta", "urgencia": "alta"})
-            elif p.aceite_proposta and not p.comprovante_key:
-                pendencias.append({"rodada": p.rodada, "acao": "Enviar comprovante", "urgencia": "alta"})
-            elif p.entrega_informada_em and p.recebimento_ok is None:
-                pendencias.append({"rodada": p.rodada, "acao": "Confirmar recebimento", "urgencia": "media"})
-            elif p.recebimento_ok and not p.avaliacao_geral:
-                pendencias.append({"rodada": p.rodada, "acao": "Avaliar a rodada", "urgencia": "baixa"})
-
-        # KPIs
-        total_rodadas = (
-            db.session.query(func.count(func.distinct(ItemPedido.rodada_id)))
-            .filter(ItemPedido.lanchonete_id == lid)
-            .scalar()
-        ) or 0
-
-        rodadas_concluidas = (
-            ParticipacaoRodada.query
-            .filter_by(lanchonete_id=lid)
-            .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
-            .count()
-        )
-
-        media_que_deu = (
-            db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
-            .filter(ParticipacaoRodada.lanchonete_id == lid,
-                    ParticipacaoRodada.avaliacao_geral.isnot(None))
-            .scalar()
-        ) or 0
-
-        kpis = {
-            "total_rodadas": total_rodadas,
-            "rodadas_concluidas": rodadas_concluidas,
-            "pendencias": len(pendencias),
-            "media_que_deu": round(float(media_que_deu), 1),
-        }
-
-        # Ultimas 3 rodadas finalizadas/canceladas + preview (total gasto + nota dada)
-        ultimas_rodadas_raw = (
-            db.session.query(Rodada)
-            .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
-            .filter(ItemPedido.lanchonete_id == lid,
-                    Rodada.status.in_(["finalizada", "cancelada", "fechada"]))
-            .group_by(Rodada.id)
-            .order_by(Rodada.data_abertura.desc())
-            .limit(3)
-            .all()
-        )
-
-        ultimas_rodadas = []
-        for r in ultimas_rodadas_raw:
-            # Total gasto = soma(qtd * preco cotacao selecionada) para pedidos dessa lanchonete
-            total = (
-                db.session.query(
-                    func.coalesce(func.sum(ItemPedido.quantidade * Cotacao.preco_unitario), 0)
-                )
-                .join(Cotacao,
-                      (Cotacao.rodada_id == ItemPedido.rodada_id) &
-                      (Cotacao.produto_id == ItemPedido.produto_id) &
-                      (Cotacao.selecionada.is_(True)))
-                .filter(ItemPedido.rodada_id == r.id,
-                        ItemPedido.lanchonete_id == lid)
-                .scalar()
-            ) or 0
-            part = (
-                ParticipacaoRodada.query
-                .filter_by(rodada_id=r.id, lanchonete_id=lid)
-                .first()
-            )
-            nota = part.avaliacao_geral if part else None
-            ultimas_rodadas.append({
-                "rodada": r,
-                "total": float(total) if total else 0.0,
-                "nota": nota,
-            })
+        from app.services.dashboard_lanchonete import dashboard_data
+        data = dashboard_data(lanchonete.id)
+        pendencias = data["pendencias"]
+        kpis = data["kpis"]
+        ultimas_rodadas = data["ultimas_rodadas"]
 
     return render_template(
         "dashboard.html",

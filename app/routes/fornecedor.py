@@ -44,41 +44,11 @@ def dashboard():
         .all()
     ) if fornecedor else []
 
-    # Pendencias agrupadas POR RODADA (nao por lanchonete)
+    # Pendencias agrupadas POR RODADA (logica em service)
     pendencias_por_rodada = []
     if fornecedor:
-        rodadas_cotadas_ids = [
-            r for (r,) in db.session.query(Cotacao.rodada_id)
-                .filter_by(fornecedor_id=fornecedor.id)
-                .distinct().all()
-        ]
-        if rodadas_cotadas_ids:
-            participacoes = (
-                ParticipacaoRodada.query
-                .options(joinedload(ParticipacaoRodada.lanchonete),
-                         joinedload(ParticipacaoRodada.rodada))
-                .filter(ParticipacaoRodada.rodada_id.in_(rodadas_cotadas_ids))
-                .filter(ParticipacaoRodada.aceite_proposta.is_(True))
-                .filter(ParticipacaoRodada.comprovante_key.isnot(None))
-                .filter(ParticipacaoRodada.entrega_informada_em.is_(None))
-                .order_by(ParticipacaoRodada.comprovante_em.asc())
-                .all()
-            )
-            # Agrupa por rodada
-            por_rodada = {}
-            for p in participacoes:
-                rid = p.rodada_id
-                if rid not in por_rodada:
-                    por_rodada[rid] = {
-                        "rodada": p.rodada,
-                        "aguardando_pagamento": [],
-                        "aguardando_entrega": [],
-                    }
-                if not p.pagamento_confirmado_em:
-                    por_rodada[rid]["aguardando_pagamento"].append(p)
-                elif not p.entrega_informada_em:
-                    por_rodada[rid]["aguardando_entrega"].append(p)
-            pendencias_por_rodada = list(por_rodada.values())
+        from app.services.pendencias import pendencias_fornecedor
+        pendencias_por_rodada = pendencias_fornecedor(fornecedor.id)
 
     # Manter backward-compat: template ainda recebe participacoes_pendentes (lista flat)
     participacoes_pendentes = [

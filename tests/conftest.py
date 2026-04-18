@@ -10,7 +10,7 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from app import create_app, db, limiter
-from app.models import Usuario, Lanchonete, Fornecedor, Produto, Rodada
+from app.models import Usuario, Lanchonete, Fornecedor, Produto, Rodada, RodadaProduto
 
 
 @pytest.fixture
@@ -85,16 +85,24 @@ def _seed_minimo():
     db.session.add(Fornecedor(usuario_id=uf.id, razao_social="Fornec Teste"))
 
     # Produto
-    db.session.add(Produto(nome="Blend 180g", categoria="Carne", unidade="kg"))
+    produto = Produto(nome="Blend 180g", categoria="Carne", subcategoria="Hamburguer", unidade="kg")
+    db.session.add(produto)
 
     # Rodada aberta
     from datetime import datetime, timedelta, timezone
     agora = datetime.now(timezone.utc).replace(tzinfo=None)
-    db.session.add(Rodada(
+    rodada = Rodada(
         nome="Rodada Teste",
         data_abertura=agora,
         data_fechamento=agora + timedelta(hours=6),
         status="aberta",
+    )
+    db.session.add(rodada)
+    db.session.flush()
+
+    # Catalogo da rodada (necessario pra lanchonete conseguir pedir)
+    db.session.add(RodadaProduto(
+        rodada_id=rodada.id, produto_id=produto.id,
     ))
 
     db.session.commit()
