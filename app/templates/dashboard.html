@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Painel - PoolCompras{% endblock %}
+{% block title %}Painel — PoolCompras{% endblock %}
 
 {% block content %}
 <div class="dashboard">
@@ -8,6 +8,57 @@
         <p class="subtitle">{{ lanchonete.nome_fantasia }} &mdash; {{ lanchonete.bairro or "Londrina" }}</p>
     {% endif %}
 
+    {# KPIs rápidos #}
+    {% if kpis %}
+        <div class="stats-grid">
+            <div class="stat-card {% if kpis.pendencias > 0 %}stat-card-primary{% endif %}">
+                <span class="stat-number">{{ kpis.pendencias }}</span>
+                <span class="stat-label">Pendências</span>
+                {% if kpis.pendencias > 0 %}
+                    <span class="stat-hint">Precisam da sua ação</span>
+                {% else %}
+                    <span class="stat-hint">Tudo em dia</span>
+                {% endif %}
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ kpis.total_rodadas }}</span>
+                <span class="stat-label">Rodadas participadas</span>
+            </div>
+            <div class="stat-card stat-card-success">
+                <span class="stat-number">{{ kpis.rodadas_concluidas }}</span>
+                <span class="stat-label">Rodadas concluídas</span>
+                <span class="stat-hint">Com avaliação enviada</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ kpis.media_que_deu }}</span>
+                <span class="stat-label">Nota média que você deu</span>
+                <span class="stat-hint">
+                    <span class="stars-readonly">
+                        {% for i in range(1, 6) %}{% if i <= kpis.media_que_deu|round %}★{% else %}☆{% endif %}{% endfor %}
+                    </span>
+                </span>
+            </div>
+        </div>
+    {% endif %}
+
+    {# Pendências do cliente #}
+    {% if pendencias %}
+        <h3 class="section-title">Ações pendentes</h3>
+        <div class="pendencias-grid">
+            {% for p in pendencias %}
+                <div class="pendencia-card">
+                    <div class="pendencia-card-head">
+                        <strong>{{ p.rodada.nome }}</strong>
+                    </div>
+                    <p>{{ p.acao }}</p>
+                    <a href="{{ url_for('historico.detalhe', rodada_id=p.rodada.id) }}"
+                       class="btn btn-primary btn-sm">Abrir rodada</a>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    {# Rodada aberta #}
     {% if rodada_aberta %}
         <div class="card card-highlight">
             <h3>Rodada aberta: {{ rodada_aberta.nome }}</h3>
@@ -46,6 +97,21 @@
             <h3>Nenhuma rodada aberta</h3>
             <p>Aguarde a próxima rodada de compras. Você será notificado!</p>
         </div>
+    {% endif %}
+
+    {# Últimas rodadas finalizadas #}
+    {% if ultimas_rodadas %}
+        <h3 class="section-title">Últimas rodadas</h3>
+        <div class="ultimas-rodadas-grid">
+            {% for r in ultimas_rodadas %}
+                <a href="{{ url_for('historico.detalhe', rodada_id=r.id) }}" class="ultima-rodada-card">
+                    <div class="ultima-rodada-nome">{{ r.nome }}</div>
+                    <div class="ultima-rodada-data">{{ r.data_abertura.strftime('%d/%m/%Y') }}</div>
+                    <span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span>
+                </a>
+            {% endfor %}
+        </div>
+        <a href="{{ url_for('historico.listar') }}" class="btn btn-outline btn-sm" style="margin-top: 0.5rem;">Ver todas →</a>
     {% endif %}
 </div>
 {% endblock %}

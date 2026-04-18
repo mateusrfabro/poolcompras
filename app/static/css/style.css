@@ -429,6 +429,38 @@ body {
     margin-bottom: 0.8rem;
 }
 
+/* === Cards de ultimas rodadas (dashboard lanchonete) === */
+.ultimas-rodadas-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+.ultima-rodada-card {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 1rem;
+    text-decoration: none;
+    color: var(--gray-900);
+    transition: all 0.15s;
+    display: block;
+}
+.ultima-rodada-card:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.ultima-rodada-nome {
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+.ultima-rodada-data {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    margin-bottom: 0.5rem;
+}
+
 /* === Lista de pagamentos por fornecedor === */
 .pagamento-list {
     display: flex;

@@ -2,7 +2,10 @@ from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func, text
 from app import db
-from app.models import Lanchonete, Rodada, ItemPedido, Cotacao, Produto
+from app.models import (
+    Lanchonete, Rodada, ItemPedido, Cotacao, Produto,
+    ParticipacaoRodada, AvaliacaoRodada, Fornecedor,
+)
 
 main_bp = Blueprint("main", __name__)
 
@@ -68,9 +71,77 @@ def dashboard():
             .all()
         )
 
+    # KPIs e pendencias da lanchonete
+    kpis = {}
+    pendencias = []
+    ultimas_rodadas = []
+    if lanchonete:
+        lid = lanchonete.id
+
+        # Pendencias: rodadas finalizadas onde precisa de acao do cliente
+        participacoes = (
+            ParticipacaoRodada.query
+            .filter_by(lanchonete_id=lid)
+            .join(Rodada, ParticipacaoRodada.rodada_id == Rodada.id)
+            .filter(Rodada.status == "finalizada")
+            .all()
+        )
+        for p in participacoes:
+            if p.aceite_proposta is None:
+                pendencias.append({"rodada": p.rodada, "acao": "Aceitar proposta", "urgencia": "alta"})
+            elif p.aceite_proposta and not p.comprovante_key:
+                pendencias.append({"rodada": p.rodada, "acao": "Enviar comprovante", "urgencia": "alta"})
+            elif p.entrega_informada_em and p.recebimento_ok is None:
+                pendencias.append({"rodada": p.rodada, "acao": "Confirmar recebimento", "urgencia": "media"})
+            elif p.recebimento_ok and not p.avaliacao_geral:
+                pendencias.append({"rodada": p.rodada, "acao": "Avaliar a rodada", "urgencia": "baixa"})
+
+        # KPIs
+        total_rodadas = (
+            db.session.query(func.count(func.distinct(ItemPedido.rodada_id)))
+            .filter(ItemPedido.lanchonete_id == lid)
+            .scalar()
+        ) or 0
+
+        rodadas_concluidas = (
+            ParticipacaoRodada.query
+            .filter_by(lanchonete_id=lid)
+            .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
+            .count()
+        )
+
+        media_que_deu = (
+            db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
+            .filter(ParticipacaoRodada.lanchonete_id == lid,
+                    ParticipacaoRodada.avaliacao_geral.isnot(None))
+            .scalar()
+        ) or 0
+
+        kpis = {
+            "total_rodadas": total_rodadas,
+            "rodadas_concluidas": rodadas_concluidas,
+            "pendencias": len(pendencias),
+            "media_que_deu": round(float(media_que_deu), 1),
+        }
+
+        # Ultimas 3 rodadas finalizadas/canceladas
+        ultimas_rodadas = (
+            db.session.query(Rodada)
+            .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
+            .filter(ItemPedido.lanchonete_id == lid,
+                    Rodada.status.in_(["finalizada", "cancelada", "fechada"]))
+            .group_by(Rodada.id)
+            .order_by(Rodada.data_abertura.desc())
+            .limit(3)
+            .all()
+        )
+
     return render_template(
         "dashboard.html",
         lanchonete=lanchonete,
         rodada_aberta=rodada_aberta,
         meus_pedidos=meus_pedidos,
+        kpis=kpis,
+        pendencias=pendencias,
+        ultimas_rodadas=ultimas_rodadas,
     )
