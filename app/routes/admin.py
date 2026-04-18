@@ -504,6 +504,72 @@ def rodada_detalhe_exportar(rodada_id):
 
 
 # --- Helper: gera resposta CSV com BOM UTF-8 para Excel abrir com acentos OK ---
+# --- Aprovacao de produtos sugeridos pelo fornecedor ---
+@admin_bp.route("/rodadas/<int:rodada_id>/aprovar-produtos", methods=["GET", "POST"])
+@login_required
+@admin_required
+def rodada_aprovar_produtos(rodada_id):
+    """Admin aprova ou recusa produtos sugeridos pelos fornecedores."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+    pendentes = (
+        RodadaProduto.query
+        .filter_by(rodada_id=rodada_id, aprovado=None)
+        .filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None))
+        .all()
+    )
+
+    if request.method == "POST":
+        rp_id = request.form.get("rp_id", type=int)
+        acao = request.form.get("acao")
+        rp = RodadaProduto.query.get(rp_id)
+        if not rp or rp.rodada_id != rodada_id:
+            flash("Produto não encontrado.", "error")
+            return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
+
+        if acao == "aprovar":
+            rp.aprovado = True
+            flash(f"Produto '{rp.produto.nome}' aprovado.", "success")
+        elif acao == "recusar":
+            rp.aprovado = False
+            # Desativa o produto (nao aparece pra lanchonete)
+            if rp.produto:
+                rp.produto.ativo = False
+            flash(f"Produto '{rp.produto.nome}' recusado.", "success")
+
+        db.session.commit()
+        return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
+
+    return render_template(
+        "admin/rodada_aprovar_produtos.html",
+        rodada=rodada,
+        pendentes=pendentes,
+    )
+
+
+@admin_bp.route("/rodadas/<int:rodada_id>/liberar", methods=["POST"])
+@login_required
+@admin_required
+def rodada_liberar(rodada_id):
+    """Admin libera a rodada para as lanchonetes (muda status -> aberta)."""
+    rodada = Rodada.query.get_or_404(rodada_id)
+    if rodada.status not in ("aguardando_cotacao", "aguardando_aprovacao"):
+        flash("Rodada não está pronta para ser liberada.", "warning")
+        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+    # Checa se todos aprovados
+    pendentes = RodadaProduto.query.filter_by(
+        rodada_id=rodada_id, aprovado=None,
+    ).filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None)).count()
+    if pendentes > 0:
+        flash(f"Ainda há {pendentes} produto(s) aguardando aprovação.", "warning")
+        return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
+
+    rodada.status = "aberta"
+    db.session.commit()
+    flash("Rodada liberada para as lanchonetes!", "success")
+    return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
+
+
 # --- Relatorio consolidado por periodo ---
 @admin_bp.route("/relatorio", methods=["GET"])
 @login_required

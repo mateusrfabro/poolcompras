@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block title %}Aprovar produtos — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Produtos sugeridos — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Fornecedores sugeriram produtos que não estavam no catálogo original.
+                Aprove ou recuse cada um.
+            </p>
+        </div>
+        <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
+    </div>
+
+    {% if not pendentes %}
+        <div class="empty-state">
+            <p>Nenhum produto pendente de aprovação.</p>
+            <form method="POST" action="{{ url_for('admin.rodada_liberar', rodada_id=rodada.id) }}" style="margin-top: 1rem;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">Liberar rodada para lanchonetes</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="pendencias-grid">
+            {% for rp in pendentes %}
+                <div class="pendencia-card">
+                    <div class="pendencia-card-head">
+                        <strong>{{ rp.produto.nome }}</strong>
+                        <span class="tag">{{ rp.produto.categoria }}</span>
+                    </div>
+                    <p>
+                        <strong>Subcategoria:</strong> {{ rp.produto.subcategoria or '—' }}<br>
+                        <strong>Unidade:</strong> {{ rp.produto.unidade }}<br>
+                        <strong>Preço de partida:</strong> {{ rp.preco_partida|brl if rp.preco_partida else '—' }}<br>
+                        <strong>Sugerido por:</strong> {{ rp.fornecedor_sugeriu.razao_social if rp.fornecedor_sugeriu else '—' }}
+                    </p>
+                    <div class="action-card-buttons">
+                        <form method="POST" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                            <button type="submit" name="acao" value="aprovar" class="btn btn-primary btn-sm">Aprovar</button>
+                        </form>
+                        <form method="POST" style="display:inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                            <button type="submit" name="acao" value="recusar" class="btn btn-danger btn-sm">Recusar</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div style="margin-top: 1.5rem;">
+            <p class="muted">Depois de decidir sobre todos, a rodada pode ser liberada.</p>
+            <form method="POST" action="{{ url_for('admin.rodada_liberar', rodada_id=rodada.id) }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary" disabled>
+                    Liberar rodada ({{ pendentes|length }} pendente(s))
+                </button>
+            </form>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

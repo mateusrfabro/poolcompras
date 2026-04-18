@@ -14,6 +14,12 @@
                         {% if rodada.status == 'preparando' %}Montar catálogo{% else %}Editar catálogo{% endif %}
                     </a>
                 {% endif %}
+                {% if pendentes_aprovacao > 0 %}
+                    <a href="{{ url_for('admin.rodada_aprovar_produtos', rodada_id=rodada.id) }}"
+                       class="btn btn-danger btn-sm">
+                        Aprovar produtos ({{ pendentes_aprovacao }})
+                    </a>
+                {% endif %}
                 <a href="{{ url_for('admin.rodada_detalhe_exportar', rodada_id=rodada.id) }}"
                    class="btn btn-outline btn-sm">Exportar CSV</a>
                 {% if rodada.status != 'cancelada' %}

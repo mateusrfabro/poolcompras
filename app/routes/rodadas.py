@@ -38,6 +38,17 @@ def detalhe(rodada_id):
 
     cotacoes = Cotacao.query.filter_by(rodada_id=rodada_id).all()
 
+    # Produtos sugeridos aguardando aprovacao (admin)
+    from app.models import RodadaProduto
+    pendentes_aprovacao = 0
+    if current_user.is_admin:
+        pendentes_aprovacao = (
+            RodadaProduto.query
+            .filter_by(rodada_id=rodada_id, aprovado=None)
+            .filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None))
+            .count()
+        )
+
     # Se lanchonete logada: mostra "Seu pedido" ao lado do total agregado
     meus_pedidos_map = {}
     if current_user.is_lanchonete and current_user.lanchonete:
@@ -54,6 +65,7 @@ def detalhe(rodada_id):
         agregado=agregado,
         cotacoes=cotacoes,
         meus_pedidos_map=meus_pedidos_map,
+        pendentes_aprovacao=pendentes_aprovacao,
     )
 
 
