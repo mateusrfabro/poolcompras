@@ -74,7 +74,20 @@
                 <strong class="countdown-text">{{ rodada_aberta.data_fechamento|countdown }}</strong>
                 <span class="muted">— Encerra em: {{ rodada_aberta.data_fechamento|datetime_br }}</span>
             </p>
-            <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Fazer pedido</a>
+            {% if participacao_atual and participacao_atual.pedido_aprovado_em %}
+                <span class="badge badge-finalizada">Pedido aprovado ✓</span>
+            {% elif participacao_atual and participacao_atual.pedido_reprovado_em %}
+                <span class="badge badge-cancelada">Pedido reprovado</span>
+            {% elif participacao_atual and participacao_atual.pedido_devolvido_em %}
+                <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Ajustar e reenviar</a>
+            {% elif participacao_atual and participacao_atual.pedido_enviado_em %}
+                <span class="badge badge-aguardando_aprovacao">Aguardando admin</span>
+                <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-outline btn-sm">Editar</a>
+            {% elif meus_pedidos %}
+                <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Atualizar pedido</a>
+            {% else %}
+                <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Fazer pedido</a>
+            {% endif %}
         </div>
 
         {% if meus_pedidos %}

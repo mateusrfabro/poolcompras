@@ -171,6 +171,19 @@ class ParticipacaoRodada(db.Model):
     rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
     lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), nullable=False, index=True)
 
+    # Fase: submissao do pedido (moderacao do admin)
+    # rascunho: pedido_enviado_em = NULL  (lanchonete ainda editando)
+    # enviado: pedido_enviado_em != NULL, aprovado_em = NULL, devolvido_em = NULL, reprovado_em = NULL
+    # aprovado: pedido_aprovado_em != NULL  (admin liberou pro pool da rodada)
+    # devolvido: pedido_devolvido_em != NULL  (lanchonete precisa ajustar e reenviar)
+    # reprovado: pedido_reprovado_em != NULL  (bloqueado)
+    pedido_enviado_em       = db.Column(db.DateTime)
+    pedido_aprovado_em      = db.Column(db.DateTime)
+    pedido_aprovado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    pedido_devolvido_em     = db.Column(db.DateTime)
+    pedido_motivo_devolucao = db.Column(db.String(500))
+    pedido_reprovado_em     = db.Column(db.DateTime)
+
     # Fase: aceite da proposta consolidada
     # null = pendente | True = aceitou | False = recusou
     aceite_proposta    = db.Column(db.Boolean)

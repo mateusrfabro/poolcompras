@@ -39,13 +39,22 @@ def detalhe(rodada_id):
     cotacoes = Cotacao.query.filter_by(rodada_id=rodada_id).all()
 
     # Produtos sugeridos aguardando aprovacao (admin)
-    from app.models import RodadaProduto
+    from app.models import RodadaProduto, ParticipacaoRodada
     pendentes_aprovacao = 0
+    pedidos_pendentes_moderacao = 0
     if current_user.is_admin:
         pendentes_aprovacao = (
             RodadaProduto.query
             .filter_by(rodada_id=rodada_id, aprovado=None)
             .filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None))
+            .count()
+        )
+        pedidos_pendentes_moderacao = (
+            ParticipacaoRodada.query
+            .filter_by(rodada_id=rodada_id)
+            .filter(ParticipacaoRodada.pedido_enviado_em.isnot(None))
+            .filter(ParticipacaoRodada.pedido_aprovado_em.is_(None))
+            .filter(ParticipacaoRodada.pedido_reprovado_em.is_(None))
             .count()
         )
 
@@ -66,6 +75,7 @@ def detalhe(rodada_id):
         cotacoes=cotacoes,
         meus_pedidos_map=meus_pedidos_map,
         pendentes_aprovacao=pendentes_aprovacao,
+        pedidos_pendentes_moderacao=pedidos_pendentes_moderacao,
     )
 
 

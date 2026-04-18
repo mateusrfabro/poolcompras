@@ -129,6 +129,9 @@
                         {% if r.status == 'aguardando_cotacao' %}
                             <a href="{{ url_for('fornecedor.cotar_catalogo', rodada_id=r.id) }}"
                                class="btn btn-sm btn-primary">Cotar preços</a>
+                        {% elif r.status == 'em_negociacao' %}
+                            <a href="{{ url_for('fornecedor.cotar_final', rodada_id=r.id) }}"
+                               class="btn btn-sm btn-primary">Cotação final</a>
                         {% else %}
                             <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=r.id) }}"
                                class="btn btn-sm btn-primary">Ver demanda</a>

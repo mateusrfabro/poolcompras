@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Moderar Pedidos — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada.id) }}" class="btn-back">Voltar para a rodada</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Moderar pedidos — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Aprove, devolva ou reprove os pedidos enviados pelas lanchonetes.
+                Apenas pedidos aprovados entram no pool agregado visível aos fornecedores.
+            </p>
+        </div>
+        <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
+    </div>
+
+    {# Pendentes de moderacao #}
+    <h3 class="section-title">
+        Aguardando moderação
+        <span class="tag">{{ enviados|length }}</span>
+    </h3>
+
+    {% if not enviados %}
+        <div class="card"><p class="muted">Nenhum pedido aguardando moderação no momento.</p></div>
+    {% else %}
+        {% for p in enviados %}
+            <div class="card" style="margin-bottom: 1rem;">
+                <div class="page-header">
+                    <div>
+                        <strong>{{ p.lanchonete.nome_fantasia if p.lanchonete else 'Lanchonete #' + p.lanchonete_id|string }}</strong>
+                        <br><span class="muted">Enviado em {{ p.pedido_enviado_em|datetime_br }}</span>
+                    </div>
+                </div>
+
+                {% set itens = itens_por_participacao.get(p.id, []) %}
+                {% if itens %}
+                    <div class="table-wrapper"><table class="table">
+                        <thead>
+                            <tr><th>Produto</th><th>Categoria</th><th>Subcategoria</th><th>Quantidade</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for i in itens %}
+                            <tr>
+                                <td>{{ i.produto.nome }}</td>
+                                <td>{{ i.produto.categoria }}</td>
+                                <td>{{ i.produto.subcategoria or '—' }}</td>
+                                <td>{{ i.quantidade|fmt_un(i.produto.unidade) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table></div>
+                {% else %}
+                    <p class="muted">Sem itens registrados.</p>
+                {% endif %}
+
+                <form method="POST" class="form-row" style="align-items: flex-end; gap: 0.5rem; margin-top: 1rem;">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="participacao_id" value="{{ p.id }}">
+
+                    <div class="form-group" style="flex: 1;">
+                        <label for="motivo_{{ p.id }}">Motivo (opcional — para devolver)</label>
+                        <input type="text" id="motivo_{{ p.id }}" name="motivo" placeholder="Ex: volume muito alto, produto X indisponivel...">
+                    </div>
+                    <button type="submit" name="acao" value="aprovar" class="btn btn-primary">Aprovar</button>
+                    <button type="submit" name="acao" value="devolver" class="btn btn-outline"
+                            onclick="return confirm('Devolver este pedido para a lanchonete ajustar?');">Devolver</button>
+                    <button type="submit" name="acao" value="reprovar" class="btn btn-outline"
+                            style="color: #c62828; border-color: #c62828;"
+                            onclick="return confirm('Reprovar este pedido? A lanchonete nao podera reenviar.');">Reprovar</button>
+                </form>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {# Aprovados #}
+    {% if aprovados %}
+        <h3 class="section-title" style="margin-top: 2rem;">
+            Aprovados <span class="tag">{{ aprovados|length }}</span>
+        </h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr><th>Lanchonete</th><th>Aprovado em</th><th>Itens</th><th></th></tr>
+            </thead>
+            <tbody>
+                {% for p in aprovados %}
+                <tr>
+                    <td>{{ p.lanchonete.nome_fantasia if p.lanchonete else p.lanchonete_id }}</td>
+                    <td>{{ p.pedido_aprovado_em|datetime_br }}</td>
+                    <td>{{ (itens_por_participacao.get(p.id) or [])|length }}</td>
+                    <td>
+                        <form method="POST" style="display: inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="hidden" name="participacao_id" value="{{ p.id }}">
+                            <button type="submit" name="acao" value="reverter" class="btn btn-outline btn-sm"
+                                    onclick="return confirm('Reverter aprovacao? Pedido volta a aguardar moderacao.');">
+                                Reverter aprovação
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    {% endif %}
+
+    {# Reprovados #}
+    {% if reprovados %}
+        <h3 class="section-title" style="margin-top: 2rem;">
+            Reprovados <span class="tag">{{ reprovados|length }}</span>
+        </h3>
+        <div class="table-wrapper"><table class="table">
+            <thead><tr><th>Lanchonete</th><th>Reprovado em</th></tr></thead>
+            <tbody>
+                {% for p in reprovados %}
+                <tr>
+                    <td>{{ p.lanchonete.nome_fantasia if p.lanchonete else p.lanchonete_id }}</td>
+                    <td>{{ p.pedido_reprovado_em|datetime_br }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    {% endif %}
+</div>
+{% endblock %}

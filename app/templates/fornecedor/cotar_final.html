@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Cotação final — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('fornecedor.dashboard') }}" class="btn-back">Voltar ao painel</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Cotação final — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Agora você conhece os <strong>volumes reais</strong> do pool.
+                Ajuste o preço final com base no volume — quanto maior, maior sua economia.
+            </p>
+        </div>
+        <span class="badge badge-em_negociacao badge-lg">Em negociação</span>
+    </div>
+
+    {% if not linhas %}
+        <div class="card"><p>Nenhuma demanda aprovada para este fornecedor nesta rodada.</p></div>
+    {% else %}
+        <form method="POST" class="form-card">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+            <div class="table-wrapper"><table class="table">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Subcategoria</th>
+                        <th>Volume</th>
+                        <th>Preço de partida</th>
+                        <th>Preço final (R$)</th>
+                        <th>Economia</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for l in linhas %}
+                    <tr>
+                        <td>
+                            <strong>{{ l.produto.nome }}</strong><br>
+                            <span class="muted" style="font-size: 0.8em;">{{ l.produto.categoria }}</span>
+                        </td>
+                        <td>{{ l.produto.subcategoria or '—' }}</td>
+                        <td><strong>{{ l.volume|fmt_un(l.produto.unidade) }}</strong></td>
+                        <td>
+                            {% if l.partida %}
+                                {{ l.partida|brl }}
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <input type="text" inputmode="numeric"
+                                   name="preco_final_{{ l.produto.id }}"
+                                   class="money-input"
+                                   placeholder="R$ 0,00"
+                                   value="{{ l.final if l.final is not none else '' }}"
+                                   style="width: 150px;">
+                        </td>
+                        <td>
+                            {% if l.economia_pct is not none %}
+                                <strong style="color: {% if l.economia_pct > 0 %}#2e7d32{% elif l.economia_pct < 0 %}#c62828{% else %}var(--gray-700){% endif %};">
+                                    {{ '%.1f'|format(l.economia_pct)|replace('.', ',') }}%
+                                </strong>
+                                <br><span class="muted" style="font-size: 0.85em;">
+                                    {{ l.economia_rs|brl }} total
+                                </span>
+                            {% else %}
+                                <span class="muted">—</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table></div>
+
+            <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">
+                Salvar cotação final
+            </button>
+        </form>
+    {% endif %}
+</div>
+<script src="{{ url_for('static', filename='js/money-mask.js') }}"></script>
+{% endblock %}

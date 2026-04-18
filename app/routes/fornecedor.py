@@ -30,9 +30,9 @@ def fornecedor_required(f):
 def dashboard():
     fornecedor = current_user.fornecedor
 
-    # Rodadas prontas para cotação (novo fluxo: aguardando_cotacao; legado: fechada/cotando)
+    # Rodadas prontas para cotação (aguardando_cotacao=partida; em_negociacao=cotacao final; legado: fechada/cotando)
     rodadas_para_cotar = Rodada.query.filter(
-        Rodada.status.in_(["aguardando_cotacao", "fechada", "cotando"])
+        Rodada.status.in_(["aguardando_cotacao", "em_negociacao", "fechada", "cotando"])
     ).order_by(Rodada.data_fechamento.desc()).all()
 
     # Cotações já enviadas por este fornecedor
@@ -175,7 +175,8 @@ def dashboard():
 def ver_demanda(rodada_id):
     rodada = Rodada.query.get_or_404(rodada_id)
 
-    # Demanda agregada — sem mostrar quais lanchonetes pediram
+    # Demanda agregada — SOMENTE pedidos aprovados pelo admin
+    # (pedidos rascunho/enviados/devolvidos/reprovados sao invisiveis pro fornecedor)
     agregado = (
         db.session.query(
             Produto.id,
@@ -185,7 +186,11 @@ def ver_demanda(rodada_id):
             func.sum(ItemPedido.quantidade).label("total_quantidade"),
         )
         .join(ItemPedido, ItemPedido.produto_id == Produto.id)
+        .join(ParticipacaoRodada,
+              (ParticipacaoRodada.rodada_id == ItemPedido.rodada_id) &
+              (ParticipacaoRodada.lanchonete_id == ItemPedido.lanchonete_id))
         .filter(ItemPedido.rodada_id == rodada_id)
+        .filter(ParticipacaoRodada.pedido_aprovado_em.isnot(None))
         .group_by(Produto.id, Produto.nome, Produto.categoria, Produto.unidade)
         .order_by(Produto.categoria, Produto.nome)
         .all()
@@ -204,6 +209,120 @@ def ver_demanda(rodada_id):
         rodada=rodada,
         agregado=agregado,
         minhas_cotacoes=minhas,
+    )
+
+
+@fornecedor_bp.route("/rodada/<int:rodada_id>/cotacao-final", methods=["GET", "POST"])
+@login_required
+@fornecedor_required
+def cotar_final(rodada_id):
+    """Tela onde o fornecedor fecha o preco FINAL com base nos volumes reais agregados.
+    Disponivel quando rodada.status == 'em_negociacao'. Mostra lado a lado:
+    preco de partida, preco final (input), e economia calculada.
+    """
+    rodada = Rodada.query.get_or_404(rodada_id)
+    if rodada.status != "em_negociacao":
+        flash("Esta rodada nao esta em fase de negociacao.", "warning")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    fornecedor = current_user.fornecedor
+    if not fornecedor:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    # Volumes agregados (SOMENTE aprovados pelo admin)
+    volumes = dict(
+        db.session.query(
+            ItemPedido.produto_id,
+            func.sum(ItemPedido.quantidade),
+        )
+        .join(ParticipacaoRodada,
+              (ParticipacaoRodada.rodada_id == ItemPedido.rodada_id) &
+              (ParticipacaoRodada.lanchonete_id == ItemPedido.lanchonete_id))
+        .filter(ItemPedido.rodada_id == rodada_id)
+        .filter(ParticipacaoRodada.pedido_aprovado_em.isnot(None))
+        .group_by(ItemPedido.produto_id)
+        .all()
+    )
+
+    # Precos de partida deste fornecedor na rodada
+    rodada_produtos = (
+        RodadaProduto.query
+        .filter_by(rodada_id=rodada_id)
+        .filter((RodadaProduto.aprovado.is_(None))
+                | (RodadaProduto.aprovado.is_(True)))
+        .join(Produto)
+        .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
+        .all()
+    )
+
+    # Cotacoes finais ja enviadas (pra preencher o form)
+    cotacoes_existentes = {
+        c.produto_id: c for c in Cotacao.query.filter_by(
+            rodada_id=rodada_id, fornecedor_id=fornecedor.id,
+        ).all()
+    }
+
+    if request.method == "POST":
+        count = 0
+        for rp in rodada_produtos:
+            pid = rp.produto_id
+            if pid not in volumes:  # so cota o que foi pedido
+                continue
+            preco_str = request.form.get(f"preco_final_{pid}", "").strip()
+            if not preco_str:
+                continue
+            try:
+                preco_final = float(preco_str.replace(",", "."))
+            except ValueError:
+                continue
+            if preco_final <= 0:
+                continue
+
+            existente = cotacoes_existentes.get(pid)
+            if existente:
+                existente.preco_unitario = preco_final
+            else:
+                db.session.add(Cotacao(
+                    rodada_id=rodada_id,
+                    fornecedor_id=fornecedor.id,
+                    produto_id=pid,
+                    preco_unitario=preco_final,
+                ))
+            count += 1
+
+        db.session.commit()
+        flash(f"Cotacao final salva. {count} preco(s) enviado(s).", "success")
+        return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
+
+    # Monta linhas pra tela: so produtos que tiveram demanda
+    linhas = []
+    for rp in rodada_produtos:
+        pid = rp.produto_id
+        if pid not in volumes:
+            continue
+        partida = float(rp.preco_partida) if rp.preco_partida else None
+        cot = cotacoes_existentes.get(pid)
+        final = float(cot.preco_unitario) if cot else None
+        economia_pct = None
+        economia_rs = None
+        if partida and final and partida > 0:
+            economia_pct = round((partida - final) / partida * 100, 1)
+            economia_rs = round((partida - final) * float(volumes[pid]), 2)
+        linhas.append({
+            "rodada_produto": rp,
+            "produto": rp.produto,
+            "volume": float(volumes[pid]),
+            "partida": partida,
+            "final": final,
+            "economia_pct": economia_pct,
+            "economia_rs": economia_rs,
+        })
+
+    return render_template(
+        "fornecedor/cotar_final.html",
+        rodada=rodada,
+        linhas=linhas,
     )
 
 

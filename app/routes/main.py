@@ -63,6 +63,12 @@ def dashboard():
     lanchonete = current_user.lanchonete
     rodada_aberta = Rodada.query.filter_by(status="aberta").first()
 
+    participacao_atual = None
+    if rodada_aberta and lanchonete:
+        participacao_atual = ParticipacaoRodada.query.filter_by(
+            rodada_id=rodada_aberta.id, lanchonete_id=lanchonete.id
+        ).first()
+
     meus_pedidos = []
     if rodada_aberta and lanchonete:
         meus_pedidos = (
@@ -171,4 +177,5 @@ def dashboard():
         kpis=kpis,
         pendencias=pendencias,
         ultimas_rodadas=ultimas_rodadas,
+        participacao_atual=participacao_atual,
     )

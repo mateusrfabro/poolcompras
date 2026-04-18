@@ -1,8 +1,9 @@
+from datetime import datetime
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import Produto, Rodada, ItemPedido, RodadaProduto
+from app.models import Produto, Rodada, ItemPedido, RodadaProduto, ParticipacaoRodada
 from app.services.csv_export import csv_response
 
 pedidos_bp = Blueprint("pedidos", __name__, url_prefix="/pedidos")
@@ -91,7 +92,23 @@ def catalogo():
         .all()
     )
 
+    # ParticipacaoRodada da lanchonete (pra saber status do pedido)
+    participacao = ParticipacaoRodada.query.filter_by(
+        rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+    ).first()
+
+    # Bloqueia edicao se pedido ja esta aprovado ou reprovado
+    pedido_bloqueado = participacao and (
+        participacao.pedido_aprovado_em is not None or
+        participacao.pedido_reprovado_em is not None
+    )
+
     if request.method == "POST":
+        if pedido_bloqueado:
+            flash("Pedido ja foi moderado pelo admin e nao pode mais ser editado.", "error")
+            return redirect(url_for("pedidos.catalogo"))
+
+        acao = request.form.get("acao", "salvar")
         count_add = 0
         count_upd = 0
         count_del = 0
@@ -124,9 +141,38 @@ def catalogo():
                 db.session.delete(existente)
                 count_del += 1
 
+        # Garante ParticipacaoRodada (cria no primeiro save)
+        if not participacao:
+            participacao = ParticipacaoRodada(
+                rodada_id=rodada.id,
+                lanchonete_id=lanchonete.id,
+            )
+            db.session.add(participacao)
+            db.session.flush()
+
+        if acao == "enviar":
+            # Exige pelo menos 1 item no pedido
+            total_itens = ItemPedido.query.filter_by(
+                rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+            ).count() + count_add - count_del
+            if total_itens <= 0:
+                db.session.rollback()
+                flash("Voce precisa escolher ao menos 1 item antes de enviar o pedido.", "error")
+                return redirect(url_for("pedidos.catalogo"))
+
+            participacao.pedido_enviado_em = datetime.utcnow()
+            # Se estava devolvido, limpa pra nova avaliacao
+            participacao.pedido_devolvido_em = None
+            participacao.pedido_motivo_devolucao = None
+            db.session.commit()
+            flash("Pedido enviado para aprovacao do admin.", "success")
+            return redirect(url_for("main.dashboard"))
+
+        # Acao = salvar (rascunho)
         db.session.commit()
         flash(
-            f"Pedido salvo! {count_add} novos, {count_upd} atualizados, {count_del} removidos.",
+            f"Pedido salvo (rascunho). {count_add} novos, {count_upd} atualizados, {count_del} removidos. "
+            "Clique em 'Enviar pedido' quando quiser submeter para o admin.",
             "success",
         )
         return redirect(url_for("pedidos.catalogo"))
@@ -156,6 +202,8 @@ def catalogo():
         meus_pedidos=meus_pedidos,
         categorias=categorias,
         total_itens=len(meus_pedidos),
+        participacao=participacao,
+        pedido_bloqueado=pedido_bloqueado,
     )
 
 

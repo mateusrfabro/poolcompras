@@ -21,6 +21,10 @@
                     </a>
                 {% endif %}
                 {% if rodada.status == 'aberta' %}
+                    <a href="{{ url_for('admin.moderar_pedidos', rodada_id=rodada.id) }}"
+                       class="btn btn-outline btn-sm">
+                        Moderar pedidos{% if pedidos_pendentes_moderacao %} ({{ pedidos_pendentes_moderacao }}){% endif %}
+                    </a>
                     <form method="POST" action="{{ url_for('admin.rodada_encerrar_coleta', rodada_id=rodada.id) }}"
                           style="display:inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
