@@ -3,7 +3,7 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from sqlalchemy import func
 from app import db
-from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada
+from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada, RodadaProduto
 
 rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")
 
@@ -45,7 +45,6 @@ def detalhe(rodada_id):
     cotacoes = Cotacao.query.filter_by(rodada_id=rodada_id).all()
 
     # Produtos sugeridos aguardando aprovacao (admin)
-    from app.models import RodadaProduto, ParticipacaoRodada
     pendentes_aprovacao = 0
     pedidos_pendentes_moderacao = 0
     if current_user.is_admin:

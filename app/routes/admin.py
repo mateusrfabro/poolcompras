@@ -9,6 +9,7 @@ from app import db
 from app.models import (
     Produto, Rodada, Fornecedor, Lanchonete,
     ParticipacaoRodada, AvaliacaoRodada, ItemPedido, Cotacao, RodadaProduto,
+    EventoRodada,
 )
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
@@ -281,7 +282,6 @@ def rodada_catalogo(rodada_id):
 def rodada_fechar(rodada_id):
     rodada = Rodada.query.get_or_404(rodada_id)
     rodada.status = "fechada"
-    from app.models import EventoRodada
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo=EventoRodada.TIPO_RODADA_FECHADA,
@@ -303,7 +303,6 @@ def rodada_encerrar_coleta(rodada_id):
         flash("Só é possível encerrar coleta de rodadas abertas.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
     rodada.status = "em_negociacao"
-    from app.models import EventoRodada
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo="rodada_em_negociacao",
@@ -346,7 +345,6 @@ def rodada_finalizar(rodada_id):
                     selecionada=True,
                 ))
     rodada.status = "finalizada"
-    from app.models import EventoRodada
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo="rodada_finalizada",
@@ -367,7 +365,6 @@ def rodada_cancelar(rodada_id):
         flash("Esta rodada já foi cancelada.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
     rodada.status = "cancelada"
-    from app.models import EventoRodada
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo=EventoRodada.TIPO_RODADA_CANCELADA,
@@ -563,7 +560,6 @@ def analytics():
 def rodada_detalhe_exportar(rodada_id):
     """Exporta demanda agregada + cotações da rodada em CSV pra admin."""
     from sqlalchemy import func
-    from app.models import ItemPedido
 
     rodada = Rodada.query.get_or_404(rodada_id)
 
@@ -586,8 +582,6 @@ def rodada_detalhe_exportar(rodada_id):
         .order_by(Produto.categoria, Produto.nome)
         .all()
     )
-
-    from app.models import Cotacao
     cotacoes = (
         Cotacao.query
         .filter_by(rodada_id=rodada_id)

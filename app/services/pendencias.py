@@ -5,7 +5,7 @@ pra evitar duplicacao entre dashboard, historico e notificacoes.
 """
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import ParticipacaoRodada, Rodada
+from app.models import ParticipacaoRodada, Rodada, Cotacao
 
 
 def pendencias_lanchonete(lanchonete_id):
@@ -52,8 +52,6 @@ def pendencias_fornecedor(fornecedor_id):
 
     Cada bloco: {'rodada': Rodada, 'aguardando_pagamento': [...], 'aguardando_entrega': [...]}
     """
-    from app.models import Cotacao
-
     rodadas_cotadas_ids = [
         r for (r,) in db.session.query(Cotacao.rodada_id)
             .filter_by(fornecedor_id=fornecedor_id)
