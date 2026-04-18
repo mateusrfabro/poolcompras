@@ -17,7 +17,8 @@
                 <small style="color: var(--gray-500);">Demanda: {{ qtds.get(produto.id, 0) }} {{ produto.unidade }}</small>
             </div>
             <div class="form-group" style="flex:1">
-                <input type="number" name="preco_{{ produto.id }}" step="0.01" min="0" placeholder="R$">
+                <input type="text" inputmode="numeric" name="preco_{{ produto.id }}"
+                       class="money-input" placeholder="R$ 0,00">
             </div>
         </div>
         {% endfor %}
@@ -26,4 +27,5 @@
     </form>
 
 </div>
+<script src="{{ url_for('static', filename='js/money-mask.js') }}"></script>
 {% endblock %}

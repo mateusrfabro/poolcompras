@@ -3,11 +3,14 @@
 
 {% block content %}
 <div class="page">
-    <a href="{{ url_for('fornecedor.dashboard') }}" class="btn-back">Voltar para o painel</a>
-
     <div class="page-header">
         <h2>Meu Desempenho</h2>
         <p class="page-sub">Indicadores de <strong>{{ fornecedor.razao_social }}</strong> no PoolCompras.</p>
+    </div>
+
+    <div class="sub-nav">
+        <a href="{{ url_for('fornecedor.dashboard') }}" class="sub-nav-item">Painel</a>
+        <a href="{{ url_for('fornecedor.analytics') }}" class="sub-nav-item sub-nav-active">Meu Desempenho</a>
     </div>
 
     <div class="stats-grid">

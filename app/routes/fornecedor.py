@@ -86,6 +86,77 @@ def dashboard():
         for p in (bloco["aguardando_pagamento"] + bloco["aguardando_entrega"])
     ]
 
+    # KPIs rapidos (mesmos da tela "Meu Desempenho", mas condensados)
+    kpis = None
+    if fornecedor:
+        fid = fornecedor.id
+        total_cot = Cotacao.query.filter_by(fornecedor_id=fid).count()
+        vencedoras = Cotacao.query.filter_by(fornecedor_id=fid, selecionada=True).count()
+        taxa_vitoria = round(vencedoras / total_cot * 100, 1) if total_cot else 0
+        media_recebida = (
+            db.session.query(func.avg(AvaliacaoRodada.estrelas))
+            .filter(AvaliacaoRodada.fornecedor_id == fid)
+            .scalar()
+        )
+        media_recebida = round(float(media_recebida), 1) if media_recebida else 0
+        # Rodadas aguardando cotacao que ainda nao cotei
+        rodadas_a_cotar_ids = [r.id for r in rodadas_para_cotar if r.status == "aguardando_cotacao"]
+        ja_cotei_nestas = set()
+        if rodadas_a_cotar_ids:
+            ja_cotei_nestas = {
+                r for (r,) in db.session.query(Cotacao.rodada_id)
+                    .filter(Cotacao.fornecedor_id == fid)
+                    .filter(Cotacao.rodada_id.in_(rodadas_a_cotar_ids))
+                    .distinct().all()
+            }
+        cotacoes_pendentes = len([r for r in rodadas_a_cotar_ids if r not in ja_cotei_nestas])
+
+        kpis = {
+            "cotacoes_pendentes": cotacoes_pendentes,
+            "taxa_vitoria": taxa_vitoria,
+            "media_recebida": media_recebida,
+            "participacoes_pendentes": len(participacoes_pendentes),
+        }
+
+    # Ultimas 3 rodadas que cotei (com preview: total cotado + vitorias)
+    ultimas_rodadas = []
+    if fornecedor:
+        rodadas_cotadas = (
+            db.session.query(Rodada)
+            .join(Cotacao, Cotacao.rodada_id == Rodada.id)
+            .filter(Cotacao.fornecedor_id == fornecedor.id)
+            .group_by(Rodada.id)
+            .order_by(Rodada.data_abertura.desc())
+            .limit(3)
+            .all()
+        )
+        for r in rodadas_cotadas:
+            total_cotado = (
+                db.session.query(func.count(Cotacao.id))
+                .filter(Cotacao.rodada_id == r.id, Cotacao.fornecedor_id == fornecedor.id)
+                .scalar()
+            ) or 0
+            vitorias = (
+                db.session.query(func.count(Cotacao.id))
+                .filter(Cotacao.rodada_id == r.id,
+                        Cotacao.fornecedor_id == fornecedor.id,
+                        Cotacao.selecionada.is_(True))
+                .scalar()
+            ) or 0
+            # Nota que recebeu nessa rodada
+            nota = (
+                db.session.query(func.avg(AvaliacaoRodada.estrelas))
+                .filter(AvaliacaoRodada.rodada_id == r.id,
+                        AvaliacaoRodada.fornecedor_id == fornecedor.id)
+                .scalar()
+            )
+            ultimas_rodadas.append({
+                "rodada": r,
+                "cotacoes": total_cotado,
+                "vitorias": vitorias,
+                "nota": round(float(nota), 1) if nota else None,
+            })
+
     return render_template(
         "fornecedor/dashboard.html",
         fornecedor=fornecedor,
@@ -93,6 +164,8 @@ def dashboard():
         minhas_cotacoes=minhas_cotacoes,
         participacoes_pendentes=participacoes_pendentes,
         pendencias_por_rodada=pendencias_por_rodada,
+        kpis=kpis,
+        ultimas_rodadas=ultimas_rodadas,
     )
 
 

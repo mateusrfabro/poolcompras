@@ -8,16 +8,55 @@
         <p class="subtitle">{{ fornecedor.razao_social }}</p>
     {% endif %}
 
+    <div class="sub-nav">
+        <a href="{{ url_for('fornecedor.dashboard') }}" class="sub-nav-item sub-nav-active">Painel</a>
+        <a href="{{ url_for('fornecedor.analytics') }}" class="sub-nav-item">Meu Desempenho</a>
+    </div>
+
+    {# KPIs rapidos #}
+    {% if kpis %}
+        <div class="stats-grid">
+            <div class="stat-card {% if kpis.cotacoes_pendentes > 0 %}stat-card-primary{% endif %}">
+                <span class="stat-number">{{ kpis.cotacoes_pendentes }}</span>
+                <span class="stat-label">Cotações pendentes</span>
+                {% if kpis.cotacoes_pendentes > 0 %}
+                    <span class="stat-hint">Aguardando seu preço</span>
+                {% else %}
+                    <span class="stat-hint">Tudo em dia</span>
+                {% endif %}
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ kpis.participacoes_pendentes }}</span>
+                <span class="stat-label">Ações pendentes</span>
+                <span class="stat-hint">Pagamentos/entregas</span>
+            </div>
+            <div class="stat-card stat-card-success">
+                <span class="stat-number">{{ kpis.taxa_vitoria }}%</span>
+                <span class="stat-label">Taxa de vitória</span>
+                <span class="stat-hint">Cotações escolhidas</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number">{{ kpis.media_recebida }}</span>
+                <span class="stat-label">Nota média recebida</span>
+                <span class="stat-hint">
+                    <span class="stars-readonly">
+                        {% for i in range(1, 6) %}{% if i <= kpis.media_recebida|round %}★{% else %}☆{% endif %}{% endfor %}
+                    </span>
+                </span>
+            </div>
+        </div>
+    {% endif %}
+
     {# Acoes pendentes AGRUPADAS POR RODADA (nao mais por lanchonete individual) #}
     {% if pendencias_por_rodada %}
         <h3>Ações pendentes</h3>
         <p class="subtitle">Rodadas esperando sua ação.</p>
         <div class="pendencias-grid">
             {% for bloco in pendencias_por_rodada %}
-                <div class="pendencia-card">
+                <div class="pendencia-card {% if bloco.rodada.data_fechamento|urgente %}pendencia-urgente{% endif %}">
                     <div class="pendencia-card-head">
                         <strong><a href="{{ url_for('fornecedor.ver_demanda', rodada_id=bloco.rodada.id) }}">{{ bloco.rodada.nome }}</a></strong>
-                        <span class="muted">{{ bloco.rodada.data_fechamento.strftime('%d/%m/%Y') }}</span>
+                        <span class="countdown-text">{{ bloco.rodada.data_fechamento|countdown }}</span>
                     </div>
 
                     {% if bloco.aguardando_pagamento %}
@@ -79,9 +118,12 @@
             </thead>
             <tbody>
                 {% for r in rodadas_para_cotar %}
-                <tr>
+                <tr {% if r.data_fechamento|urgente %}class="row-urgent"{% endif %}>
                     <td>{{ r.nome }}</td>
-                    <td>{{ r.data_fechamento.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <strong>{{ r.data_fechamento|countdown }}</strong>
+                        <br><span class="muted" style="font-size: 0.8em;">{{ r.data_fechamento.strftime('%d/%m/%Y') }}</span>
+                    </td>
                     <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
                     <td>
                         {% if r.status == 'aguardando_cotacao' %}
@@ -100,6 +142,31 @@
         <div class="card">
             <h3>Nenhuma rodada aberta para cotação</h3>
             <p>Quando as lanchonetes finalizarem os pedidos, você será notificado para enviar seus preços.</p>
+        </div>
+    {% endif %}
+
+    {% if ultimas_rodadas %}
+        <h3 class="section-title">Últimas rodadas</h3>
+        <div class="ultimas-rodadas-grid">
+            {% for u in ultimas_rodadas %}
+                <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=u.rodada.id) }}" class="ultima-rodada-card">
+                    <div class="ultima-rodada-nome">{{ u.rodada.nome }}</div>
+                    <div class="ultima-rodada-data">{{ u.rodada.data_abertura.strftime('%d/%m/%Y') }}</div>
+                    <div class="ultima-rodada-preview">
+                        <strong>{{ u.vitorias }}/{{ u.cotacoes }}</strong>
+                        <span class="muted">cotações escolhidas</span>
+                    </div>
+                    {% if u.nota %}
+                        <div class="ultima-rodada-preview">
+                            <span class="stars-readonly">
+                                {% for i in range(1, 6) %}{% if i <= u.nota|round %}★{% else %}☆{% endif %}{% endfor %}
+                            </span>
+                            <span class="muted">nota recebida</span>
+                        </div>
+                    {% endif %}
+                    <span class="badge badge-{{ u.rodada.status }}">{{ u.rodada.status|status_label }}</span>
+                </a>
+            {% endfor %}
         </div>
     {% endif %}
 

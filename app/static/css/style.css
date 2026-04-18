@@ -169,6 +169,49 @@ body {
     margin-bottom: 1.5rem;
 }
 .card-highlight { border-left: 4px solid var(--primary); }
+
+/* === Urgencia visual (deadline hoje/amanha) === */
+.countdown-text {
+    color: var(--primary);
+    font-weight: 600;
+}
+.card-urgent {
+    border-left-color: #e53935 !important;
+    background: #fff5f5;
+}
+.card-urgent .countdown-text { color: #c62828; }
+.pendencia-urgente {
+    border-left: 4px solid #e53935;
+    background: #fff5f5;
+}
+.pendencia-urgente .countdown-text { color: #c62828; font-weight: 700; }
+.pendencia-media { border-left: 4px solid #fb8c00; }
+.row-urgent { background: #fff5f5; }
+.row-urgent td strong { color: #c62828; }
+.tag-urgent {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #e53935;
+    color: #fff;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    animation: pulse-urgent 1.8s ease-in-out infinite;
+}
+@keyframes pulse-urgent {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.05); opacity: 0.85; }
+}
+.ultima-rodada-preview {
+    font-size: 0.85rem;
+    margin: 0.3rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.ultima-rodada-preview strong { color: var(--gray-900); }
 .card-actions {
     display: flex;
     gap: 0.8rem;

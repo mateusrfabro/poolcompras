@@ -8,6 +8,11 @@
         <p class="subtitle">{{ lanchonete.nome_fantasia }} &mdash; {{ lanchonete.bairro or "Londrina" }}</p>
     {% endif %}
 
+    <div class="sub-nav">
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item sub-nav-active">Painel</a>
+        <a href="{{ url_for('historico.analytics') }}" class="sub-nav-item">Meu Resumo</a>
+    </div>
+
     {# KPIs rápidos #}
     {% if kpis %}
         <div class="stats-grid">
@@ -46,9 +51,12 @@
         <h3 class="section-title">Ações pendentes</h3>
         <div class="pendencias-grid">
             {% for p in pendencias %}
-                <div class="pendencia-card">
+                <div class="pendencia-card {% if p.urgencia == 'alta' %}pendencia-urgente{% elif p.urgencia == 'media' %}pendencia-media{% endif %}">
                     <div class="pendencia-card-head">
                         <strong>{{ p.rodada.nome }}</strong>
+                        {% if p.urgencia == 'alta' %}
+                            <span class="tag tag-urgent">Urgente</span>
+                        {% endif %}
                     </div>
                     <p>{{ p.acao }}</p>
                     <a href="{{ url_for('historico.detalhe', rodada_id=p.rodada.id) }}"
@@ -60,9 +68,12 @@
 
     {# Rodada aberta #}
     {% if rodada_aberta %}
-        <div class="card card-highlight">
+        <div class="card card-highlight {% if rodada_aberta.data_fechamento|urgente %}card-urgent{% endif %}">
             <h3>Rodada aberta: {{ rodada_aberta.nome }}</h3>
-            <p>Fecha em: {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</p>
+            <p>
+                <strong class="countdown-text">{{ rodada_aberta.data_fechamento|countdown }}</strong>
+                <span class="muted">— {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</span>
+            </p>
             <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Fazer pedido</a>
         </div>
 
@@ -103,11 +114,25 @@
     {% if ultimas_rodadas %}
         <h3 class="section-title">Últimas rodadas</h3>
         <div class="ultimas-rodadas-grid">
-            {% for r in ultimas_rodadas %}
-                <a href="{{ url_for('historico.detalhe', rodada_id=r.id) }}" class="ultima-rodada-card">
-                    <div class="ultima-rodada-nome">{{ r.nome }}</div>
-                    <div class="ultima-rodada-data">{{ r.data_abertura.strftime('%d/%m/%Y') }}</div>
-                    <span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span>
+            {% for u in ultimas_rodadas %}
+                <a href="{{ url_for('historico.detalhe', rodada_id=u.rodada.id) }}" class="ultima-rodada-card">
+                    <div class="ultima-rodada-nome">{{ u.rodada.nome }}</div>
+                    <div class="ultima-rodada-data">{{ u.rodada.data_abertura.strftime('%d/%m/%Y') }}</div>
+                    {% if u.total > 0 %}
+                        <div class="ultima-rodada-preview">
+                            <strong>{{ u.total|brl }}</strong>
+                            <span class="muted">gasto</span>
+                        </div>
+                    {% endif %}
+                    {% if u.nota %}
+                        <div class="ultima-rodada-preview">
+                            <span class="stars-readonly">
+                                {% for i in range(1, 6) %}{% if i <= u.nota %}★{% else %}☆{% endif %}{% endfor %}
+                            </span>
+                            <span class="muted">sua avaliação</span>
+                        </div>
+                    {% endif %}
+                    <span class="badge badge-{{ u.rodada.status }}">{{ u.rodada.status|status_label }}</span>
                 </a>
             {% endfor %}
         </div>

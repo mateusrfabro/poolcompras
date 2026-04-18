@@ -9,7 +9,8 @@
         <div>
             <h2>Catálogo — {{ rodada.nome }}</h2>
             <p class="page-sub">
-                Fecha em {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}.
+                <strong class="countdown-text">{{ rodada.data_fechamento|countdown }}</strong>
+                <span class="muted">({{ rodada.data_fechamento.strftime('%d/%m/%Y') }})</span>.
                 Marque a quantidade de cada produto que você precisa (deixe em branco ou 0 pra não pedir).
             </p>
         </div>

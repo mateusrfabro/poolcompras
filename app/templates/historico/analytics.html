@@ -3,13 +3,16 @@
 
 {% block content %}
 <div class="page">
-    <a href="{{ url_for('historico.listar') }}" class="btn-back">Voltar para Minhas Rodadas</a>
-
     <div class="page-header">
         <div>
             <h2>Meu Resumo</h2>
             <p class="page-sub">Indicadores de <strong>{{ lanchonete.nome_fantasia }}</strong> no PoolCompras.</p>
         </div>
+    </div>
+
+    <div class="sub-nav">
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item">Painel</a>
+        <a href="{{ url_for('historico.analytics') }}" class="sub-nav-item sub-nav-active">Meu Resumo</a>
     </div>
 
     <div class="stats-grid">

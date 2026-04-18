@@ -191,4 +191,49 @@ def create_app(config_name="default"):
             un_fmt = PLURAIS.get(unidade.lower(), unidade + "s")
         return f"{num} {un_fmt}"
 
+    # Filter: tempo restante humanizado ("em 3h45min", "em 2 dias", "hoje", "encerrada")
+    @app.template_filter("countdown")
+    def format_countdown(data):
+        from datetime import datetime, date, time as dtime
+        if data is None:
+            return "—"
+        agora = datetime.utcnow()
+        # Se vier date, considera fim do dia (23:59)
+        if isinstance(data, datetime):
+            alvo = data
+        elif isinstance(data, date):
+            alvo = datetime.combine(data, dtime(23, 59))
+        else:
+            return "—"
+        delta = alvo - agora
+        total_seg = int(delta.total_seconds())
+        if total_seg <= 0:
+            return "Encerrada"
+        dias = total_seg // 86400
+        horas = (total_seg % 86400) // 3600
+        minutos = (total_seg % 3600) // 60
+        if dias >= 2:
+            return f"Fecha em {dias} dias"
+        if dias == 1:
+            return f"Fecha em 1 dia e {horas}h"
+        if horas >= 1:
+            return f"Fecha em {horas}h{minutos:02d}min"
+        return f"Fecha em {minutos}min"
+
+    # Filter: booleano de urgencia (prazo hoje ou amanha)
+    @app.template_filter("urgente")
+    def is_urgente(data):
+        from datetime import datetime, date, time as dtime
+        if data is None:
+            return False
+        agora = datetime.utcnow()
+        if isinstance(data, datetime):
+            alvo = data
+        elif isinstance(data, date):
+            alvo = datetime.combine(data, dtime(23, 59))
+        else:
+            return False
+        delta = alvo - agora
+        return 0 < delta.total_seconds() <= 86400  # <= 24h
+
     return app
