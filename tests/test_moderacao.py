@@ -219,3 +219,94 @@ def test_admin_produto_historico_precos_renderiza(app, client_admin):
     pid = Produto.query.first().id
     r = client_admin.get(f"/admin/produtos/{pid}/historico-precos")
     assert r.status_code == 200
+
+
+# ------- Fluxo aprovacao cotacao final (SubmissaoCotacao) -------
+
+def _prepara_rodada_em_negociacao():
+    """Move rodada pra em_negociacao + cria participacao aprovada + catalogo."""
+    from app.models import SubmissaoCotacao
+    rodada = Rodada.query.first()
+    produto = Produto.query.first()
+    lanch = Lanchonete.query.filter_by(nome_fantasia="Lanch A").first()
+    forn = Fornecedor.query.first()
+
+    # Ajusta preco_partida do catalogo
+    rp = RodadaProduto.query.filter_by(rodada_id=rodada.id, produto_id=produto.id).first()
+    if rp:
+        rp.preco_partida = 20.00
+
+    # Cria ItemPedido aprovado
+    db.session.add(ItemPedido(
+        rodada_id=rodada.id, lanchonete_id=lanch.id,
+        produto_id=produto.id, quantidade=10,
+    ))
+    db.session.add(ParticipacaoRodada(
+        rodada_id=rodada.id, lanchonete_id=lanch.id,
+        pedido_enviado_em=datetime.utcnow(),
+        pedido_aprovado_em=datetime.utcnow(),
+    ))
+    rodada.status = "em_negociacao"
+    db.session.commit()
+    return rodada.id, forn.id
+
+
+def test_fornecedor_envia_cotacao_final_cria_submissao(app, client_forn):
+    """POST Enviar cotacao deve criar SubmissaoCotacao com enviada_em."""
+    from app.models import SubmissaoCotacao
+    rodada_id, forn_id = _prepara_rodada_em_negociacao()
+    produto_id = Produto.query.first().id
+
+    token = _get_csrf(client_forn, f"/fornecedor/rodada/{rodada_id}/cotacao-final")
+    r = client_forn.post(f"/fornecedor/rodada/{rodada_id}/cotacao-final", data={
+        "csrf_token": token,
+        f"preco_final_{produto_id}": "18.00",
+        "acao": "enviar",
+    }, follow_redirects=False)
+    assert r.status_code in (200, 302)
+
+    sub = SubmissaoCotacao.query.filter_by(rodada_id=rodada_id, fornecedor_id=forn_id).first()
+    assert sub is not None, "SubmissaoCotacao nao foi criada"
+    assert sub.enviada_em is not None
+    assert sub.aprovada_em is None
+
+
+def test_admin_aprova_cotacao_final(app, client_admin):
+    from app.models import SubmissaoCotacao
+    rodada_id, forn_id = _prepara_rodada_em_negociacao()
+    sub = SubmissaoCotacao(
+        rodada_id=rodada_id, fornecedor_id=forn_id,
+        enviada_em=datetime.utcnow(),
+    )
+    db.session.add(sub)
+    db.session.commit()
+    sub_id = sub.id
+
+    token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/aprovar-cotacoes")
+    client_admin.post(f"/admin/rodadas/{rodada_id}/aprovar-cotacoes", data={
+        "csrf_token": token, "submissao_id": sub_id, "acao": "aprovar",
+    })
+
+    sub = db.session.get(SubmissaoCotacao, sub_id)
+    assert sub.aprovada_em is not None
+
+
+def test_admin_devolve_cotacao_final(app, client_admin):
+    from app.models import SubmissaoCotacao
+    rodada_id, forn_id = _prepara_rodada_em_negociacao()
+    sub = SubmissaoCotacao(
+        rodada_id=rodada_id, fornecedor_id=forn_id,
+        enviada_em=datetime.utcnow(),
+    )
+    db.session.add(sub)
+    db.session.commit()
+    sub_id = sub.id
+
+    token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/aprovar-cotacoes")
+    client_admin.post(f"/admin/rodadas/{rodada_id}/aprovar-cotacoes", data={
+        "csrf_token": token, "submissao_id": sub_id, "acao": "devolver",
+    })
+
+    sub = db.session.get(SubmissaoCotacao, sub_id)
+    assert sub.devolvida_em is not None
+    assert sub.enviada_em is None
