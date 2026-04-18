@@ -88,8 +88,8 @@ def _seed_minimo():
     db.session.add(Produto(nome="Blend 180g", categoria="Carne", unidade="kg"))
 
     # Rodada aberta
-    from datetime import datetime, timedelta
-    agora = datetime.utcnow()
+    from datetime import datetime, timedelta, timezone
+    agora = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.add(Rodada(
         nome="Rodada Teste",
         data_abertura=agora,

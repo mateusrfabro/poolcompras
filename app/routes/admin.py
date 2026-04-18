@@ -635,7 +635,7 @@ def rodada_aprovar_produtos(rodada_id):
     if request.method == "POST":
         rp_id = request.form.get("rp_id", type=int)
         acao = request.form.get("acao")
-        rp = RodadaProduto.query.get(rp_id)
+        rp = db.session.get(RodadaProduto, rp_id)
         if not rp or rp.rodada_id != rodada_id:
             flash("Produto não encontrado.", "error")
             return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
@@ -837,7 +837,7 @@ def moderar_pedidos(rodada_id):
         acao = request.form.get("acao")
         motivo = request.form.get("motivo", "").strip() or None
 
-        part = ParticipacaoRodada.query.get(participacao_id)
+        part = db.session.get(ParticipacaoRodada, participacao_id)
         if not part or part.rodada_id != rodada_id:
             flash("Participacao nao encontrada.", "error")
             return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))

@@ -196,8 +196,9 @@ def catalogo():
     categorias = sorted(by_cat.keys())
 
     # QuickWin: ultima rodada em que a lanchonete pediu algo (pra "Meu pedido usual")
+    # So oferece se nao tem itens salvos ainda na rodada atual (senao vira ruido)
     ultima_rodada_pedido = None
-    if not pedido_bloqueado:
+    if not pedido_bloqueado and not meus_pedidos:
         ultima_rodada_pedido = (
             db.session.query(Rodada)
             .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
@@ -320,7 +321,7 @@ def novo():
 @pedidos_bp.route("/remover/<int:item_id>", methods=["POST"])
 @login_required
 def remover(item_id):
-    item = ItemPedido.query.get(item_id)
+    item = db.session.get(ItemPedido, item_id)
     if item is None:
         flash("Este item não existe mais (pode ter sido removido em outra sessão).", "warning")
         return redirect(url_for("pedidos.listar"))
