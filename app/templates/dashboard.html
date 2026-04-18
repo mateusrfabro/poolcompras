@@ -63,7 +63,7 @@
         <div class="card card-highlight">
             <h3>Rodada aberta: {{ rodada_aberta.nome }}</h3>
             <p>Fecha em: {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</p>
-            <a href="{{ url_for('pedidos.novo') }}" class="btn btn-primary">Fazer pedido</a>
+            <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Fazer pedido</a>
         </div>
 
         {% if meus_pedidos %}

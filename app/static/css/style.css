@@ -443,6 +443,51 @@ body {
     margin-bottom: 0.8rem;
 }
 
+/* === Catalogo do cliente (filtros + quantidades) === */
+.catalogo-filtros {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    padding: 1rem;
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    margin-bottom: 1.5rem;
+}
+.catalogo-filtros label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+}
+.catalogo-filtro-select,
+.catalogo-filtro-input {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    font-size: 0.9rem;
+    min-width: 150px;
+}
+.catalogo-contador {
+    margin-left: auto;
+    font-size: 0.9rem;
+}
+.cliente-categoria {
+    margin-bottom: 1.5rem;
+}
+.cliente-categoria h3 {
+    color: var(--primary);
+    border-bottom: 2px solid var(--gray-200);
+    padding-bottom: 0.4rem;
+    margin-bottom: 1rem;
+}
+.cliente-subcategoria { margin-bottom: 1rem; }
+.cliente-subcategoria h4 {
+    color: var(--gray-700);
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+}
+
 /* === Catalogo da rodada (admin monta) === */
 .catalogo-stats {
     padding: 0.8rem 1rem;

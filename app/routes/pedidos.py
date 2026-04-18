@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import Produto, Rodada, ItemPedido
+from app.models import Produto, Rodada, ItemPedido, RodadaProduto
 from app.services.csv_export import csv_response
 
 pedidos_bp = Blueprint("pedidos", __name__, url_prefix="/pedidos")
@@ -61,55 +61,109 @@ def exportar():
     )
 
 
-@pedidos_bp.route("/novo", methods=["GET", "POST"])
+@pedidos_bp.route("/catalogo", methods=["GET", "POST"])
 @login_required
-def novo():
+def catalogo():
+    """Tela nova: lista o catalogo da rodada aberta com preco de partida,
+    lanchonete marca quantidade de cada item (pode ser 0)."""
     lanchonete = current_user.lanchonete
-    rodada_aberta = Rodada.query.filter_by(status="aberta").first()
+    if not lanchonete:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("main.dashboard"))
 
-    if not rodada_aberta:
+    rodada = (
+        Rodada.query.filter_by(status="aberta")
+        .order_by(Rodada.data_abertura.desc())
+        .first()
+    )
+    if not rodada:
         flash("Nenhuma rodada aberta no momento.", "warning")
         return redirect(url_for("pedidos.listar"))
 
-    if request.method == "POST":
-        produto_id = request.form.get("produto_id", type=int)
-        quantidade = request.form.get("quantidade", type=float)
-        observacao = request.form.get("observacao", "").strip()
+    # Carrega catalogo da rodada (apenas aprovados ou do admin)
+    catalogo = (
+        RodadaProduto.query
+        .filter_by(rodada_id=rodada.id)
+        .filter((RodadaProduto.aprovado.is_(None))
+                | (RodadaProduto.aprovado.is_(True)))
+        .join(Produto)
+        .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
+        .all()
+    )
 
-        if not produto_id or not quantidade or quantidade <= 0:
-            flash("Selecione um produto e informe a quantidade.", "error")
-        else:
+    if request.method == "POST":
+        count_add = 0
+        count_upd = 0
+        count_del = 0
+        for rp in catalogo:
+            qtd_str = request.form.get(f"qtd_{rp.produto_id}", "").strip()
+            try:
+                qtd = float(qtd_str.replace(",", ".")) if qtd_str else 0
+            except ValueError:
+                qtd = 0
+
             existente = ItemPedido.query.filter_by(
-                rodada_id=rodada_aberta.id,
+                rodada_id=rodada.id,
                 lanchonete_id=lanchonete.id,
-                produto_id=produto_id,
+                produto_id=rp.produto_id,
             ).first()
 
-            if existente:
-                existente.quantidade += quantidade
-                if observacao:
-                    existente.observacao = observacao
-                flash("Quantidade atualizada no pedido existente.", "success")
-            else:
-                item = ItemPedido(
-                    rodada_id=rodada_aberta.id,
-                    lanchonete_id=lanchonete.id,
-                    produto_id=produto_id,
-                    quantidade=quantidade,
-                    observacao=observacao,
-                )
-                db.session.add(item)
-                flash("Pedido adicionado!", "success")
+            if qtd > 0:
+                if existente:
+                    existente.quantidade = qtd
+                    count_upd += 1
+                else:
+                    db.session.add(ItemPedido(
+                        rodada_id=rodada.id,
+                        lanchonete_id=lanchonete.id,
+                        produto_id=rp.produto_id,
+                        quantidade=qtd,
+                    ))
+                    count_add += 1
+            elif existente:
+                db.session.delete(existente)
+                count_del += 1
 
-            db.session.commit()
-            return redirect(url_for("pedidos.listar"))
+        db.session.commit()
+        flash(
+            f"Pedido salvo! {count_add} novos, {count_upd} atualizados, {count_del} removidos.",
+            "success",
+        )
+        return redirect(url_for("pedidos.catalogo"))
 
-    produtos = Produto.query.filter_by(ativo=True).order_by(Produto.categoria, Produto.nome).all()
+    # Meus pedidos atuais (pra preencher inputs)
+    meus_pedidos = {
+        ip.produto_id: float(ip.quantidade)
+        for ip in ItemPedido.query.filter_by(
+            rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+        ).all()
+    }
+
+    # Agrupa por categoria -> subcategoria
+    by_cat = {}
+    for rp in catalogo:
+        cat = rp.produto.categoria
+        sub = rp.produto.subcategoria or "—"
+        by_cat.setdefault(cat, {}).setdefault(sub, []).append(rp)
+
+    # Listas pra filtro
+    categorias = sorted(by_cat.keys())
+
     return render_template(
-        "pedidos/novo.html",
-        rodada=rodada_aberta,
-        produtos=produtos,
+        "pedidos/catalogo.html",
+        rodada=rodada,
+        catalogo_por_cat=by_cat,
+        meus_pedidos=meus_pedidos,
+        categorias=categorias,
+        total_itens=len(meus_pedidos),
     )
+
+
+@pedidos_bp.route("/novo", methods=["GET", "POST"])
+@login_required
+def novo():
+    """Rota legada — redireciona pra novo catalogo da rodada."""
+    return redirect(url_for("pedidos.catalogo"))
 
 
 @pedidos_bp.route("/remover/<int:item_id>", methods=["POST"])

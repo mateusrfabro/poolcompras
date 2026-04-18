@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block title %}Catálogo — {{ rodada.nome }}{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('main.dashboard') }}" class="btn-back">Voltar ao painel</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Catálogo — {{ rodada.nome }}</h2>
+            <p class="page-sub">
+                Fecha em {{ rodada.data_fechamento.strftime('%d/%m/%Y') }}.
+                Marque a quantidade de cada produto que você precisa (deixe em branco ou 0 pra não pedir).
+            </p>
+        </div>
+        <span class="badge badge-aberta badge-lg">Em aberto</span>
+    </div>
+
+    <div class="catalogo-filtros">
+        <label>
+            <strong>Filtrar por categoria:</strong>
+            <select id="filtro-categoria" class="catalogo-filtro-select">
+                <option value="">Todas</option>
+                {% for cat in categorias %}
+                    <option value="{{ cat }}">{{ cat }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label>
+            <strong>Subcategoria:</strong>
+            <select id="filtro-subcategoria" class="catalogo-filtro-select">
+                <option value="">Todas</option>
+            </select>
+        </label>
+        <label>
+            <strong>Buscar:</strong>
+            <input type="text" id="filtro-busca" placeholder="Nome do produto..."
+                   class="catalogo-filtro-input">
+        </label>
+        <span class="muted catalogo-contador">
+            <span id="counter-itens">{{ total_itens }}</span> item(s) no seu pedido
+        </span>
+    </div>
+
+    <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        {% for categoria, subcats in catalogo_por_cat.items() %}
+            <div class="cliente-categoria" data-cat="{{ categoria }}">
+                <h3>{{ categoria }}</h3>
+                {% for subcat, produtos in subcats.items() %}
+                    <div class="cliente-subcategoria" data-subcat="{{ subcat }}">
+                        {% if subcat != '—' %}
+                            <h4>{{ subcat }}</h4>
+                        {% endif %}
+                        <div class="table-wrapper"><table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Produto</th>
+                                    <th>Unidade</th>
+                                    <th>Preço de partida</th>
+                                    <th>Quantidade</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for rp in produtos %}
+                                <tr class="cliente-linha" data-nome="{{ rp.produto.nome|lower }}">
+                                    <td><strong>{{ rp.produto.nome }}</strong></td>
+                                    <td>{{ rp.produto.unidade }}</td>
+                                    <td>
+                                        {% if rp.preco_partida %}
+                                            <strong>{{ rp.preco_partida|brl }}</strong>
+                                        {% else %}
+                                            <span class="muted">—</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <input type="number" name="qtd_{{ rp.produto_id }}"
+                                               step="0.1" min="0"
+                                               placeholder="0"
+                                               value="{{ meus_pedidos.get(rp.produto_id, '') }}"
+                                               style="width: 100px;"
+                                               data-produto-id="{{ rp.produto_id }}"
+                                               class="input-qtd">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table></div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.5rem;">
+            Salvar pedido
+        </button>
+    </form>
+</div>
+
+<script src="{{ url_for('static', filename='js/catalogo_cliente.js') }}"></script>
+{% endblock %}
