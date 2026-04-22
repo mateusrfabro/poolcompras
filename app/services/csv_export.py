@@ -4,15 +4,15 @@ from io import StringIO
 from flask import Response
 
 
-def csv_response(filename: str, headers: list, rows: list) -> Response:
-    """Gera resposta CSV com BOM UTF-8 e delimiter ';' (Excel no Windows)."""
+def csv_response(filename: str, headers: list, rows: list, delimiter: str = ";") -> Response:
+    """Gera resposta CSV com BOM UTF-8. Delimiter default ';' (Excel BR)."""
     buf = StringIO()
-    buf.write("\ufeff")
-    writer = csv.writer(buf, delimiter=";", quoting=csv.QUOTE_MINIMAL)
+    buf.write("﻿")
+    writer = csv.writer(buf, delimiter=delimiter, quoting=csv.QUOTE_MINIMAL)
     writer.writerow(headers)
     writer.writerows(rows)
     return Response(
         buf.getvalue(),
-        mimetype="text/csv",
+        mimetype="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
