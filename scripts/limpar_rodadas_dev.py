@@ -13,6 +13,10 @@ assert no inicio bloqueia se DB uri for de producao.
 """
 import os
 import sys
+from pathlib import Path
+
+# Garante que app/ esta no path independente de onde o script eh invocado
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 os.environ.setdefault("SECRET_KEY", "dev-cleanup")
 
