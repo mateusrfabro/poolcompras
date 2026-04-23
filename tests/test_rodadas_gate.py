@@ -14,7 +14,7 @@ from werkzeug.security import generate_password_hash
 
 
 def _agora():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(timezone.utc)
 
 
 def _cenario_com_vencedor():

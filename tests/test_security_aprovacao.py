@@ -41,8 +41,8 @@ def _prepara_em_negociacao():
     ))
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
-        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_enviado_em=datetime.now(timezone.utc),
+        pedido_aprovado_em=datetime.now(timezone.utc),
     ))
     rodada.status = "em_negociacao"
     db.session.commit()
@@ -82,7 +82,7 @@ def _cria_fornecedor_b_com_cotacao(rodada_id, produto_id, preco=22.00):
 def test_lanchonete_nao_aprova_cotacao(app, client_lanchA):
     rodada_id, forn_id, _ = _prepara_em_negociacao()
     sub = SubmissaoCotacao(rodada_id=rodada_id, fornecedor_id=forn_id,
-                            enviada_em=datetime.now(timezone.utc).replace(tzinfo=None))
+                            enviada_em=datetime.now(timezone.utc))
     db.session.add(sub)
     db.session.commit()
     sub_id = sub.id
@@ -101,7 +101,7 @@ def test_lanchonete_nao_aprova_cotacao(app, client_lanchA):
 def test_fornecedor_nao_aprova_cotacao(app, client_forn):
     rodada_id, forn_id, _ = _prepara_em_negociacao()
     sub = SubmissaoCotacao(rodada_id=rodada_id, fornecedor_id=forn_id,
-                            enviada_em=datetime.now(timezone.utc).replace(tzinfo=None))
+                            enviada_em=datetime.now(timezone.utc))
     db.session.add(sub)
     db.session.commit()
     sub_id = sub.id
@@ -118,7 +118,7 @@ def test_fornecedor_nao_aprova_cotacao(app, client_forn):
 def test_lanchonete_nao_adiciona_nota_admin(app, client_lanchA):
     rodada_id, forn_id, _ = _prepara_em_negociacao()
     sub = SubmissaoCotacao(rodada_id=rodada_id, fornecedor_id=forn_id,
-                            enviada_em=datetime.now(timezone.utc).replace(tzinfo=None))
+                            enviada_em=datetime.now(timezone.utc))
     db.session.add(sub)
     db.session.commit()
     sub_id = sub.id
@@ -167,8 +167,8 @@ def test_fornecedor_nao_edita_cotacao_aprovada(app, client_forn):
     db.session.add(cot)
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
-        aprovada_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        enviada_em=datetime.now(timezone.utc),
+        aprovada_em=datetime.now(timezone.utc),
     )
     db.session.add(sub)
     db.session.commit()
@@ -196,8 +196,8 @@ def test_fornecedor_nao_adiciona_nota_apos_aprovacao(app, client_forn):
     rodada_id, forn_id, _ = _prepara_em_negociacao()
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
-        aprovada_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        enviada_em=datetime.now(timezone.utc),
+        aprovada_em=datetime.now(timezone.utc),
     )
     db.session.add(sub)
     db.session.commit()
@@ -217,7 +217,7 @@ def test_admin_nota_vazia_rejeitada(app, client_admin):
     rodada_id, forn_id, _ = _prepara_em_negociacao()
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        enviada_em=datetime.now(timezone.utc),
     )
     db.session.add(sub)
     db.session.commit()

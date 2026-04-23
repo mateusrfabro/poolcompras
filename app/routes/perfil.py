@@ -177,7 +177,7 @@ def editar():
                 db.session.rollback()
                 return redirect(url_for("perfil.editar"))
             usuario.senha_hash = generate_password_hash(senha_nova)
-            usuario.senha_atualizada_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            usuario.senha_atualizada_em = datetime.now(timezone.utc)
             flash("Perfil atualizado e senha trocada com sucesso.", "success")
         else:
             flash("Perfil atualizado com sucesso.", "success")

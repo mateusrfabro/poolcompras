@@ -24,7 +24,7 @@ def _token_serializer():
 
 
 def _agora_naive():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(timezone.utc)
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])

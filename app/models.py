@@ -21,10 +21,10 @@ class Usuario(UserMixin, db.Model):
     tipo = db.Column(db.String(20), default="lanchonete", index=True)  # admin, lanchonete, fornecedor
     is_admin = db.Column(db.Boolean, default=False)  # legado — is_admin @property garante fonte unica
     ativo = db.Column(db.Boolean, default=True, nullable=False, index=True)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     # Marcador pra invalidar tokens de reset + sessoes ao trocar senha.
     # Cada redefinir_senha / perfil com troca de senha atualiza esse campo.
-    senha_atualizada_em = db.Column(db.DateTime, nullable=True)
+    senha_atualizada_em = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Chat ID do Telegram. Unique+index pra webhook futuro achar user dono
     # rapido. BigInteger suporta IDs negativos (grupos) e positivos (1:1).
@@ -60,7 +60,7 @@ class Lanchonete(db.Model):
     bairro = db.Column(db.String(80))
     cidade = db.Column(db.String(80), default="Londrina")
     ativa = db.Column(db.Boolean, default=True, index=True)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     pedidos = db.relationship("ItemPedido", backref="lanchonete")
 
@@ -76,7 +76,7 @@ class Produto(db.Model):
     subcategoria = db.Column(db.String(50), index=True)
     unidade = db.Column(db.String(20), nullable=False)
     ativo = db.Column(db.Boolean, default=True)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
 class Rodada(db.Model):
@@ -85,18 +85,18 @@ class Rodada(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    data_abertura = db.Column(db.DateTime, nullable=False)
-    data_fechamento = db.Column(db.DateTime, nullable=False)
+    data_abertura = db.Column(db.DateTime(timezone=True), nullable=False)
+    data_fechamento = db.Column(db.DateTime(timezone=True), nullable=False)
     status = db.Column(db.String(20), default="aberta", index=True)  # aberta, fechada, cotando, finalizada, cancelada
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Deadlines por fase do fluxo (opcional — se null, usa data_fechamento como padrao)
-    deadline_pedido       = db.Column(db.DateTime)  # ate quando lanchonete envia pedido
-    deadline_cotacao      = db.Column(db.DateTime)  # ate quando fornecedor envia cotacao
-    deadline_aceite       = db.Column(db.DateTime)  # ate quando lanchonete aceita proposta final
-    deadline_pagamento    = db.Column(db.DateTime)  # ate quando lanchonete paga
-    deadline_entrega      = db.Column(db.DateTime)  # ate quando fornecedor entrega
-    deadline_confirmacao  = db.Column(db.DateTime)  # ate quando lanchonete confirma recebimento
+    deadline_pedido       = db.Column(db.DateTime(timezone=True))  # ate quando lanchonete envia pedido
+    deadline_cotacao      = db.Column(db.DateTime(timezone=True))  # ate quando fornecedor envia cotacao
+    deadline_aceite       = db.Column(db.DateTime(timezone=True))  # ate quando lanchonete aceita proposta final
+    deadline_pagamento    = db.Column(db.DateTime(timezone=True))  # ate quando lanchonete paga
+    deadline_entrega      = db.Column(db.DateTime(timezone=True))  # ate quando fornecedor entrega
+    deadline_confirmacao  = db.Column(db.DateTime(timezone=True))  # ate quando lanchonete confirma recebimento
 
     itens = db.relationship("ItemPedido", backref="rodada")
     cotacoes = db.relationship("Cotacao", backref="rodada")
@@ -113,7 +113,7 @@ class ItemPedido(db.Model):
     # Numeric(10,3) suporta ate 3 casas (suficiente para kg/litro fracionario)
     quantidade = db.Column(Numeric(10, 3), nullable=False)
     observacao = db.Column(db.String(200))
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     produto = db.relationship("Produto")
 
@@ -137,7 +137,7 @@ class Fornecedor(db.Model):
     # Opt-in LGPD: so aparece no marketplace publico se explicitamente True.
     # Default False pro comportamento novo ser "conservador" (fornecedor escolhe aparecer).
     aparece_no_marketplace = db.Column(db.Boolean, default=False, nullable=False)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Dados para pagamento (lanchonete paga por fora do sistema)
     chave_pix = db.Column(db.String(150))     # CNPJ/email/telefone/aleatoria
@@ -159,16 +159,24 @@ class Cotacao(db.Model):
     # Numeric(12,2) suporta ate ~10 bilhoes; perfeito para precos em BRL
     preco_unitario = db.Column(Numeric(12, 2), nullable=False)
     quantidade_minima = db.Column(Numeric(10, 3))
-    validade = db.Column(db.DateTime)
+    validade = db.Column(db.DateTime(timezone=True))
     selecionada = db.Column(db.Boolean, default=False, index=True)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     produto = db.relationship("Produto")
 
     __table_args__ = (
-        # Cada fornecedor envia 1 cotacao por (rodada, produto). Evita duplicatas.
         UniqueConstraint("rodada_id", "fornecedor_id", "produto_id",
                          name="uq_cotacao_rodada_fornecedor_produto"),
+        # Unique partial: no maximo 1 vencedora por (rodada, produto).
+        # Postgres e SQLite suportam partial index via WHERE.
+        db.Index(
+            "ix_cotacao_vencedora_unica",
+            "rodada_id", "produto_id",
+            unique=True,
+            postgresql_where=db.text("selecionada IS TRUE"),
+            sqlite_where=db.text("selecionada IS TRUE"),
+        ),
     )
 
 
@@ -194,42 +202,42 @@ class ParticipacaoRodada(db.Model):
     # aprovado: pedido_aprovado_em != NULL  (admin liberou pro pool da rodada)
     # devolvido: pedido_devolvido_em != NULL  (lanchonete precisa ajustar e reenviar)
     # reprovado: pedido_reprovado_em != NULL  (bloqueado)
-    pedido_enviado_em       = db.Column(db.DateTime)
-    pedido_aprovado_em      = db.Column(db.DateTime)
+    pedido_enviado_em       = db.Column(db.DateTime(timezone=True))
+    pedido_aprovado_em      = db.Column(db.DateTime(timezone=True))
     pedido_aprovado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)
-    pedido_devolvido_em     = db.Column(db.DateTime)
+    pedido_devolvido_em     = db.Column(db.DateTime(timezone=True))
     pedido_motivo_devolucao = db.Column(db.String(500))
-    pedido_reprovado_em     = db.Column(db.DateTime)
+    pedido_reprovado_em     = db.Column(db.DateTime(timezone=True))
 
     # Fase: aceite da proposta consolidada
     # null = pendente | True = aceitou | False = recusou
     aceite_proposta    = db.Column(db.Boolean, index=True)
-    aceite_em          = db.Column(db.DateTime)
+    aceite_em          = db.Column(db.DateTime(timezone=True))
 
     # Fase: comprovante de pagamento (chave opaca de storage — caminho no disco/S3)
     comprovante_key    = db.Column(db.String(255))
-    comprovante_em     = db.Column(db.DateTime)
+    comprovante_em     = db.Column(db.DateTime(timezone=True))
 
     # Fase: fornecedor confirma recebimento do pagamento
-    pagamento_confirmado_em      = db.Column(db.DateTime)
+    pagamento_confirmado_em      = db.Column(db.DateTime(timezone=True))
     pagamento_confirmado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)
 
     # Fase: fornecedor informa entrega
-    entrega_informada_em   = db.Column(db.DateTime)
+    entrega_informada_em   = db.Column(db.DateTime(timezone=True))
     entrega_informada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)
     entrega_data           = db.Column(db.Date)  # data real da entrega
 
     # Fase: cliente confirma recebimento
     # null = pendente | True = recebeu OK | False = problema
     recebimento_ok           = db.Column(db.Boolean)
-    recebimento_em           = db.Column(db.DateTime)
+    recebimento_em           = db.Column(db.DateTime(timezone=True))
     recebimento_observacao   = db.Column(db.String(500))
 
     # Avaliacao geral da rodada (opcao D: 1-5 estrelas; se <=3 cliente detalha por fornecedor)
     avaliacao_geral   = db.Column(db.Integer)  # 1-5
-    avaliacao_em      = db.Column(db.DateTime)
+    avaliacao_em      = db.Column(db.DateTime(timezone=True))
 
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships para queries
     rodada      = db.relationship("Rodada", backref="participacoes")
@@ -257,7 +265,7 @@ class AvaliacaoRodada(db.Model):
 
     estrelas   = db.Column(db.Integer, nullable=False)  # 1-5
     comentario = db.Column(db.String(500))
-    criado_em  = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em  = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     rodada      = db.relationship("Rodada")
     lanchonete  = db.relationship("Lanchonete")
@@ -301,7 +309,7 @@ class EventoRodada(db.Model):
     ator_id       = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)  # quem fez (null = sistema)
     tipo          = db.Column(db.String(40), nullable=False)
     descricao     = db.Column(db.String(500))
-    criado_em     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    criado_em     = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
     rodada     = db.relationship("Rodada", backref="eventos")
     lanchonete = db.relationship("Lanchonete")
@@ -335,7 +343,7 @@ class RodadaProduto(db.Model):
 
     # Aprovacao: None = aprovado automaticamente (admin adicionou); True = admin aprovou; False = admin recusou
     aprovado = db.Column(db.Boolean, default=None)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     produto    = db.relationship("Produto")
     rodada     = db.relationship("Rodada", backref="catalogo")
@@ -364,12 +372,12 @@ class SubmissaoCotacao(db.Model):
     rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
     fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"), nullable=False, index=True)
 
-    enviada_em         = db.Column(db.DateTime)
-    aprovada_em        = db.Column(db.DateTime)
+    enviada_em         = db.Column(db.DateTime(timezone=True))
+    aprovada_em        = db.Column(db.DateTime(timezone=True))
     aprovada_por_id    = db.Column(db.Integer, db.ForeignKey("usuarios.id", name="fk_submissao_aprovada_por"), index=True)
-    devolvida_em       = db.Column(db.DateTime)
+    devolvida_em       = db.Column(db.DateTime(timezone=True))
 
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     rodada     = db.relationship("Rodada")
     fornecedor = db.relationship("Fornecedor")
@@ -401,7 +409,7 @@ class NotaNegociacao(db.Model):
         db.ForeignKey("usuarios.id", name="fk_nota_autor"),
         nullable=False, index=True)
     texto     = db.Column(db.String(1000), nullable=False)
-    criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
     submissao    = db.relationship("SubmissaoCotacao", backref="notas")
     autor_usuario = db.relationship("Usuario")

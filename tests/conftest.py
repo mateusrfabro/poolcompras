@@ -90,7 +90,7 @@ def _seed_minimo():
 
     # Rodada aberta
     from datetime import datetime, timedelta, timezone
-    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    agora = datetime.now(timezone.utc)
     rodada = Rodada(
         nome="Rodada Teste",
         data_abertura=agora,

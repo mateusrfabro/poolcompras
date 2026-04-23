@@ -14,7 +14,7 @@ from app.services.pnl_fornecedor import calcular_pnl
 
 
 def _agora():
-    return datetime.now(timezone.utc).replace(tzinfo=None)
+    return datetime.now(timezone.utc)
 
 
 def _prepara_venda_aceita():

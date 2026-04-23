@@ -202,18 +202,25 @@ def create_app(config_name="default"):
         return f"{num} {un_fmt}"
 
     def _normaliza_alvo(data):
-        """Converte date/datetime pro alvo efetivo. Se datetime com hora 00:00, trata como fim do dia."""
-        from datetime import datetime, date, time as dtime
+        """Converte date/datetime pro alvo efetivo. Se datetime com hora 00:00, trata como fim do dia.
+
+        SQLite retorna datetime naive mesmo com DateTime(timezone=True); Postgres retorna aware.
+        Pra filtros funcionarem igual nos dois, forca tz UTC se vier naive.
+        """
+        from datetime import datetime, date, time as dtime, timezone
         if data is None:
             return None
         if isinstance(data, datetime):
-            # Se hora 00:00:00, assumir fim do dia (23:59)
-            if data.time() == dtime(0, 0):
-                return data.replace(hour=23, minute=59)
-            return data
-        if isinstance(data, date):
-            return datetime.combine(data, dtime(23, 59))
-        return None
+            alvo = data
+            if alvo.time() == dtime(0, 0):
+                alvo = alvo.replace(hour=23, minute=59)
+        elif isinstance(data, date):
+            alvo = datetime.combine(data, dtime(23, 59))
+        else:
+            return None
+        if alvo.tzinfo is None:
+            alvo = alvo.replace(tzinfo=timezone.utc)
+        return alvo
 
     # Filter: tempo restante humanizado ("Fecha em 3h45min", "Fecha em 2 dias", "Encerrada")
     @app.template_filter("countdown")
@@ -222,7 +229,7 @@ def create_app(config_name="default"):
         alvo = _normaliza_alvo(data)
         if alvo is None:
             return "—"
-        delta = alvo - datetime.now(timezone.utc).replace(tzinfo=None)
+        delta = alvo - datetime.now(timezone.utc)
         total_seg = int(delta.total_seconds())
         if total_seg <= 0:
             return "Encerrada"
@@ -252,7 +259,7 @@ def create_app(config_name="default"):
         alvo = _normaliza_alvo(data)
         if alvo is None:
             return False
-        delta = alvo - datetime.now(timezone.utc).replace(tzinfo=None)
+        delta = alvo - datetime.now(timezone.utc)
         return 0 < delta.total_seconds() <= 86400  # <= 24h
 
     # Filter: traduz EventoRodada.tipo para rotulo PT-BR pra timeline.

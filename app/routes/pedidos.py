@@ -160,7 +160,7 @@ def catalogo():
                 flash("Voce precisa escolher ao menos 1 item antes de enviar o pedido.", "error")
                 return redirect(url_for("pedidos.catalogo"))
 
-            participacao.pedido_enviado_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            participacao.pedido_enviado_em = datetime.now(timezone.utc)
             # Se estava devolvido, limpa pra nova avaliacao
             participacao.pedido_devolvido_em = None
             participacao.pedido_motivo_devolucao = None

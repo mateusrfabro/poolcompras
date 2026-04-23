@@ -78,7 +78,7 @@ def _cria_pedido_enviado_lanchA():
     ))
     part = ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_enviado_em=datetime.now(timezone.utc),
     )
     db.session.add(part)
     db.session.commit()
@@ -161,7 +161,7 @@ def test_fornecedor_ve_pedido_aprovado(app, client_forn):
     rodada_id, part_id = _cria_pedido_enviado_lanchA()
     # Aprova direto no DB (sem passar por client_admin)
     part = db.session.get(ParticipacaoRodada, part_id)
-    part.pedido_aprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
+    part.pedido_aprovado_em = datetime.now(timezone.utc)
     db.session.commit()
 
     r = client_forn.get(f"/fornecedor/rodada/{rodada_id}")
@@ -181,7 +181,7 @@ def test_repetir_ultimo_pedido_copia_itens(app, client_lanchA):
     ))
     rodada_antiga.status = "finalizada"
     from datetime import timedelta, timezone
-    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    agora = datetime.now(timezone.utc)
     nova = Rodada(
         nome="Rodada 2", data_abertura=agora,
         data_fechamento=agora + timedelta(hours=6), status="aberta",
@@ -243,8 +243,8 @@ def _prepara_rodada_em_negociacao():
     ))
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
-        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_enviado_em=datetime.now(timezone.utc),
+        pedido_aprovado_em=datetime.now(timezone.utc),
     ))
     rodada.status = "em_negociacao"
     db.session.commit()
@@ -276,7 +276,7 @@ def test_admin_aprova_cotacao_final(app, client_admin):
     rodada_id, forn_id = _prepara_rodada_em_negociacao()
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        enviada_em=datetime.now(timezone.utc),
     )
     db.session.add(sub)
     db.session.commit()
@@ -296,7 +296,7 @@ def test_admin_devolve_cotacao_final(app, client_admin):
     rodada_id, forn_id = _prepara_rodada_em_negociacao()
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        enviada_em=datetime.now(timezone.utc),
     )
     db.session.add(sub)
     db.session.commit()

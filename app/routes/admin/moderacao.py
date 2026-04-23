@@ -75,7 +75,7 @@ def moderar_pedidos(rodada_id):
 
         notif_titulo = notif_detalhes = None
         if acao == "aprovar":
-            part.pedido_aprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            part.pedido_aprovado_em = datetime.now(timezone.utc)
             part.pedido_aprovado_por_id = current_user.id
             part.pedido_devolvido_em = None
             part.pedido_reprovado_em = None
@@ -84,7 +84,7 @@ def moderar_pedidos(rodada_id):
             notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi aprovado "
                               f"e entrou no pool.")
         elif acao == "devolver":
-            part.pedido_devolvido_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            part.pedido_devolvido_em = datetime.now(timezone.utc)
             part.pedido_motivo_devolucao = motivo
             part.pedido_enviado_em = None
             part.pedido_aprovado_em = None
@@ -94,7 +94,7 @@ def moderar_pedidos(rodada_id):
             notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi devolvido "
                               f"pelo admin.{motivo_txt} Ajuste e reenvie.")
         elif acao == "reprovar":
-            part.pedido_reprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            part.pedido_reprovado_em = datetime.now(timezone.utc)
             part.pedido_aprovado_em = None
             flash(f"Pedido de {nome_lanchonete} reprovado.", "warning")
             notif_titulo = "Pedido reprovado"
@@ -164,7 +164,7 @@ def aprovar_cotacoes(rodada_id):
 
         notif_titulo = notif_detalhes = None
         if acao == "aprovar":
-            sub.aprovada_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            sub.aprovada_em = datetime.now(timezone.utc)
             sub.aprovada_por_id = current_user.id
             sub.devolvida_em = None
             flash(f"Cotacao de {nome_forn} aprovada.", "success")
@@ -172,7 +172,7 @@ def aprovar_cotacoes(rodada_id):
             notif_detalhes = (f"Sua cotação final na rodada '{rodada.nome}' foi "
                               f"aprovada pelo admin e está disponível pras lanchonetes.")
         elif acao == "devolver":
-            sub.devolvida_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            sub.devolvida_em = datetime.now(timezone.utc)
             sub.enviada_em = None
             sub.aprovada_em = None
             flash(f"Cotacao de {nome_forn} devolvida pra negociacao.", "success")

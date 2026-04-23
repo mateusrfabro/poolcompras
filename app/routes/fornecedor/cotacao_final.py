@@ -117,7 +117,7 @@ def cotar_final(rodada_id):
                 flash("Voce precisa preencher ao menos 1 preco antes de enviar.", "error")
                 return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
-            submissao.enviada_em = datetime.now(timezone.utc).replace(tzinfo=None)
+            submissao.enviada_em = datetime.now(timezone.utc)
             submissao.devolvida_em = None
             db.session.commit()
             flash("Cotacao enviada pra aprovacao do admin.", "success")

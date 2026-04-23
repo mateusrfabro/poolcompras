@@ -29,10 +29,10 @@ def _prepara_compra_aceita():
     ))
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
-        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_enviado_em=datetime.now(timezone.utc),
+        pedido_aprovado_em=datetime.now(timezone.utc),
         aceite_proposta=True,
-        aceite_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        aceite_em=datetime.now(timezone.utc),
     ))
     rodada.status = "finalizada"
     db.session.commit()
@@ -103,7 +103,7 @@ def test_cmv_ignora_rodadas_nao_aceitas(app):
     # Participacao com aceite_proposta=False (recusou)
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_aprovado_em=datetime.now(timezone.utc),
         aceite_proposta=False,
     ))
     db.session.commit()

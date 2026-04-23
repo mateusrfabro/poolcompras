@@ -24,7 +24,7 @@ cron_bp = Blueprint("cron", __name__, cli_group="cron")
 def fechar_vencidas():
     """Fecha rodadas cujo data_fechamento ja passou, gerando EventoRodada."""
     # SQLite retorna datetime naive; comparamos naive com naive
-    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    agora = datetime.now(timezone.utc)
 
     rodadas = Rodada.query.filter(
         Rodada.status == "aberta",
@@ -54,7 +54,7 @@ def deadline_vencido():
     """Marca participacoes que passaram do deadline de alguma fase (loga no EventoRodada).
     Nao cancela automaticamente — apenas registra pra relatorio.
     """
-    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    agora = datetime.now(timezone.utc)
     contagens = {"pedido": 0, "cotacao": 0, "aceite": 0,
                  "pagamento": 0, "entrega": 0, "confirmacao": 0}
 
@@ -104,7 +104,7 @@ def deadline_vencido():
 @with_appcontext
 def status():
     """Mostra rodadas abertas e suas datas de fechamento (util pra debug de cron)."""
-    agora = datetime.now(timezone.utc).replace(tzinfo=None)
+    agora = datetime.now(timezone.utc)
     rodadas = Rodada.query.filter_by(status="aberta").order_by(Rodada.data_fechamento.asc()).all()
     if not rodadas:
         click.echo("Nenhuma rodada aberta.")
