@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
@@ -7,7 +8,17 @@ from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
 from app.services.notificacoes import enviar_link_recuperacao
 
+logger = logging.getLogger(__name__)
+
 auth_bp = Blueprint("auth", __name__)
+
+
+def _client_ip() -> str:
+    """IP do cliente tolerante a proxy (X-Forwarded-For primeiro)."""
+    xff = request.headers.get("X-Forwarded-For", "")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.remote_addr or "-"
 
 # Token de recuperacao de senha — sem tabela extra, assinado com SECRET_KEY
 _RECUPERACAO_SALT = "recuperar-senha"
@@ -50,12 +61,19 @@ def login():
 
         if usuario and senha_ok:
             if not getattr(usuario, "ativo", True):
+                logger.warning("LOGIN_BLOQUEADO email=%s ip=%s motivo=inativo",
+                               email, _client_ip())
                 flash("Conta desativada. Contate o administrador.", "error")
                 return render_template("auth/login.html")
             login_user(usuario)
+            logger.info("LOGIN_OK usuario=%s email=%s tipo=%s ip=%s",
+                        usuario.id, email, usuario.tipo, _client_ip())
             next_page = request.args.get("next")
             return redirect(next_page or url_for("main.dashboard"))
 
+        # Nao revela se o email existe ou nao (timing ja equalizado acima)
+        logger.warning("LOGIN_FAIL email=%s ip=%s usuario_existe=%s",
+                       email, _client_ip(), bool(usuario))
         flash("E-mail ou senha incorretos.", "error")
 
     return render_template("auth/login.html")
@@ -167,7 +185,10 @@ def registro_fornecedor():
 @auth_bp.route("/logout")
 @login_required
 def logout():
+    uid = current_user.id
+    email = current_user.email
     logout_user()
+    logger.info("LOGOUT usuario=%s email=%s ip=%s", uid, email, _client_ip())
     return redirect(url_for("auth.login"))
 
 

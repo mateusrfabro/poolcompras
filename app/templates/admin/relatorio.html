@@ -7,11 +7,11 @@
         <h2>Relatório Consolidado</h2>
     </div>
 
-    <div class="sub-nav">
+    <nav class="sub-nav" aria-label="Seções">
         <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item">Painel</a>
         <a href="{{ url_for('admin.analytics') }}" class="sub-nav-item">Indicadores</a>
         <a href="{{ url_for('admin.relatorio') }}" class="sub-nav-item sub-nav-active">Relatório</a>
-    </div>
+    </nav>
 
     <form method="GET" class="form-card" style="margin-bottom: 2rem;">
         <div class="form-row">

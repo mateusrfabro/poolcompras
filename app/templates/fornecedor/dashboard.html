@@ -8,11 +8,11 @@
         <p class="subtitle">{{ fornecedor.razao_social }}</p>
     {% endif %}
 
-    <div class="sub-nav">
+    <nav class="sub-nav" aria-label="Seções">
         <a href="{{ url_for('fornecedor.dashboard') }}" class="sub-nav-item sub-nav-active">Painel</a>
         <a href="{{ url_for('fornecedor.analytics') }}" class="sub-nav-item">Meu Desempenho</a>
         <a href="{{ url_for('fornecedor.pnl') }}" class="sub-nav-item">Meu P&amp;L</a>
-    </div>
+    </nav>
 
     {# KPIs rapidos #}
     {% if kpis %}
@@ -69,7 +69,7 @@
                             {% for p in bloco.aguardando_pagamento %}
                                 <li>
                                     {{ p.lanchonete.nome_fantasia }}
-                                    — <a href="{{ url_for('uploads.servir', key=p.comprovante_key) }}" target="_blank">Ver comprovante</a>
+                                    — <a href="{{ url_for('uploads.servir', key=p.comprovante_key) }}" target="_blank" rel="noopener noreferrer">Ver comprovante</a>
                                     <form method="POST"
                                           action="{{ url_for('fluxo.confirmar_pagamento', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
                                           style="display:inline; margin-left: 0.5rem;">

@@ -190,7 +190,7 @@
 
             {% elif not participacao.pagamento_confirmado_em %}
                 <p>Comprovante enviado.
-                    <a href="{{ url_for('uploads.servir', key=participacao.comprovante_key) }}" target="_blank">Ver arquivo</a>.
+                    <a href="{{ url_for('uploads.servir', key=participacao.comprovante_key) }}" target="_blank" rel="noopener noreferrer">Ver arquivo</a>.
                     Aguardando o fornecedor confirmar o recebimento do pagamento.
                 </p>
 

@@ -189,7 +189,7 @@
         </p>
         <div style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <form method="POST" action="{{ url_for('perfil.telegram_iniciar') }}"
-                  target="_blank" rel="noopener" style="display: inline;">
+                  target="_blank" rel="noopener noreferrer" style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary">1. Conectar Telegram</button>
             </form>
