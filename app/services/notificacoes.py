@@ -1,62 +1,124 @@
-"""Camada de notificacoes (link recuperacao de senha, alertas, etc).
+"""Camada de notificacoes via Telegram bot (canal default do projeto).
 
-Hoje: loga o payload. No Bloco D vai plugar no bot Telegram (default do projeto).
-E-mail via SMTP continua opcional — habilita apenas se SMTP_* estiverem em env.
+- `enviar_telegram(usuario, texto)`: helper generico. Se o usuario tiver
+  `telegram_chat_id` preenchido e a env `TELEGRAM_BOT_TOKEN` existir, faz POST
+  pra API do Telegram. Senao, cai no fallback de log.
 
-Canal padrao do PoolCompras = Telegram bot (decisao 2026-04-22).
+- `enviar_link_recuperacao(usuario, link)`: chama `enviar_telegram` com texto
+  pre-formatado pra reset de senha.
+
+- `notificar_evento(usuario, titulo, detalhes)`: helper pros eventos do fluxo
+  (proposta aprovada, pagamento confirmado, cotacao devolvida, etc).
+
+Docs da API: https://core.telegram.org/bots/api#sendmessage
 """
 import logging
 import os
+
+import requests
 from flask import current_app
 
 logger = logging.getLogger(__name__)
 
+_TELEGRAM_TIMEOUT_SEG = 5  # evita travar a request se api.telegram.org cair
+_TELEGRAM_API = "https://api.telegram.org/bot{token}/sendMessage"
 
-def enviar_link_recuperacao(usuario, link: str) -> bool:
-    """Envia link de recuperacao de senha pelo canal disponivel.
 
-    Ordem de preferencia:
-    1. Telegram bot (se usuario.telegram_chat_id + TELEGRAM_BOT_TOKEN configurados)
-    2. SMTP (se SMTP_HOST + SMTP_USER configurados)
-    3. Log (fallback; admin ve no log e repassa manualmente)
-
-    Returns:
-        True se conseguiu enviar por canal real, False se caiu no fallback de log.
-    """
-    texto = (
-        f"Ola, {usuario.nome_responsavel}!\n\n"
-        f"Recebemos um pedido pra redefinir sua senha no PoolCompras.\n"
-        f"Clique no link abaixo (valido por 1 hora):\n\n"
-        f"{link}\n\n"
-        f"Se voce nao solicitou, ignore esta mensagem."
+def _tem_canal_ativo(usuario) -> bool:
+    """True se o usuario configurou telegram_chat_id E temos TELEGRAM_BOT_TOKEN."""
+    return bool(
+        getattr(usuario, "telegram_chat_id", None)
+        and os.environ.get("TELEGRAM_BOT_TOKEN")
     )
 
-    # 1. Telegram (placeholder — implementa quando bot estiver configurado)
-    chat_id = getattr(usuario, "telegram_chat_id", None)
-    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    if chat_id and bot_token:
-        # TODO(bloco-telegram): implementar POST pra api.telegram.org/bot<token>/sendMessage
-        logger.info("notif.telegram.skipped (implementacao pendente) user=%s", usuario.id)
 
-    # 2. SMTP (placeholder)
-    if os.environ.get("SMTP_HOST") and os.environ.get("SMTP_USER"):
-        # TODO(bloco-smtp): implementar envio via smtplib
-        logger.info("notif.smtp.skipped (implementacao pendente) user=%s", usuario.id)
+def enviar_telegram(usuario, texto: str) -> bool:
+    """Envia uma mensagem de texto pro chat_id do usuario via bot.
 
-    # 3. Fallback: log estruturado pro admin pegar manualmente.
-    # SO logamos o link em DEBUG ou TESTING — em prod (journald compartilhado)
-    # qualquer operador com acesso a logs sequestraria a conta.
+    Returns:
+        True se a API Telegram retornou 200. False se fallou ou se canal
+        nao esta configurado (cai no fallback de log).
+
+    Nao levanta excecao — notificacao eh best-effort e nao pode bloquear
+    o fluxo de negocio.
+    """
+    if not _tem_canal_ativo(usuario):
+        _logar_fallback(usuario, texto)
+        return False
+
+    token = os.environ["TELEGRAM_BOT_TOKEN"]
+    url = _TELEGRAM_API.format(token=token)
+    payload = {
+        "chat_id": usuario.telegram_chat_id,
+        "text": texto,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": False,
+    }
+    try:
+        r = requests.post(url, json=payload, timeout=_TELEGRAM_TIMEOUT_SEG)
+        if r.status_code == 200 and r.json().get("ok"):
+            logger.info("TELEGRAM_OK usuario=%s", usuario.id)
+            return True
+        logger.warning(
+            "TELEGRAM_FAIL usuario=%s status=%s body=%s",
+            usuario.id, r.status_code, r.text[:200],
+        )
+    except requests.RequestException as e:
+        logger.warning("TELEGRAM_EXC usuario=%s err=%s", usuario.id, e)
+
+    _logar_fallback(usuario, texto)
+    return False
+
+
+def _logar_fallback(usuario, texto: str):
+    """Fallback: registra no log quando canal Telegram nao ta pronto.
+
+    Em DEBUG/TESTING: loga texto completo (admin/test pegam do log).
+    Em prod: loga apenas que houve tentativa (nao vaza tokens de reset).
+    """
     app = current_app._get_current_object() if current_app else None
     dev_like = bool(app and (app.debug or app.config.get("TESTING")))
     if dev_like:
         logger.warning(
-            "RECUPERACAO_SENHA usuario=%s email=%s link=%s\n%s",
-            usuario.id, usuario.email, link, texto,
+            "NOTIF_FALLBACK usuario=%s email=%s\n%s",
+            usuario.id, usuario.email, texto,
         )
     else:
-        # Em prod, registra apenas o pedido. O link assinado NAO vai pra log.
         logger.info(
-            "RECUPERACAO_SENHA_SOLICITADA usuario=%s (canal ainda nao plugado — envio manual)",
+            "NOTIF_FALLBACK_SOLICITADA usuario=%s (canal nao configurado)",
             usuario.id,
         )
-    return False
+
+
+def enviar_link_recuperacao(usuario, link: str) -> bool:
+    """Envia link de recuperacao de senha. Canal preferencial: Telegram."""
+    texto = (
+        f"Olá, {_escape(usuario.nome_responsavel)}!\n\n"
+        f"Recebemos um pedido pra redefinir sua senha no PoolCompras.\n"
+        f"Clique no link abaixo (válido por 1 hora):\n\n"
+        f"{link}\n\n"
+        f"Se você não solicitou, ignore esta mensagem."
+    )
+    return enviar_telegram(usuario, texto)
+
+
+def notificar_evento(usuario, titulo: str, detalhes: str = "") -> bool:
+    """Notifica o usuario sobre um evento do fluxo (proposta, pagto, etc).
+
+    Args:
+        usuario: Usuario dono da notificacao
+        titulo: linha principal da mensagem (ex: "Proposta aprovada")
+        detalhes: opcional, texto adicional (ex: nome da rodada)
+    """
+    texto = f"<b>{_escape(titulo)}</b>"
+    if detalhes:
+        texto += f"\n\n{_escape(detalhes)}"
+    texto += "\n\n— PoolCompras"
+    return enviar_telegram(usuario, texto)
+
+
+def _escape(txt: str) -> str:
+    """Escape minimo pra HTML parse_mode do Telegram (so &, <, >)."""
+    if not txt:
+        return ""
+    return str(txt).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")

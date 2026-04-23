@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}Fornecedores parceiros — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h2>Fornecedores parceiros</h2>
+            <p class="page-sub">
+                Avaliados pelas lanchonetes da rede PoolCompras em Londrina.
+            </p>
+        </div>
+    </div>
+
+    {% if fornecedores %}
+        <div class="analytics-grid">
+            {% for f in fornecedores %}
+                <div class="analytics-card">
+                    <h3>{{ f.razao_social }}</h3>
+                    <p class="muted" style="margin-top: -0.3rem;">{{ f.cidade }}</p>
+
+                    <div class="stats-inline">
+                        {% if f.media %}
+                            <div class="stat-inline">
+                                <span class="stars-readonly">
+                                    {% for i in range(1, 6) %}{% if i <= f.media|round %}★{% else %}☆{% endif %}{% endfor %}
+                                </span>
+                                <strong>{{ '%.1f'|format(f.media)|replace('.', ',') }}</strong>
+                                <span class="muted">({{ f.avaliacoes }} aval.)</span>
+                            </div>
+                        {% else %}
+                            <div class="stat-inline muted">
+                                <span>Sem avaliações ainda</span>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if f.rodadas_vencidas %}
+                        <p class="muted" style="margin-top: 0.75rem;">
+                            {{ f.rodadas_vencidas }} rodada(s) com cotação vencedora.
+                        </p>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="analytics-card">
+            <p class="muted">Nenhum fornecedor cadastrado ainda.</p>
+        </div>
+    {% endif %}
+
+    <div class="analytics-card" style="margin-top: 2rem; text-align: center;">
+        <h3>Quer fazer parte?</h3>
+        <p>Cadastre sua lanchonete ou seu negócio fornecedor e economize com compras coletivas.</p>
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+            <a href="{{ url_for('auth.registro') }}" class="btn btn-primary">Sou lanchonete</a>
+            <a href="{{ url_for('auth.registro_fornecedor') }}" class="btn btn-outline">Sou fornecedor</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

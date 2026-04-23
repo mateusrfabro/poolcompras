@@ -452,6 +452,10 @@ body {
 .alert-warning { background: #fff3cd; color: #856404; }
 .alert-info { background: #e0f2fe; color: #075985; }
 
+/* Stats inline (usado no marketplace) */
+.stats-inline { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.stat-inline { display: inline-flex; gap: 0.5rem; align-items: center; }
+
 /* Paginas de erro (404, 403, 500) */
 .error-page {
     text-align: center;

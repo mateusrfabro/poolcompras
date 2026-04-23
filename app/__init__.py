@@ -78,6 +78,7 @@ def create_app(config_name="default"):
     from app.routes.uploads import uploads_bp
     from app.routes.fluxo import fluxo_bp
     from app.routes.perfil import perfil_bp
+    from app.routes.marketplace import marketplace_bp
     from app.cli import cron_bp
 
     # Error handlers amigaveis
@@ -105,6 +106,7 @@ def create_app(config_name="default"):
     app.register_blueprint(uploads_bp)
     app.register_blueprint(fluxo_bp)
     app.register_blueprint(perfil_bp)
+    app.register_blueprint(marketplace_bp)
     app.register_blueprint(cron_bp)
 
     # Pluralizacao por unidade. Simbolos (kg, g, ml, l) sao invariaveis em PT-BR.

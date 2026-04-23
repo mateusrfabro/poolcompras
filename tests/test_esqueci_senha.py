@@ -43,8 +43,8 @@ def test_esqueci_senha_email_valido_gera_token_via_notificacao(app, client, capl
                 data={"csrf_token": token, "email": "lancha@test.com"},
                 follow_redirects=False)
 
-    # Log deve conter RECUPERACAO_SENHA com link redefinir-senha
-    rec = [r for r in caplog.records if "RECUPERACAO_SENHA" in r.getMessage()]
+    # Log deve conter NOTIF_FALLBACK com link redefinir-senha
+    rec = [r for r in caplog.records if "NOTIF_FALLBACK" in r.getMessage()]
     assert len(rec) == 1
     assert "/redefinir-senha/" in rec[0].getMessage()
 

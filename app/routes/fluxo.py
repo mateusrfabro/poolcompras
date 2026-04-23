@@ -16,9 +16,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db, limiter
 from app.models import (
     Rodada, ParticipacaoRodada, EventoRodada, Cotacao, Fornecedor,
-    AvaliacaoRodada, SubmissaoCotacao,
+    AvaliacaoRodada, SubmissaoCotacao, Lanchonete,
 )
 from app.services.storage import get_storage
+from app.services.notificacoes import notificar_evento
 
 fluxo_bp = Blueprint("fluxo", __name__, url_prefix="/fluxo")
 
@@ -73,6 +74,33 @@ def _registrar_evento(rodada_id, tipo, descricao, lanchonete_id=None, ator_id=No
         tipo=tipo,
         descricao=descricao,
     ))
+
+
+def _notificar_fornecedores_comprovante(rodada, lanchonete):
+    """Notifica fornecedores vencedores que a lanchonete X enviou comprovante."""
+    from app.models import ItemPedido
+    # Fornecedores distintos que venceram algum item dessa lanchonete nessa rodada
+    forn_ids = {
+        fid for (fid,) in db.session.query(Cotacao.fornecedor_id)
+            .join(ItemPedido,
+                  (ItemPedido.rodada_id == Cotacao.rodada_id) &
+                  (ItemPedido.produto_id == Cotacao.produto_id))
+            .filter(Cotacao.rodada_id == rodada.id,
+                    Cotacao.selecionada.is_(True),
+                    ItemPedido.lanchonete_id == lanchonete.id)
+            .distinct().all()
+    }
+    if not forn_ids:
+        return
+    for f in Fornecedor.query.filter(Fornecedor.id.in_(forn_ids)).all():
+        if f.responsavel:
+            notificar_evento(
+                f.responsavel,
+                "Comprovante recebido",
+                f"{lanchonete.nome_fantasia} enviou o comprovante de pagamento "
+                f"da rodada '{rodada.nome}'. Confirme o recebimento quando "
+                f"conciliar o valor na conta.",
+            )
 
 
 def _so_dona_lanchonete(rodada_id):
@@ -194,6 +222,10 @@ def enviar_comprovante(rodada_id):
                           "Comprovante de pagamento enviado",
                           lanchonete_id=lanchonete.id, ator_id=current_user.id)
         db.session.commit()
+
+        # Notifica fornecedores vencedores dos itens dessa lanchonete
+        _notificar_fornecedores_comprovante(rodada, lanchonete)
+
         flash("Comprovante enviado! Aguardando confirmação do fornecedor.", "success")
     except SQLAlchemyError:
         db.session.rollback()
@@ -374,6 +406,18 @@ def confirmar_pagamento(rodada_id, lanchonete_id):
                           "Fornecedor confirmou recebimento do pagamento",
                           lanchonete_id=lanchonete_id, ator_id=current_user.id)
         db.session.commit()
+
+        # Notifica a lanchonete dona da participacao
+        lanch = db.session.get(Lanchonete, lanchonete_id)
+        if lanch and lanch.responsavel:
+            notificar_evento(
+                lanch.responsavel,
+                "Pagamento confirmado",
+                f"{_fornecedor.razao_social} confirmou o recebimento do seu "
+                f"pagamento na rodada '{rodada.nome}'. Aguardando informacao "
+                f"de entrega.",
+            )
+
         flash("Pagamento confirmado.", "success")
     except SQLAlchemyError:
         db.session.rollback()
@@ -417,6 +461,17 @@ def informar_entrega(rodada_id, lanchonete_id):
                           f"Fornecedor informou entrega para {entrega_dt.strftime('%d/%m/%Y')}",
                           lanchonete_id=lanchonete_id, ator_id=current_user.id)
         db.session.commit()
+
+        lanch = db.session.get(Lanchonete, lanchonete_id)
+        if lanch and lanch.responsavel:
+            notificar_evento(
+                lanch.responsavel,
+                "Entrega informada",
+                f"{_fornecedor.razao_social} informou entrega para "
+                f"{entrega_dt.strftime('%d/%m/%Y')} na rodada '{rodada.nome}'. "
+                f"Confirme o recebimento quando chegar.",
+            )
+
         flash("Entrega registrada.", "success")
     except SQLAlchemyError:
         db.session.rollback()

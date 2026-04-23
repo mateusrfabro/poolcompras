@@ -26,6 +26,10 @@ class Usuario(UserMixin, db.Model):
     # Cada redefinir_senha / perfil com troca de senha atualiza esse campo.
     senha_atualizada_em = db.Column(db.DateTime, nullable=True)
 
+    # Chat ID do Telegram — usuario cola depois de falar com @BotFather + nosso bot.
+    # Se None, notificacoes caem no fallback de log.
+    telegram_chat_id = db.Column(db.String(32), nullable=True)
+
     lanchonete = db.relationship(
         "Lanchonete", backref="responsavel", uselist=False,
         foreign_keys="Lanchonete.usuario_id",

@@ -9,6 +9,7 @@ from app.models import (
     Produto, Rodada, RodadaProduto, Cotacao,
     ItemPedido, ParticipacaoRodada, SubmissaoCotacao, NotaNegociacao,
 )
+from app.services.notificacoes import notificar_evento
 from . import admin_bp, admin_required
 
 
@@ -71,28 +72,44 @@ def moderar_pedidos(rodada_id):
 
         nome_lanchonete = part.lanchonete.nome_fantasia if part.lanchonete else f"#{part.lanchonete_id}"
 
+        notif_titulo = notif_detalhes = None
         if acao == "aprovar":
             part.pedido_aprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
             part.pedido_aprovado_por_id = current_user.id
             part.pedido_devolvido_em = None
             part.pedido_reprovado_em = None
             flash(f"Pedido de {nome_lanchonete} aprovado.", "success")
+            notif_titulo = "Pedido aprovado"
+            notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi aprovado "
+                              f"e entrou no pool.")
         elif acao == "devolver":
             part.pedido_devolvido_em = datetime.now(timezone.utc).replace(tzinfo=None)
             part.pedido_motivo_devolucao = motivo
             part.pedido_enviado_em = None
             part.pedido_aprovado_em = None
             flash(f"Pedido de {nome_lanchonete} devolvido a lanchonete.", "success")
+            notif_titulo = "Pedido devolvido"
+            motivo_txt = f" Motivo: {motivo}." if motivo else ""
+            notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi devolvido "
+                              f"pelo admin.{motivo_txt} Ajuste e reenvie.")
         elif acao == "reprovar":
             part.pedido_reprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
             part.pedido_aprovado_em = None
             flash(f"Pedido de {nome_lanchonete} reprovado.", "warning")
+            notif_titulo = "Pedido reprovado"
+            notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi reprovado "
+                              f"pelo admin. Contate-nos se precisar.")
         elif acao == "reverter":
             part.pedido_aprovado_em = None
             part.pedido_aprovado_por_id = None
             flash(f"Aprovacao de {nome_lanchonete} revertida. Pedido voltou a aguardar moderacao.", "info")
 
         db.session.commit()
+
+        # Notifica a lanchonete do desfecho
+        if notif_titulo and part.lanchonete and part.lanchonete.responsavel:
+            notificar_evento(part.lanchonete.responsavel, notif_titulo, notif_detalhes)
+
         return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
 
     participacoes = (
@@ -144,22 +161,32 @@ def aprovar_cotacoes(rodada_id):
 
         nome_forn = sub.fornecedor.razao_social if sub.fornecedor else f"#{sub.fornecedor_id}"
 
+        notif_titulo = notif_detalhes = None
         if acao == "aprovar":
             sub.aprovada_em = datetime.now(timezone.utc).replace(tzinfo=None)
             sub.aprovada_por_id = current_user.id
             sub.devolvida_em = None
             flash(f"Cotacao de {nome_forn} aprovada.", "success")
+            notif_titulo = "Cotação aprovada"
+            notif_detalhes = (f"Sua cotação final na rodada '{rodada.nome}' foi "
+                              f"aprovada pelo admin e está disponível pras lanchonetes.")
         elif acao == "devolver":
             sub.devolvida_em = datetime.now(timezone.utc).replace(tzinfo=None)
             sub.enviada_em = None
             sub.aprovada_em = None
             flash(f"Cotacao de {nome_forn} devolvida pra negociacao.", "success")
+            notif_titulo = "Cotação devolvida"
+            notif_detalhes = (f"Sua cotação na rodada '{rodada.nome}' foi devolvida "
+                              f"pelo admin. Ajuste os preços e reenvie.")
         elif acao == "reverter":
             sub.aprovada_em = None
             sub.aprovada_por_id = None
             flash(f"Aprovacao de {nome_forn} revertida.", "info")
 
         db.session.commit()
+
+        if notif_titulo and sub.fornecedor and sub.fornecedor.responsavel:
+            notificar_evento(sub.fornecedor.responsavel, notif_titulo, notif_detalhes)
         return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
 
     submissoes = (

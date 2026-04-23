@@ -55,6 +55,7 @@
                 <a href="{{ url_for('auth.logout') }}" class="btn-logout">Sair</a>
 
             {% else %}
+                <a href="{{ url_for('marketplace.listar') }}">Fornecedores</a>
                 <a href="{{ url_for('auth.login') }}">Entrar</a>
                 <a href="{{ url_for('auth.registro') }}">Cadastrar</a>
             {% endif %}

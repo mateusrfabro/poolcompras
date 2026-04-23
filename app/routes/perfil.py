@@ -72,6 +72,9 @@ def editar():
         # --- Dados do Usuario (comum aos 3 tipos) ---
         usuario.nome_responsavel = request.form.get("nome_responsavel", "").strip() or usuario.nome_responsavel
         usuario.telefone = request.form.get("telefone", "").strip()
+        # Telegram chat_id: opcional, string vazia vira None
+        chat_id_raw = request.form.get("telegram_chat_id", "").strip()
+        usuario.telegram_chat_id = chat_id_raw or None
 
         # --- Dados especificos por tipo ---
         if current_user.is_lanchonete and usuario.lanchonete:
