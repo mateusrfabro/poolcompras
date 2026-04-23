@@ -6,6 +6,7 @@ Regras:
 - Troca de senha eh opcional: se senha_nova vazia, nao altera
 - Troca de senha exige senha_atual correta (protege de sessao sequestrada)
 """
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -100,6 +101,7 @@ def editar():
                 db.session.rollback()
                 return redirect(url_for("perfil.editar"))
             usuario.senha_hash = generate_password_hash(senha_nova)
+            usuario.senha_atualizada_em = datetime.now(timezone.utc).replace(tzinfo=None)
             flash("Perfil atualizado e senha trocada com sucesso.", "success")
         else:
             flash("Perfil atualizado com sucesso.", "success")

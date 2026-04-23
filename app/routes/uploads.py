@@ -44,10 +44,13 @@ def servir(key):
              "jpg": "image/jpeg", "jpeg": "image/jpeg"}
     mime = mimes.get(ext, "application/octet-stream")
 
+    # PDFs forcam download — PDFs maliciosos podem conter JS que executa inline.
+    # Imagens mantem inline pra preview funcionar.
+    forcar_download = ext == "pdf"
     return send_file(
         BytesIO(conteudo),
         mimetype=mime,
-        as_attachment=False,  # inline (abre no browser)
+        as_attachment=forcar_download,
         download_name=f"comprovante_{participacao.rodada_id}_{participacao.lanchonete_id}.{ext}",
     )
 

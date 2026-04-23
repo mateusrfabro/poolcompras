@@ -21,6 +21,9 @@ class Usuario(UserMixin, db.Model):
     tipo = db.Column(db.String(20), default="lanchonete")  # admin, lanchonete, fornecedor
     is_admin = db.Column(db.Boolean, default=False)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    # Marcador pra invalidar tokens de reset + sessoes ao trocar senha.
+    # Cada redefinir_senha / perfil com troca de senha atualiza esse campo.
+    senha_atualizada_em = db.Column(db.DateTime, nullable=True)
 
     lanchonete = db.relationship(
         "Lanchonete", backref="responsavel", uselist=False,

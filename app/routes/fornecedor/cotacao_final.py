@@ -85,7 +85,8 @@ def cotar_final(rodada_id):
                 preco_final = float(preco_str.replace(",", "."))
             except ValueError:
                 continue
-            if preco_final <= 0:
+            if preco_final <= 0 or preco_final > 100000:
+                # Rejeita zero/negativo e valores absurdos (digito errado, ataque).
                 continue
 
             existente = cotacoes_existentes.get(pid)

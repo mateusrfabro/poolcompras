@@ -86,7 +86,7 @@ def enviar_cotacao(rodada_id):
         count = 0
         for produto in produtos:
             preco = request.form.get(f"preco_{produto.id}", type=float)
-            if preco and preco > 0:
+            if preco and 0 < preco <= 100000:
                 existente = Cotacao.query.filter_by(
                     rodada_id=rodada_id,
                     fornecedor_id=fornecedor.id,
@@ -152,7 +152,7 @@ def cotar_catalogo(rodada_id):
             if preco_str:
                 try:
                     preco = float(preco_str.replace(",", "."))
-                    if preco > 0:
+                    if 0 < preco <= 100000:
                         rp.preco_partida = preco
                         count_precos += 1
                 except ValueError:

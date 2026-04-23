@@ -107,3 +107,38 @@ def test_redefinir_senha_usuario_logado_redireciona_dashboard(client_lanchA):
     assert r.status_code == 302
     r = client_lanchA.get("/redefinir-senha/qualquer", follow_redirects=False)
     assert r.status_code == 302
+
+
+def test_redefinir_senha_token_one_use(app, client):
+    """Token ja usado (senha_atualizada_em > timestamp do token) eh rejeitado."""
+    usuario = Usuario.query.filter_by(email="lancha@test.com").first()
+    token = _gera_token(app, usuario.id)
+
+    # 1a tentativa: funciona
+    csrf = _get_csrf(client, f"/redefinir-senha/{token}")
+    client.post(f"/redefinir-senha/{token}",
+                data={"csrf_token": csrf, "senha": "senha1_nova",
+                      "confirmacao": "senha1_nova"},
+                follow_redirects=False)
+
+    # 2a tentativa com o MESMO token (como se atacante tivesse pego do log):
+    # usuario.senha_atualizada_em >= timestamp do token -> rejeita
+    from app import db as _db
+    from app.models import Usuario as U
+    u = _db.session.get(U, usuario.id)
+    assert u.senha_atualizada_em is not None
+
+    r = client.get(f"/redefinir-senha/{token}", follow_redirects=False)
+    assert r.status_code == 302
+    assert "/esqueci-senha" in r.headers["Location"]
+
+
+def test_login_timing_equalizado(client):
+    """Nao eh teste de timing de fato (instavel), so garante que email inexistente
+    nao da erro de servidor e tem mesma resposta visivel (flash 'E-mail ou senha
+    incorretos')."""
+    r = client.post("/login",
+                    data={"email": "ninguem@lugar.nenhum", "senha": "qualquer"},
+                    follow_redirects=False)
+    assert r.status_code == 200  # renderiza login de volta com flash
+    assert b"incorretos" in r.data

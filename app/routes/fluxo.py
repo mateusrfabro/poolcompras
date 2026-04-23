@@ -403,6 +403,13 @@ def informar_entrega(rodada_id, lanchonete_id):
         flash("Data de entrega inválida.", "error")
         return redirect(url_for("fornecedor.dashboard"))
 
+    # Rejeita datas absurdas (digito errado ou ataque)
+    hoje = date.today()
+    from datetime import timedelta
+    if entrega_dt < hoje - timedelta(days=30) or entrega_dt > hoje + timedelta(days=365):
+        flash("Data de entrega fora da janela aceitavel.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
+
     try:
         p.entrega_informada_em = _agora()
         p.entrega_informada_por_id = current_user.id

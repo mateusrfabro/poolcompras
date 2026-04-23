@@ -43,17 +43,20 @@ def enviar_link_recuperacao(usuario, link: str) -> bool:
         # TODO(bloco-smtp): implementar envio via smtplib
         logger.info("notif.smtp.skipped (implementacao pendente) user=%s", usuario.id)
 
-    # 3. Fallback: log estruturado pro admin pegar manualmente em DEV
-    # Em prod (gunicorn + journald) vira rastro auditavel.
+    # 3. Fallback: log estruturado pro admin pegar manualmente.
+    # SO logamos o link em DEBUG ou TESTING — em prod (journald compartilhado)
+    # qualquer operador com acesso a logs sequestraria a conta.
     app = current_app._get_current_object() if current_app else None
-    if app and app.debug:
+    dev_like = bool(app and (app.debug or app.config.get("TESTING")))
+    if dev_like:
         logger.warning(
             "RECUPERACAO_SENHA usuario=%s email=%s link=%s\n%s",
             usuario.id, usuario.email, link, texto,
         )
     else:
+        # Em prod, registra apenas o pedido. O link assinado NAO vai pra log.
         logger.info(
-            "RECUPERACAO_SENHA usuario=%s email=%s link=%s",
-            usuario.id, usuario.email, link,
+            "RECUPERACAO_SENHA_SOLICITADA usuario=%s (canal ainda nao plugado — envio manual)",
+            usuario.id,
         )
     return False
