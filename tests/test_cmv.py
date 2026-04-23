@@ -1,5 +1,5 @@
 """Testes da tela Meu CMV da lanchonete + service de calculo."""
-from datetime import datetime
+from datetime import datetime, timezone
 from app import db
 from app.models import (
     Cotacao, ItemPedido, Lanchonete, Produto, Rodada,
@@ -29,10 +29,10 @@ def _prepara_compra_aceita():
     ))
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.utcnow(),
-        pedido_aprovado_em=datetime.utcnow(),
+        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
         aceite_proposta=True,
-        aceite_em=datetime.utcnow(),
+        aceite_em=datetime.now(timezone.utc).replace(tzinfo=None),
     ))
     rodada.status = "finalizada"
     db.session.commit()
@@ -103,7 +103,7 @@ def test_cmv_ignora_rodadas_nao_aceitas(app):
     # Participacao com aceite_proposta=False (recusou)
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_aprovado_em=datetime.utcnow(),
+        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
         aceite_proposta=False,
     ))
     db.session.commit()

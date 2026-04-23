@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -160,7 +160,7 @@ def catalogo():
                 flash("Voce precisa escolher ao menos 1 item antes de enviar o pedido.", "error")
                 return redirect(url_for("pedidos.catalogo"))
 
-            participacao.pedido_enviado_em = datetime.utcnow()
+            participacao.pedido_enviado_em = datetime.now(timezone.utc).replace(tzinfo=None)
             # Se estava devolvido, limpa pra nova avaliacao
             participacao.pedido_devolvido_em = None
             participacao.pedido_motivo_devolucao = None

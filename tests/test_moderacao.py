@@ -1,6 +1,6 @@
 """Testes do fluxo de moderacao de pedidos + cotacao final + filtros de invisibilidade."""
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from app import db
 from app.models import (
     ParticipacaoRodada, ItemPedido, Rodada, Produto, Lanchonete,
@@ -78,7 +78,7 @@ def _cria_pedido_enviado_lanchA():
     ))
     part = ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.utcnow(),
+        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.session.add(part)
     db.session.commit()
@@ -161,7 +161,7 @@ def test_fornecedor_ve_pedido_aprovado(app, client_forn):
     rodada_id, part_id = _cria_pedido_enviado_lanchA()
     # Aprova direto no DB (sem passar por client_admin)
     part = db.session.get(ParticipacaoRodada, part_id)
-    part.pedido_aprovado_em = datetime.utcnow()
+    part.pedido_aprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
     db.session.commit()
 
     r = client_forn.get(f"/fornecedor/rodada/{rodada_id}")
@@ -243,8 +243,8 @@ def _prepara_rodada_em_negociacao():
     ))
     db.session.add(ParticipacaoRodada(
         rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.utcnow(),
-        pedido_aprovado_em=datetime.utcnow(),
+        pedido_enviado_em=datetime.now(timezone.utc).replace(tzinfo=None),
+        pedido_aprovado_em=datetime.now(timezone.utc).replace(tzinfo=None),
     ))
     rodada.status = "em_negociacao"
     db.session.commit()
@@ -276,7 +276,7 @@ def test_admin_aprova_cotacao_final(app, client_admin):
     rodada_id, forn_id = _prepara_rodada_em_negociacao()
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.utcnow(),
+        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.session.add(sub)
     db.session.commit()
@@ -296,7 +296,7 @@ def test_admin_devolve_cotacao_final(app, client_admin):
     rodada_id, forn_id = _prepara_rodada_em_negociacao()
     sub = SubmissaoCotacao(
         rodada_id=rodada_id, fornecedor_id=forn_id,
-        enviada_em=datetime.utcnow(),
+        enviada_em=datetime.now(timezone.utc).replace(tzinfo=None),
     )
     db.session.add(sub)
     db.session.commit()

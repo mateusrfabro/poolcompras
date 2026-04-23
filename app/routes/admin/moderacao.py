@@ -1,5 +1,5 @@
 """Rotas admin de moderacao: pedidos de lanchonetes, produtos sugeridos e cotacoes finais."""
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -72,19 +72,19 @@ def moderar_pedidos(rodada_id):
         nome_lanchonete = part.lanchonete.nome_fantasia if part.lanchonete else f"#{part.lanchonete_id}"
 
         if acao == "aprovar":
-            part.pedido_aprovado_em = datetime.utcnow()
+            part.pedido_aprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
             part.pedido_aprovado_por_id = current_user.id
             part.pedido_devolvido_em = None
             part.pedido_reprovado_em = None
             flash(f"Pedido de {nome_lanchonete} aprovado.", "success")
         elif acao == "devolver":
-            part.pedido_devolvido_em = datetime.utcnow()
+            part.pedido_devolvido_em = datetime.now(timezone.utc).replace(tzinfo=None)
             part.pedido_motivo_devolucao = motivo
             part.pedido_enviado_em = None
             part.pedido_aprovado_em = None
             flash(f"Pedido de {nome_lanchonete} devolvido a lanchonete.", "success")
         elif acao == "reprovar":
-            part.pedido_reprovado_em = datetime.utcnow()
+            part.pedido_reprovado_em = datetime.now(timezone.utc).replace(tzinfo=None)
             part.pedido_aprovado_em = None
             flash(f"Pedido de {nome_lanchonete} reprovado.", "warning")
         elif acao == "reverter":
@@ -145,12 +145,12 @@ def aprovar_cotacoes(rodada_id):
         nome_forn = sub.fornecedor.razao_social if sub.fornecedor else f"#{sub.fornecedor_id}"
 
         if acao == "aprovar":
-            sub.aprovada_em = datetime.utcnow()
+            sub.aprovada_em = datetime.now(timezone.utc).replace(tzinfo=None)
             sub.aprovada_por_id = current_user.id
             sub.devolvida_em = None
             flash(f"Cotacao de {nome_forn} aprovada.", "success")
         elif acao == "devolver":
-            sub.devolvida_em = datetime.utcnow()
+            sub.devolvida_em = datetime.now(timezone.utc).replace(tzinfo=None)
             sub.enviada_em = None
             sub.aprovada_em = None
             flash(f"Cotacao de {nome_forn} devolvida pra negociacao.", "success")

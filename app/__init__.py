@@ -208,11 +208,11 @@ def create_app(config_name="default"):
     # Filter: tempo restante humanizado ("Fecha em 3h45min", "Fecha em 2 dias", "Encerrada")
     @app.template_filter("countdown")
     def format_countdown(data):
-        from datetime import datetime
+        from datetime import datetime, timezone
         alvo = _normaliza_alvo(data)
         if alvo is None:
             return "—"
-        delta = alvo - datetime.utcnow()
+        delta = alvo - datetime.now(timezone.utc).replace(tzinfo=None)
         total_seg = int(delta.total_seconds())
         if total_seg <= 0:
             return "Encerrada"
@@ -238,11 +238,11 @@ def create_app(config_name="default"):
     # Filter: booleano de urgencia (prazo hoje ou amanha)
     @app.template_filter("urgente")
     def is_urgente(data):
-        from datetime import datetime
+        from datetime import datetime, timezone
         alvo = _normaliza_alvo(data)
         if alvo is None:
             return False
-        delta = alvo - datetime.utcnow()
+        delta = alvo - datetime.now(timezone.utc).replace(tzinfo=None)
         return 0 < delta.total_seconds() <= 86400  # <= 24h
 
     return app
