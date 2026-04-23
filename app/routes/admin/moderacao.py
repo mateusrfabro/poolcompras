@@ -4,7 +4,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
-from app import db
+from app import db, limiter
 from app.models import (
     Produto, Rodada, RodadaProduto, Cotacao,
     ItemPedido, ParticipacaoRodada, SubmissaoCotacao, NotaNegociacao,
@@ -254,6 +254,7 @@ def aprovar_cotacoes(rodada_id):
 @admin_bp.route("/submissoes/<int:submissao_id>/nota", methods=["POST"])
 @login_required
 @admin_required
+@limiter.limit("30/hour")
 def adicionar_nota_negociacao_admin(submissao_id):
     sub = db.session.get(SubmissaoCotacao, submissao_id)
     if not sub:

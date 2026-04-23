@@ -5,7 +5,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.orm import contains_eager
 
-from app import db
+from app import db, limiter
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto,
     ParticipacaoRodada, RodadaProduto,
@@ -182,6 +182,7 @@ def cotar_final(rodada_id):
 @fornecedor_bp.route("/rodada/<int:rodada_id>/cotacao-final/nota", methods=["POST"])
 @login_required
 @fornecedor_required
+@limiter.limit("30/hour")
 def adicionar_nota_negociacao(rodada_id):
     """Fornecedor adiciona nota na negociacao (permitido so se nao aprovada)."""
     fornecedor = current_user.fornecedor

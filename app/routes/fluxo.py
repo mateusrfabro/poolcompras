@@ -123,6 +123,29 @@ def _so_fornecedor_da_rodada(rodada_id):
     return rodada, current_user.fornecedor
 
 
+def _fornecedor_atende_lanchonete(rodada_id, fornecedor_id, lanchonete_id):
+    """True se o fornecedor venceu (selecionada=True) algum produto pedido pela lanchonete.
+
+    Usado pra impedir que fornecedor A marque pagamento/entrega pra lanchonete X
+    cujos itens foram todos vencidos por fornecedor B.
+    """
+    q = (
+        db.session.query(Cotacao.id)
+        .join(
+            ItemPedido,
+            (ItemPedido.rodada_id == Cotacao.rodada_id)
+            & (ItemPedido.produto_id == Cotacao.produto_id),
+        )
+        .filter(
+            Cotacao.rodada_id == rodada_id,
+            Cotacao.fornecedor_id == fornecedor_id,
+            Cotacao.selecionada.is_(True),
+            ItemPedido.lanchonete_id == lanchonete_id,
+        )
+    )
+    return db.session.query(q.exists()).scalar()
+
+
 # ---------- Acoes da lanchonete ----------
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/aceitar", methods=["POST"])
@@ -387,6 +410,9 @@ def avaliar_detalhado(rodada_id):
 @login_required
 def confirmar_pagamento(rodada_id, lanchonete_id):
     rodada, _fornecedor = _so_fornecedor_da_rodada(rodada_id)
+    # Ownership: fornecedor so confirma pagamento de lanchonete cujos itens ele venceu.
+    if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):
+        abort(403)
     p = ParticipacaoRodada.query.filter_by(
         rodada_id=rodada_id, lanchonete_id=lanchonete_id,
     ).first_or_404()
@@ -429,6 +455,8 @@ def confirmar_pagamento(rodada_id, lanchonete_id):
 @login_required
 def informar_entrega(rodada_id, lanchonete_id):
     rodada, _fornecedor = _so_fornecedor_da_rodada(rodada_id)
+    if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):
+        abort(403)
     p = ParticipacaoRodada.query.filter_by(
         rodada_id=rodada_id, lanchonete_id=lanchonete_id,
     ).first_or_404()

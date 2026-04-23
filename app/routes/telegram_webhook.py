@@ -23,7 +23,7 @@ import requests
 from flask import Blueprint, abort, jsonify, request, current_app
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
-from app import db
+from app import db, limiter
 from app.models import Usuario
 
 logger = logging.getLogger(__name__)
@@ -40,8 +40,13 @@ def _vincular_serializer():
 
 
 @telegram_webhook_bp.route("/webhook/telegram/<secret>", methods=["POST"])
+@limiter.limit("60/minute")
 def receber_update(secret):
-    """Endpoint que o Telegram chama quando o webhook esta ativo."""
+    """Endpoint que o Telegram chama quando o webhook esta ativo.
+
+    Rate-limit 60/min protege contra brute-force do secret na URL.
+    Telegram em trafego normal manda <1/s pra um bot pequeno.
+    """
     esperado = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
     if not esperado or secret != esperado:
         abort(404)  # nao revela que a rota existe
