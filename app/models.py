@@ -18,8 +18,9 @@ class Usuario(UserMixin, db.Model):
     senha_hash = db.Column(db.String(256), nullable=False)
     nome_responsavel = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20))
-    tipo = db.Column(db.String(20), default="lanchonete")  # admin, lanchonete, fornecedor
-    is_admin = db.Column(db.Boolean, default=False)
+    tipo = db.Column(db.String(20), default="lanchonete", index=True)  # admin, lanchonete, fornecedor
+    is_admin = db.Column(db.Boolean, default=False)  # legado — is_admin @property garante fonte unica
+    ativo = db.Column(db.Boolean, default=True, nullable=False, index=True)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     # Marcador pra invalidar tokens de reset + sessoes ao trocar senha.
     # Cada redefinir_senha / perfil com troca de senha atualiza esse campo.
@@ -54,7 +55,7 @@ class Lanchonete(db.Model):
     endereco = db.Column(db.String(200))
     bairro = db.Column(db.String(80))
     cidade = db.Column(db.String(80), default="Londrina")
-    ativa = db.Column(db.Boolean, default=True)
+    ativa = db.Column(db.Boolean, default=True, index=True)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     pedidos = db.relationship("ItemPedido", backref="lanchonete")
@@ -82,7 +83,7 @@ class Rodada(db.Model):
     nome = db.Column(db.String(100), nullable=False)
     data_abertura = db.Column(db.DateTime, nullable=False)
     data_fechamento = db.Column(db.DateTime, nullable=False)
-    status = db.Column(db.String(20), default="aberta")  # aberta, fechada, cotando, finalizada, cancelada
+    status = db.Column(db.String(20), default="aberta", index=True)  # aberta, fechada, cotando, finalizada, cancelada
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Deadlines por fase do fluxo (opcional — se null, usa data_fechamento como padrao)
@@ -128,7 +129,7 @@ class Fornecedor(db.Model):
     telefone = db.Column(db.String(20))
     email = db.Column(db.String(120))
     cidade = db.Column(db.String(80))
-    ativo = db.Column(db.Boolean, default=True)
+    ativo = db.Column(db.Boolean, default=True, index=True)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Dados para pagamento (lanchonete paga por fora do sistema)
@@ -152,7 +153,7 @@ class Cotacao(db.Model):
     preco_unitario = db.Column(Numeric(12, 2), nullable=False)
     quantidade_minima = db.Column(Numeric(10, 3))
     validade = db.Column(db.DateTime)
-    selecionada = db.Column(db.Boolean, default=False)
+    selecionada = db.Column(db.Boolean, default=False, index=True)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     produto = db.relationship("Produto")
@@ -188,14 +189,14 @@ class ParticipacaoRodada(db.Model):
     # reprovado: pedido_reprovado_em != NULL  (bloqueado)
     pedido_enviado_em       = db.Column(db.DateTime)
     pedido_aprovado_em      = db.Column(db.DateTime)
-    pedido_aprovado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    pedido_aprovado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)
     pedido_devolvido_em     = db.Column(db.DateTime)
     pedido_motivo_devolucao = db.Column(db.String(500))
     pedido_reprovado_em     = db.Column(db.DateTime)
 
     # Fase: aceite da proposta consolidada
     # null = pendente | True = aceitou | False = recusou
-    aceite_proposta    = db.Column(db.Boolean)
+    aceite_proposta    = db.Column(db.Boolean, index=True)
     aceite_em          = db.Column(db.DateTime)
 
     # Fase: comprovante de pagamento (chave opaca de storage — caminho no disco/S3)
@@ -204,11 +205,11 @@ class ParticipacaoRodada(db.Model):
 
     # Fase: fornecedor confirma recebimento do pagamento
     pagamento_confirmado_em      = db.Column(db.DateTime)
-    pagamento_confirmado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    pagamento_confirmado_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)
 
     # Fase: fornecedor informa entrega
     entrega_informada_em   = db.Column(db.DateTime)
-    entrega_informada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"))
+    entrega_informada_por_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)
     entrega_data           = db.Column(db.Date)  # data real da entrega
 
     # Fase: cliente confirma recebimento
@@ -290,7 +291,7 @@ class EventoRodada(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"), nullable=False, index=True)
     lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"), index=True)  # null = evento global
-    ator_id       = db.Column(db.Integer, db.ForeignKey("usuarios.id"))  # quem fez (null = sistema)
+    ator_id       = db.Column(db.Integer, db.ForeignKey("usuarios.id"), index=True)  # quem fez (null = sistema)
     tipo          = db.Column(db.String(40), nullable=False)
     descricao     = db.Column(db.String(500))
     criado_em     = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
@@ -323,7 +324,7 @@ class RodadaProduto(db.Model):
     preco_partida = db.Column(Numeric(12, 2))
 
     # Quem sugeriu: null = admin (durante montagem); fornecedor_id = sugerido durante cotacao
-    adicionado_por_fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"))
+    adicionado_por_fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"), index=True)
 
     # Aprovacao: None = aprovado automaticamente (admin adicionou); True = admin aprovou; False = admin recusou
     aprovado = db.Column(db.Boolean, default=None)
@@ -358,7 +359,7 @@ class SubmissaoCotacao(db.Model):
 
     enviada_em         = db.Column(db.DateTime)
     aprovada_em        = db.Column(db.DateTime)
-    aprovada_por_id    = db.Column(db.Integer, db.ForeignKey("usuarios.id", name="fk_submissao_aprovada_por"))
+    aprovada_por_id    = db.Column(db.Integer, db.ForeignKey("usuarios.id", name="fk_submissao_aprovada_por"), index=True)
     devolvida_em       = db.Column(db.DateTime)
 
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
@@ -391,7 +392,7 @@ class NotaNegociacao(db.Model):
     autor_tipo       = db.Column(db.String(20), nullable=False)  # admin | fornecedor
     autor_usuario_id = db.Column(db.Integer,
         db.ForeignKey("usuarios.id", name="fk_nota_autor"),
-        nullable=False)
+        nullable=False, index=True)
     texto     = db.Column(db.String(1000), nullable=False)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
 

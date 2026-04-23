@@ -49,6 +49,9 @@ def login():
             senha_ok = False
 
         if usuario and senha_ok:
+            if not getattr(usuario, "ativo", True):
+                flash("Conta desativada. Contate o administrador.", "error")
+                return render_template("auth/login.html")
             login_user(usuario)
             next_page = request.args.get("next")
             return redirect(next_page or url_for("main.dashboard"))
