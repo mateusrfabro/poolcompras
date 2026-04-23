@@ -1,150 +1,31 @@
-"""
-Historico de rodadas da lanchonete logada.
-Lista as rodadas em que a lanchonete participou (com status e contagem
-de produtos). Detalhe expandido fica em template separado.
+"""Detalhe expandido de 1 rodada da lanchonete logada.
+
+Inclui itens, precos (partida x final), economia, timeline de fases (aceite,
+comprovante, pagamento, entrega, recebimento, avaliacao), insights automaticos
+e break-down de pagamento por fornecedor.
 """
 from collections import defaultdict
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
+
 from app import db
 from app.models import (
-    Rodada, ItemPedido, Cotacao, Produto, Lanchonete, Fornecedor,
-    ParticipacaoRodada, EventoRodada, AvaliacaoRodada,
+    Rodada, ItemPedido, Cotacao, Produto, RodadaProduto,
+    ParticipacaoRodada, EventoRodada, SubmissaoCotacao,
 )
-from app.services.csv_export import csv_response
-
-historico_bp = Blueprint("historico", __name__, url_prefix="/minhas-rodadas")
-
-
-# Status que aparecem na aba Historico (nao queremos mostrar so "aberta" aqui)
-STATUS_HISTORICO = ("finalizada", "cancelada", "fechada", "cotando")
-
-
-@historico_bp.route("/")
-@login_required
-def listar():
-    """Listagem de rodadas em que a lanchonete logada participou."""
-    if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta área é apenas para lanchonetes.", "warning")
-        return redirect(url_for("main.dashboard"))
-
-    lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro primeiro.", "error")
-        return redirect(url_for("main.dashboard"))
-
-    # Filtro de status (default: todas)
-    filtro_status = request.args.get("status", "todas")
-
-    # Subquery: rodadas em que essa lanchonete teve pedidos
-    rodadas_q = (
-        db.session.query(
-            Rodada,
-            func.count(ItemPedido.id).label("qtd_itens"),
-            func.count(func.distinct(ItemPedido.produto_id)).label("qtd_produtos"),
-        )
-        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
-        .filter(ItemPedido.lanchonete_id == lanchonete.id)
-        .group_by(Rodada.id)
-        .order_by(Rodada.data_abertura.desc())
-    )
-
-    # Nota dada pela lanchonete por rodada (map id->estrelas)
-    notas_map = dict(
-        db.session.query(ParticipacaoRodada.rodada_id,
-                         ParticipacaoRodada.avaliacao_geral)
-        .filter(ParticipacaoRodada.lanchonete_id == lanchonete.id,
-                ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .all()
-    )
-
-    if filtro_status == "todas":
-        # Mostra todas em que ela participou (inclui aberta tambem)
-        pass
-    elif filtro_status in STATUS_HISTORICO:
-        rodadas_q = rodadas_q.filter(Rodada.status == filtro_status)
-    elif filtro_status == "aberta":
-        rodadas_q = rodadas_q.filter(Rodada.status == "aberta")
-
-    rodadas = rodadas_q.all()
-
-    # Conta totais p/ filtros (badges) — DISTINCT pra contar RODADAS, nao itens
-    contagem = dict(
-        db.session.query(Rodada.status, func.count(func.distinct(Rodada.id)))
-        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
-        .filter(ItemPedido.lanchonete_id == lanchonete.id)
-        .group_by(Rodada.status)
-        .all()
-    )
-    contagem["todas"] = sum(contagem.values())
-
-    return render_template(
-        "historico/listar.html",
-        rodadas=rodadas,
-        filtro_status=filtro_status,
-        contagem=contagem,
-        lanchonete=lanchonete,
-        notas_map=notas_map,
-    )
-
-
-@historico_bp.route("/exportar.csv")
-@login_required
-def exportar():
-    """Exporta histórico de rodadas da lanchonete logada."""
-    if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta área é apenas para lanchonetes.", "warning")
-        return redirect(url_for("main.dashboard"))
-    lanchonete = current_user.lanchonete
-    if not lanchonete:
-        return redirect(url_for("main.dashboard"))
-
-    rodadas = (
-        db.session.query(
-            Rodada,
-            func.count(ItemPedido.id).label("qtd_itens"),
-        )
-        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
-        .filter(ItemPedido.lanchonete_id == lanchonete.id)
-        .group_by(Rodada.id)
-        .order_by(Rodada.data_abertura.desc())
-        .all()
-    )
-    notas = dict(
-        db.session.query(ParticipacaoRodada.rodada_id, ParticipacaoRodada.avaliacao_geral)
-        .filter(ParticipacaoRodada.lanchonete_id == lanchonete.id,
-                ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .all()
-    )
-    return csv_response(
-        filename=f"minhas_rodadas_{lanchonete.nome_fantasia.replace(' ', '_')}.csv",
-        headers=["rodada", "data", "status", "itens_pedidos", "avaliacao"],
-        rows=[
-            [r.nome, r.data_abertura.strftime("%Y-%m-%d"), r.status,
-             str(qtd), str(notas.get(r.id, ""))]
-            for r, qtd in rodadas
-        ],
-    )
+from . import historico_bp, lanchonete_required
 
 
 @historico_bp.route("/<int:rodada_id>")
 @login_required
+@lanchonete_required
 def detalhe(rodada_id):
     """Detalhe expandido de uma rodada da lanchonete logada."""
-    if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta área é apenas para lanchonetes.", "warning")
-        return redirect(url_for("main.dashboard"))
-
     lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro primeiro.", "error")
-        return redirect(url_for("main.dashboard"))
-
     rodada = db.get_or_404(Rodada, rodada_id)
 
-    # Garante que a lanchonete participou desta rodada
     participou = (
         ItemPedido.query
         .filter_by(rodada_id=rodada_id, lanchonete_id=lanchonete.id)
@@ -154,7 +35,6 @@ def detalhe(rodada_id):
         flash("Você não participou desta rodada.", "warning")
         return redirect(url_for("historico.listar"))
 
-    # Itens da lanchonete nesta rodada (com produto, joinedload p/ evitar N+1 no loop)
     meus_itens = (
         ItemPedido.query
         .options(joinedload(ItemPedido.produto))
@@ -164,7 +44,7 @@ def detalhe(rodada_id):
         .all()
     )
 
-    # Fix N+1: carrega TODAS as cotacoes da rodada em 1 query (com fornecedor) e agrupa
+    # Fix N+1: 1 query por categoria de dados
     cotacoes_por_produto = defaultdict(list)
     cotacoes_rodada = (
         Cotacao.query
@@ -175,15 +55,13 @@ def detalhe(rodada_id):
     for c in cotacoes_rodada:
         cotacoes_por_produto[c.produto_id].append(c)
 
-    # Carrega precos de partida (RodadaProduto.preco_partida) em 1 query
-    from app.models import RodadaProduto
     partidas_por_produto = {
         rp.produto_id: float(rp.preco_partida) if rp.preco_partida else None
         for rp in RodadaProduto.query.filter_by(rodada_id=rodada_id).all()
     }
 
     # Monta detalhe de cada item com lookup O(1)
-    # preco_partida = RodadaProduto.preco_partida (preco de referencia do pool, fase 1)
+    # preco_partida = RodadaProduto.preco_partida (preco de referencia, fase 1)
     # preco_final = menor cotacao final (vencedora) OU cotacao selecionada se existir
     itens_detalhe = []
     for item in meus_itens:
@@ -245,7 +123,6 @@ def detalhe(rodada_id):
         pct = float(economia / total_partida * 100)
         insights.append(f"Economia total de {pct:.1f}% sobre o preço de partida.")
 
-    # Produto com maior economia (absoluta)
     itens_com_eco = [
         i for i in itens_detalhe
         if i["preco_partida"] and i["preco_final"] and i["preco_partida"] > i["preco_final"]
@@ -260,7 +137,6 @@ def detalhe(rodada_id):
             .replace(",", "X").replace(".", ",").replace("X", ".")
         )
 
-    # Fornecedor mais presente (venceu mais cotações)
     forn_contagem = defaultdict(int)
     for i in itens_detalhe:
         if i.get("fornecedor"):
@@ -269,14 +145,12 @@ def detalhe(rodada_id):
         top_forn = max(forn_contagem, key=forn_contagem.get)
         insights.append(f"Fornecedor destaque: {top_forn} (venceu {forn_contagem[top_forn]} produtos).")
 
-    # Fase 2: participacao da lanchonete + eventos da timeline
     participacao = (
         ParticipacaoRodada.query
         .filter_by(rodada_id=rodada_id, lanchonete_id=lanchonete.id)
         .first()
     )
 
-    # Eventos da rodada filtrados para esta lanchonete (inclui eventos globais lanchonete_id=NULL)
     eventos = (
         EventoRodada.query
         .options(joinedload(EventoRodada.ator))
@@ -289,11 +163,9 @@ def detalhe(rodada_id):
         .all()
     )
 
-    # Monta as fases da timeline com status derivado da participacao (ordem canonica)
     fases = _montar_fases_timeline(participacao, rodada)
 
-    # Proposta disponivel pra aceite: rodada finalizada OU em_negociacao com submissao aprovada
-    from app.models import SubmissaoCotacao
+    # Proposta disponivel pra aceite: finalizada OU em_negociacao com submissao aprovada
     proposta_disponivel = rodada.status == "finalizada" or (
         rodada.status == "em_negociacao" and
         db.session.query(SubmissaoCotacao.id).filter_by(rodada_id=rodada_id)
@@ -332,11 +204,10 @@ def _media_geral_rodada(rodada_id):
 def _montar_fases_timeline(participacao, rodada):
     """Deriva o estado das 6 fases do fluxo a partir da ParticipacaoRodada.
 
-    Retorna lista de dicts {icone, status, titulo, descricao, data} onde:
-      status = 'ok' (verde ✓) | 'problema' (vermelho ✗) | 'pendente' (cinza —)
+    Retorna lista de dicts {status, titulo, descricao, data} onde:
+      status = 'ok' (verde) | 'problema' (vermelho) | 'pendente' (cinza)
     """
     if not participacao:
-        # Rodada aberta ou cancelada sem participacao registrada: tudo pendente
         return []
 
     def _fmt(dt):
@@ -399,7 +270,7 @@ def _montar_fases_timeline(participacao, rodada):
 
     # 6. Avaliacao
     if participacao.avaliacao_geral:
-        fases.append({"status": "ok", "titulo": f"Rodada avaliada",
+        fases.append({"status": "ok", "titulo": "Rodada avaliada",
                       "descricao": f"Você deu {participacao.avaliacao_geral} estrela(s).",
                       "data": _fmt(participacao.avaliacao_em)})
     else:
@@ -407,126 +278,3 @@ def _montar_fases_timeline(participacao, rodada):
                       "descricao": "Você ainda não avaliou esta rodada.", "data": None})
 
     return fases
-
-
-# ---------- Analytics da lanchonete ----------
-
-@historico_bp.route("/analytics")
-@login_required
-def analytics():
-    """Dashboard de KPIs pessoais da lanchonete logada."""
-    if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta área é apenas para lanchonetes.", "warning")
-        return redirect(url_for("main.dashboard"))
-
-    lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro primeiro.", "error")
-        return redirect(url_for("main.dashboard"))
-
-    lid = lanchonete.id
-
-    # Contagens basicas
-    total_rodadas = (
-        db.session.query(func.count(func.distinct(ItemPedido.rodada_id)))
-        .filter(ItemPedido.lanchonete_id == lid)
-        .scalar()
-    ) or 0
-
-    rodadas_avaliadas = (
-        ParticipacaoRodada.query
-        .filter_by(lanchonete_id=lid)
-        .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .count()
-    )
-
-    total_itens_pedidos = (
-        ItemPedido.query.filter_by(lanchonete_id=lid).count()
-    )
-
-    # Média de avaliação que a lanchonete deu
-    minha_media = (
-        db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
-        .filter(ParticipacaoRodada.lanchonete_id == lid,
-                ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .scalar()
-    ) or 0
-
-    # Produtos mais pedidos pela lanchonete (top 5)
-    meus_top_produtos = (
-        db.session.query(
-            Produto.nome, Produto.unidade,
-            func.sum(ItemPedido.quantidade).label("total"),
-        )
-        .join(ItemPedido, ItemPedido.produto_id == Produto.id)
-        .filter(ItemPedido.lanchonete_id == lid)
-        .group_by(Produto.id)
-        .order_by(func.sum(ItemPedido.quantidade).desc())
-        .limit(5)
-        .all()
-    )
-
-    # Ranking de fornecedores que a lanchonete avaliou (media das notas que ELA deu)
-    meus_fornecedores = (
-        db.session.query(
-            Fornecedor.razao_social,
-            func.avg(AvaliacaoRodada.estrelas).label("media"),
-            func.count(AvaliacaoRodada.id).label("avaliacoes"),
-        )
-        .join(AvaliacaoRodada, AvaliacaoRodada.fornecedor_id == Fornecedor.id)
-        .filter(AvaliacaoRodada.lanchonete_id == lid)
-        .group_by(Fornecedor.id)
-        .order_by(func.avg(AvaliacaoRodada.estrelas).desc())
-        .all()
-    )
-
-    # Historico de notas por rodada (pra mini grafico textual)
-    historico_notas = (
-        db.session.query(
-            Rodada.nome,
-            ParticipacaoRodada.avaliacao_geral,
-        )
-        .join(ParticipacaoRodada, ParticipacaoRodada.rodada_id == Rodada.id)
-        .filter(ParticipacaoRodada.lanchonete_id == lid,
-                ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .order_by(Rodada.data_abertura.desc())
-        .limit(10)
-        .all()
-    )
-
-    return render_template(
-        "historico/analytics.html",
-        lanchonete=lanchonete,
-        total_rodadas=total_rodadas,
-        rodadas_avaliadas=rodadas_avaliadas,
-        total_itens_pedidos=total_itens_pedidos,
-        minha_media=round(float(minha_media), 1),
-        meus_top_produtos=meus_top_produtos,
-        meus_fornecedores=meus_fornecedores,
-        historico_notas=historico_notas,
-    )
-
-
-@historico_bp.route("/cmv")
-@login_required
-def cmv():
-    """Meu CMV: gasto efetivo em compras aceitas, economia obtida, top categorias/produtos."""
-    if current_user.is_admin or current_user.is_fornecedor:
-        flash("Esta área é apenas para lanchonetes.", "warning")
-        return redirect(url_for("main.dashboard"))
-    lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro primeiro.", "error")
-        return redirect(url_for("main.dashboard"))
-
-    from app.services.cmv_lanchonete import calcular_cmv
-    dados = calcular_cmv(lanchonete.id)
-
-    return render_template(
-        "historico/cmv.html",
-        lanchonete=lanchonete,
-        kpis=dados["kpis"],
-        top_categorias=dados["top_categorias"],
-        top_produtos=dados["top_produtos"],
-        por_rodada=dados["por_rodada"],
-    )
