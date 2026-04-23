@@ -44,12 +44,14 @@ def lanchonete_nova():
             return render_template("admin/lanchonete_form.html", lanchonete=None,
                                    form_data=request.form)
 
+        ativa = "ativa" in request.form
         usuario = Usuario(
             email=email,
             senha_hash=generate_password_hash(senha),
             nome_responsavel=nome_responsavel,
             telefone=request.form.get("telefone", "").strip(),
             tipo="lanchonete",
+            ativo=ativa,  # alinha Usuario.ativo com Lanchonete.ativa (invariante)
         )
         db.session.add(usuario)
         db.session.flush()
@@ -61,7 +63,7 @@ def lanchonete_nova():
             endereco=request.form.get("endereco", "").strip(),
             bairro=request.form.get("bairro", "").strip(),
             cidade=request.form.get("cidade", "").strip() or "Londrina",
-            ativa="ativa" in request.form,
+            ativa=ativa,
         )
         db.session.add(lanchonete)
         db.session.commit()

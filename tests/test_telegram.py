@@ -9,9 +9,9 @@ from app.services.notificacoes import (
 )
 
 
-def _user_com_telegram(chat_id="12345678"):
+def _user_com_telegram(chat_id=12345678):
     u = Usuario.query.filter_by(email="lancha@test.com").first()
-    u.telegram_chat_id = chat_id
+    u.telegram_chat_id = int(chat_id)
     db.session.commit()
     return u
 
@@ -44,7 +44,7 @@ def test_canal_inativo_sem_chat_id(app):
 
 def test_envio_sucesso_chama_api(app):
     """Com TOKEN + chat_id, faz POST pra api.telegram.org e retorna True em 200."""
-    u = _user_com_telegram("99999")
+    u = _user_com_telegram(99999)
     os.environ["TELEGRAM_BOT_TOKEN"] = "abc:def"
 
     resp = MagicMock()
@@ -57,7 +57,8 @@ def test_envio_sucesso_chama_api(app):
             mock_post.assert_called_once()
             args, kwargs = mock_post.call_args
             assert "bot" in args[0] and args[0].endswith("/sendMessage")
-            assert kwargs["json"]["chat_id"] == "99999"
+            # chat_id vai como int (BigInteger no DB) ou str — aceita ambos
+            assert str(kwargs["json"]["chat_id"]) == "99999"
             assert kwargs["json"]["text"] == "msg teste"
             assert kwargs["json"]["parse_mode"] == "HTML"
             assert kwargs["timeout"] == 5
@@ -69,7 +70,7 @@ def test_envio_falha_api_cai_no_fallback(app, caplog):
     """API retorna 400 (chat_id invalido, bot bloqueado, etc) -> False + log."""
     import logging
     caplog.set_level(logging.WARNING, logger="app.services.notificacoes")
-    u = _user_com_telegram("000")
+    u = _user_com_telegram(1000)
     os.environ["TELEGRAM_BOT_TOKEN"] = "x"
 
     resp = MagicMock()
@@ -91,7 +92,7 @@ def test_envio_timeout_nao_levanta(app, caplog):
     import logging
     import requests as req_module
     caplog.set_level(logging.WARNING, logger="app.services.notificacoes")
-    u = _user_com_telegram("111")
+    u = _user_com_telegram(111)
     os.environ["TELEGRAM_BOT_TOKEN"] = "x"
 
     try:
@@ -107,7 +108,7 @@ def test_envio_timeout_nao_levanta(app, caplog):
 
 def test_notificar_evento_inclui_titulo_e_detalhes(app):
     """notificar_evento formata HTML bold no titulo + separa detalhes."""
-    u = _user_com_telegram("1")
+    u = _user_com_telegram(1)
     os.environ["TELEGRAM_BOT_TOKEN"] = "x"
 
     capturado = {}
@@ -132,7 +133,7 @@ def test_notificar_evento_inclui_titulo_e_detalhes(app):
 
 def test_link_recuperacao_usa_telegram_quando_disponivel(app):
     """enviar_link_recuperacao chama enviar_telegram se canal ativo."""
-    u = _user_com_telegram("333")
+    u = _user_com_telegram(333)
     os.environ["TELEGRAM_BOT_TOKEN"] = "x"
 
     resp = MagicMock()

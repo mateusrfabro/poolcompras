@@ -16,6 +16,8 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     # Limite de upload (sera usado quando comprovantes entrarem na Fase 2)
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
+    # Username do bot Telegram (usado pra montar deep link t.me/<username>?start=...)
+    TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "poolcomprasbot")
 
 
 class DevelopmentConfig(Config):

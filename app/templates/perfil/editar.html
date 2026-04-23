@@ -107,6 +107,20 @@
                 <input type="text" id="conta" name="conta"
                        value="{{ usuario.fornecedor.conta or '' }}">
             </div>
+
+            <h3>Marketplace público</h3>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="aparece_no_marketplace"
+                           {{ 'checked' if usuario.fornecedor.aparece_no_marketplace }}>
+                    Exibir minha empresa na vitrine pública <code>/marketplace</code>
+                    (razão social + cidade + nota média)
+                </label>
+                <small class="muted" style="display:block; margin-top:.25rem;">
+                    Desmarcado por padrão. Se marcar, autorizo a exibição desses dados
+                    a visitantes não-logados (LGPD).
+                </small>
+            </div>
         {% endif %}
 
         <h3>Notificações por Telegram <span class="muted">(opcional)</span></h3>
@@ -132,22 +146,10 @@
             </ol>
         {% endif %}
 
-        {# Campo manual escondido por padrao — so aparece via toggle "vincular manual" #}
-        <details style="margin-top: 1rem;">
-            <summary class="muted" style="cursor: pointer;">Prefere colar o chat_id manualmente?</summary>
-            <div class="form-group" style="margin-top: 0.75rem;">
-                <label for="telegram_chat_id">chat_id (numérico)</label>
-                <input type="text" id="telegram_chat_id" name="telegram_chat_id"
-                       value="{{ usuario.telegram_chat_id or '' }}"
-                       placeholder="Ex: 123456789"
-                       pattern="^-?\d{5,20}$"
-                       inputmode="numeric">
-                <small class="muted">
-                    Obtenha em <strong>@userinfobot</strong> no Telegram (mande <code>/start</code>
-                    e copie o número Id). Deixe vazio para desativar.
-                </small>
-            </div>
-        </details>
+        {# Campo manual removido do form principal. A vinculacao manual agora
+           tem rota propria /perfil/telegram/manual que tambem passa por OTP,
+           evitando sequestro de chat_id alheio. UI aparece abaixo so quando
+           nao conectado. #}
 
         <h3>Trocar senha <span class="muted">(opcional)</span></h3>
         <p class="muted" style="margin-top: -0.5rem;">Preencha os 3 campos apenas se quiser trocar sua senha.</p>
@@ -181,18 +183,43 @@
             </button>
         </form>
     {% else %}
-        <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <p class="muted" style="margin-top: 1rem;">
+            <strong>Dica:</strong> mantenha esta aba aberta — o link do bot abre em nova aba.
+            Você tem 10 minutos pra concluir.
+        </p>
+        <div style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
             <form method="POST" action="{{ url_for('perfil.telegram_iniciar') }}"
-                  style="display: inline;">
+                  target="_blank" rel="noopener" style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-primary">Conectar Telegram</button>
+                <button type="submit" class="btn btn-primary">1. Conectar Telegram</button>
             </form>
             <form method="POST" action="{{ url_for('perfil.telegram_confirmar') }}"
                   style="display: inline;">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-outline">Já dei /start, concluir</button>
+                <button type="submit" class="btn btn-outline">2. Já dei /start, concluir</button>
             </form>
         </div>
+
+        <details style="margin-top: 1.25rem;">
+            <summary class="muted" style="cursor: pointer;">Prefere colar o chat_id manualmente?</summary>
+            <form method="POST" action="{{ url_for('perfil.telegram_manual') }}"
+                  style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                    <label for="chat_id">chat_id</label>
+                    <input type="text" id="chat_id" name="chat_id"
+                           placeholder="Ex: 123456789"
+                           pattern="^-?\d{5,20}$"
+                           inputmode="numeric" required>
+                </div>
+                <button type="submit" class="btn btn-outline">Enviar código</button>
+            </form>
+            <small class="muted" style="display: block; margin-top: 0.5rem;">
+                Obtenha seu chat_id em <strong>@userinfobot</strong>.
+                Mesmo digitado, exigimos confirmação via código enviado pelo bot
+                — chat_id de outra pessoa não consegue ser vinculado.
+            </small>
+        </details>
     {% endif %}
 </div>
 {% endblock %}

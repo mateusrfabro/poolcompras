@@ -38,10 +38,11 @@ def rodada_aprovar_produtos(rodada_id):
             rp.aprovado = True
             flash(f"Produto '{rp.produto.nome}' aprovado.", "success")
         elif acao == "recusar":
+            # Apenas marca a SUGESTAO como recusada nesta rodada.
+            # Antes: tambem setava produto.ativo=False — side effect GLOBAL que
+            # desativava o produto em todas as outras rodadas (bug latente).
             rp.aprovado = False
-            if rp.produto:
-                rp.produto.ativo = False
-            flash(f"Produto '{rp.produto.nome}' recusado.", "success")
+            flash(f"Produto '{rp.produto.nome}' recusado nesta rodada.", "success")
 
         db.session.commit()
         return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))

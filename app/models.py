@@ -26,9 +26,9 @@ class Usuario(UserMixin, db.Model):
     # Cada redefinir_senha / perfil com troca de senha atualiza esse campo.
     senha_atualizada_em = db.Column(db.DateTime, nullable=True)
 
-    # Chat ID do Telegram — usuario cola depois de falar com @BotFather + nosso bot.
-    # Se None, notificacoes caem no fallback de log.
-    telegram_chat_id = db.Column(db.String(32), nullable=True)
+    # Chat ID do Telegram. Unique+index pra webhook futuro achar user dono
+    # rapido. BigInteger suporta IDs negativos (grupos) e positivos (1:1).
+    telegram_chat_id = db.Column(db.BigInteger, nullable=True, index=True, unique=True)
 
     lanchonete = db.relationship(
         "Lanchonete", backref="responsavel", uselist=False,
@@ -134,6 +134,9 @@ class Fornecedor(db.Model):
     email = db.Column(db.String(120))
     cidade = db.Column(db.String(80))
     ativo = db.Column(db.Boolean, default=True, index=True)
+    # Opt-in LGPD: so aparece no marketplace publico se explicitamente True.
+    # Default False pro comportamento novo ser "conservador" (fornecedor escolhe aparecer).
+    aparece_no_marketplace = db.Column(db.Boolean, default=False, nullable=False)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     # Dados para pagamento (lanchonete paga por fora do sistema)

@@ -28,7 +28,9 @@ def listar():
             func.count(AvaliacaoRodada.id).label("avaliacoes"),
         )
         .outerjoin(AvaliacaoRodada, AvaliacaoRodada.fornecedor_id == Fornecedor.id)
+        # Opt-in LGPD: apenas fornecedores que autorizaram explicitamente.
         .filter(Fornecedor.ativo.is_(True))
+        .filter(Fornecedor.aparece_no_marketplace.is_(True))
         .group_by(Fornecedor.id)
         .order_by(
             func.avg(AvaliacaoRodada.estrelas).desc().nullslast(),

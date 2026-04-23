@@ -22,8 +22,12 @@
                     <div class="stats-inline">
                         {% if f.media %}
                             <div class="stat-inline">
-                                <span class="stars-readonly">
-                                    {% for i in range(1, 6) %}{% if i <= f.media|round %}★{% else %}☆{% endif %}{% endfor %}
+                                <span class="stars-readonly"
+                                      role="img"
+                                      aria-label="{{ '%.1f'|format(f.media)|replace('.', ',') }} de 5 estrelas">
+                                    {% for i in range(1, 6) -%}
+                                    <span aria-hidden="true">{% if i <= f.media|round %}★{% else %}☆{% endif %}</span>
+                                    {%- endfor %}
                                 </span>
                                 <strong>{{ '%.1f'|format(f.media)|replace('.', ',') }}</strong>
                                 <span class="muted">({{ f.avaliacoes }} aval.)</span>
@@ -44,8 +48,9 @@
             {% endfor %}
         </div>
     {% else %}
-        <div class="analytics-card">
-            <p class="muted">Nenhum fornecedor cadastrado ainda.</p>
+        <div class="empty-state">
+            Ainda não há fornecedores listados publicamente.
+            Se você é fornecedor parceiro, ative a exibição em Meu Perfil.
         </div>
     {% endif %}
 

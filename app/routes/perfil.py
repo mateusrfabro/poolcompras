@@ -6,12 +6,15 @@ Regras:
 - Troca de senha eh opcional: se senha_nova vazia, nao altera
 - Troca de senha exige senha_atual correta (protege de sessao sequestrada)
 """
+import hashlib
+import hmac
 import logging
 import os
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -23,17 +26,65 @@ logger = logging.getLogger(__name__)
 
 perfil_bp = Blueprint("perfil", __name__, url_prefix="/perfil")
 
-# Vinculacao Telegram: token assinado embutido no deep link do bot.
-# Usuario clica "Conectar Telegram" -> abrimos t.me/<bot>?start=<token>.
-# Quando ele manda /start <token> pro bot, chamamos getUpdates, procuramos
-# pelo token, extraimos chat_id e salvamos.
+# Vinculacao Telegram — fluxo em 2 etapas:
+#   1. Descoberta do chat_id (via deep link t.me/bot?start=<token>  OU  colado manualmente)
+#   2. Confirmacao por OTP: sistema envia codigo de 6 digitos pro chat_id
+#      descoberto. So salva Usuario.telegram_chat_id se o user colar o codigo
+#      correto de volta. Fecha o vetor "atacante cola chat_id alheio".
 _TELEGRAM_SALT = "vincular-telegram"
-_TELEGRAM_TTL_SEG = 600  # 10 min — tempo suficiente pra abrir Telegram e clicar start
-_TELEGRAM_BOT_USERNAME = "poolcomprasbot"
+_TELEGRAM_TTL_SEG = 600  # 10 min — tempo pra abrir Telegram e dar start
+_TELEGRAM_OTP_TTL_SEG = 600
+_TELEGRAM_OTP_LEN = 6
+
+
+def _bot_username():
+    return current_app.config.get("TELEGRAM_BOT_USERNAME", "poolcomprasbot")
 
 
 def _telegram_serializer():
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
+
+
+def _hash_codigo(codigo: str, secret: str) -> str:
+    """HMAC-SHA256 — guardamos hash em sess ao, nao o codigo em claro."""
+    return hmac.new(secret.encode(), codigo.encode(), hashlib.sha256).hexdigest()
+
+
+def _iniciar_otp(chat_id) -> bool:
+    """Gera codigo de 6 digitos, envia pro chat_id e registra pendencia
+    em session. Retorna True se o envio teve sucesso (chat_id valido).
+
+    Se envio falhar (chat_id nao existe, bot bloqueado, etc), nao
+    registra pendencia — o usuario recebe feedback e pode tentar outro ID.
+    """
+    codigo = f"{secrets.randbelow(10**_TELEGRAM_OTP_LEN):0{_TELEGRAM_OTP_LEN}d}"
+    secret = current_app.config["SECRET_KEY"]
+    codigo_hash = _hash_codigo(codigo, secret)
+
+    # Envia ANTES de salvar pendencia — se falhar, nao contamina session
+    class _Pseudo:
+        def __init__(self, cid, uid):
+            self.telegram_chat_id = str(cid)
+            self.id = uid
+            self.nome_responsavel = ""
+            self.email = ""
+    ok = enviar_telegram(
+        _Pseudo(chat_id, current_user.id),
+        f"<b>PoolCompras — codigo de confirmacao</b>\n\n"
+        f"Seu codigo de vinculacao: <code>{codigo}</code>\n\n"
+        f"Digite-o no site pra concluir. Expira em 10 minutos.\n"
+        f"Se nao solicitou, ignore esta mensagem.",
+    )
+    if not ok:
+        return False
+
+    session["telegram_otp_pendente"] = {
+        "chat_id": str(chat_id),
+        "codigo_hash": codigo_hash,
+        "expira_em": (datetime.now(timezone.utc) +
+                      timedelta(seconds=_TELEGRAM_OTP_TTL_SEG)).isoformat(),
+    }
+    return True
 
 
 # Campos sensiveis: mudanca exige reautenticacao com senha_atual.
@@ -92,9 +143,8 @@ def editar():
         # --- Dados do Usuario (comum aos 3 tipos) ---
         usuario.nome_responsavel = request.form.get("nome_responsavel", "").strip() or usuario.nome_responsavel
         usuario.telefone = request.form.get("telefone", "").strip()
-        # Telegram chat_id: opcional, string vazia vira None
-        chat_id_raw = request.form.get("telegram_chat_id", "").strip()
-        usuario.telegram_chat_id = chat_id_raw or None
+        # telegram_chat_id NAO eh setado aqui — fluxo dedicado /telegram/*
+        # garante que apenas o dono do chat pode vincular (via OTP).
 
         # --- Dados especificos por tipo ---
         if current_user.is_lanchonete and usuario.lanchonete:
@@ -114,6 +164,7 @@ def editar():
             f.banco = request.form.get("banco", "").strip() or None
             f.agencia = request.form.get("agencia", "").strip() or None
             f.conta = request.form.get("conta", "").strip() or None
+            f.aparece_no_marketplace = "aparece_no_marketplace" in request.form
 
         # --- Troca de senha (se fluxo iniciado acima, senha_atual ja foi validada) ---
         if vai_trocar_senha:
@@ -135,7 +186,7 @@ def editar():
         return redirect(url_for("perfil.editar"))
 
     return render_template("perfil/editar.html", usuario=usuario,
-                           bot_username=_TELEGRAM_BOT_USERNAME)
+                           bot_username=_bot_username())
 
 
 # --------- Vinculacao de Telegram via deep link ---------
@@ -145,15 +196,9 @@ def editar():
 @login_required
 @limiter.limit("10 per hour", error_message="Muitas tentativas. Aguarde.")
 def telegram_iniciar():
-    """Gera token assinado + redireciona pro deep link do bot.
-
-    Usuario vai abrir o Telegram com /start <token>. Depois volta e clica
-    'Concluir conexao' que chama /telegram/confirmar.
-    """
+    """Gera token assinado + redireciona pro deep link do bot."""
     token = _telegram_serializer().dumps(current_user.id, salt=_TELEGRAM_SALT)
-    deep_link = f"https://t.me/{_TELEGRAM_BOT_USERNAME}?start={token}"
-    # Guardamos o token na session pra /confirmar saber o que procurar
-    from flask import session
+    deep_link = f"https://t.me/{_bot_username()}?start={token}"
     session["telegram_token"] = token
     return redirect(deep_link)
 
@@ -162,19 +207,12 @@ def telegram_iniciar():
 @login_required
 @limiter.limit("20 per hour", error_message="Muitas tentativas. Aguarde.")
 def telegram_confirmar():
-    """Apos o usuario ter dado /start no bot, chama getUpdates pra descobrir
-    o chat_id dele via match do token assinado.
-
-    Se encontrar: salva chat_id + envia mensagem de confirmacao.
-    Senao: flash orienta ir no @userinfobot ou tentar de novo.
-    """
-    from flask import session
+    """Apos /start no bot, busca chat_id via getUpdates + dispara OTP."""
     token_esperado = session.pop("telegram_token", None)
     if not token_esperado:
         flash("Sessao de conexao expirada. Clique 'Conectar Telegram' novamente.", "warning")
         return redirect(url_for("perfil.editar"))
 
-    # Valida que token ainda pertence a este user + nao expirou
     try:
         user_id = _telegram_serializer().loads(
             token_esperado, salt=_TELEGRAM_SALT, max_age=_TELEGRAM_TTL_SEG,
@@ -194,29 +232,110 @@ def telegram_confirmar():
     if not chat_id:
         flash(
             "Nao encontramos seu /start no Telegram. Verifique se abriu o bot "
-            "@poolcomprasbot e apertou 'Iniciar' dentro de 10 minutos. "
-            "Se preferir, cole o chat_id manualmente abaixo.",
+            f"@{_bot_username()} e apertou 'Iniciar' dentro de 10 minutos.",
             "warning",
         )
         return redirect(url_for("perfil.editar"))
 
-    # Salva + manda mensagem de confirmacao
-    current_user.telegram_chat_id = str(chat_id)
-    db.session.commit()
-    enviar_telegram(
-        current_user,
-        "<b>Telegram conectado!</b>\n\nA partir de agora voce recebe "
-        "notificacoes do PoolCompras aqui. Se quiser desvincular, volte em "
-        "Meu perfil → Desconectar Telegram.",
+    if not _iniciar_otp(chat_id):
+        flash("Nao conseguimos enviar o codigo de confirmacao. Tente novamente.", "error")
+        return redirect(url_for("perfil.editar"))
+
+    flash(
+        "Enviamos um codigo de 6 digitos no seu Telegram — cole-o abaixo pra concluir.",
+        "info",
     )
-    flash("Telegram conectado! Voce deve ter recebido uma mensagem de confirmacao.", "success")
-    return redirect(url_for("perfil.editar"))
+    return redirect(url_for("perfil.telegram_codigo"))
+
+
+@perfil_bp.route("/telegram/manual", methods=["POST"])
+@login_required
+@limiter.limit("10 per hour", error_message="Muitas tentativas. Aguarde.")
+def telegram_manual():
+    """Usuario informa chat_id diretamente (fallback).
+
+    Mesmo com chat_id em maos, exige OTP: se for chat_id alheio, a msg do
+    codigo vai pro dono real — atacante nao consegue colar.
+    """
+    chat_id = request.form.get("chat_id", "").strip()
+    if not chat_id or not chat_id.lstrip("-").isdigit():
+        flash("chat_id invalido (deve ser numerico).", "error")
+        return redirect(url_for("perfil.editar"))
+
+    if not os.environ.get("TELEGRAM_BOT_TOKEN"):
+        flash("Bot Telegram nao esta configurado no servidor.", "error")
+        return redirect(url_for("perfil.editar"))
+
+    if not _iniciar_otp(chat_id):
+        flash(
+            "Nao conseguimos enviar o codigo pro chat_id informado. Confirme "
+            "que voce iniciou conversa com o bot e digitou o ID correto.",
+            "error",
+        )
+        return redirect(url_for("perfil.editar"))
+
+    flash("Enviamos um codigo de 6 digitos no Telegram — cole-o abaixo.", "info")
+    return redirect(url_for("perfil.telegram_codigo"))
+
+
+@perfil_bp.route("/telegram/codigo", methods=["GET", "POST"])
+@login_required
+@limiter.limit("20 per hour", methods=["POST"],
+               error_message="Muitas tentativas. Aguarde.")
+def telegram_codigo():
+    """Formulario pra colar o codigo OTP que foi enviado pro Telegram.
+
+    GET: renderiza form. POST: valida codigo + TTL, salva chat_id se bater.
+    """
+    pendente = session.get("telegram_otp_pendente")
+    if not pendente:
+        flash("Nenhuma vinculacao pendente. Clique em 'Conectar Telegram' no seu perfil.",
+              "warning")
+        return redirect(url_for("perfil.editar"))
+
+    # Expirou?
+    expira_em = datetime.fromisoformat(pendente["expira_em"])
+    if datetime.now(timezone.utc) > expira_em:
+        session.pop("telegram_otp_pendente", None)
+        flash("Codigo expirado. Clique em 'Conectar Telegram' novamente.", "warning")
+        return redirect(url_for("perfil.editar"))
+
+    if request.method == "POST":
+        informado = request.form.get("codigo", "").strip()
+        if not informado or len(informado) != _TELEGRAM_OTP_LEN or not informado.isdigit():
+            flash("Codigo invalido (6 digitos numericos).", "error")
+            return render_template("perfil/telegram_codigo.html",
+                                    bot_username=_bot_username())
+
+        secret = current_app.config["SECRET_KEY"]
+        esperado_hash = pendente["codigo_hash"]
+        if not hmac.compare_digest(_hash_codigo(informado, secret), esperado_hash):
+            flash("Codigo incorreto. Tente de novo.", "error")
+            return render_template("perfil/telegram_codigo.html",
+                                    bot_username=_bot_username())
+
+        # OK — confirma vinculacao. Coluna eh BigInteger.
+        current_user.telegram_chat_id = int(pendente["chat_id"])
+        db.session.commit()
+        session.pop("telegram_otp_pendente", None)
+        enviar_telegram(
+            current_user,
+            "<b>Telegram conectado!</b>\n\nA partir de agora voce recebe "
+            "notificacoes do PoolCompras aqui. Se quiser desvincular, volte "
+            "em Meu perfil -> Desconectar Telegram.",
+        )
+        flash("Telegram conectado com sucesso!", "success")
+        return redirect(url_for("perfil.editar"))
+
+    return render_template("perfil/telegram_codigo.html",
+                            bot_username=_bot_username())
 
 
 @perfil_bp.route("/telegram/desvincular", methods=["POST"])
 @login_required
 def telegram_desvincular():
     current_user.telegram_chat_id = None
+    session.pop("telegram_otp_pendente", None)
     db.session.commit()
     flash("Telegram desconectado. Notificacoes caem no log do servidor.", "info")
     return redirect(url_for("perfil.editar"))

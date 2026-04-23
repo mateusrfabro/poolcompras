@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Confirmar Telegram — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="form-page">
+    <a href="{{ url_for('perfil.editar') }}" class="btn-back">Voltar para o perfil</a>
+    <h2>Confirmar vinculação do Telegram</h2>
+    <p class="page-sub">
+        Enviamos um código de 6 dígitos no seu Telegram via
+        <strong>@{{ bot_username }}</strong>. Cole o código abaixo pra concluir.
+    </p>
+
+    <form method="POST" class="form-card" style="max-width: 360px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div class="form-group">
+            <label for="codigo">Código</label>
+            <input type="text" id="codigo" name="codigo" required
+                   inputmode="numeric" pattern="^\d{6}$"
+                   maxlength="6" minlength="6"
+                   autocomplete="one-time-code"
+                   autofocus
+                   placeholder="123456"
+                   style="font-size: 1.5rem; letter-spacing: 0.3rem; text-align: center;">
+            <small class="muted">O código expira em 10 minutos.</small>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Confirmar</button>
+    </form>
+
+    <p class="muted" style="margin-top: 1rem; text-align: center;">
+        Não recebeu? Volte ao perfil e clique "Conectar Telegram" de novo.
+    </p>
+</div>
+{% endblock %}

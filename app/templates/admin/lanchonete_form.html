@@ -25,11 +25,13 @@
                 <div class="form-group">
                     <label for="nome_responsavel">Nome completo</label>
                     <input type="text" id="nome_responsavel" name="nome_responsavel" required
+                           autocomplete="name"
                            value="{{ form_data.get('nome_responsavel', '') }}">
                 </div>
                 <div class="form-group">
                     <label for="telefone">WhatsApp</label>
-                    <input type="text" id="telefone" name="telefone"
+                    <input type="tel" id="telefone" name="telefone"
+                           inputmode="tel" autocomplete="tel"
                            placeholder="(43) 99999-9999"
                            value="{{ form_data.get('telefone', '') }}">
                 </div>
@@ -38,12 +40,15 @@
                 <div class="form-group">
                     <label for="email">E-mail de acesso</label>
                     <input type="email" id="email" name="email" required
+                           autocomplete="email"
+                           spellcheck="false" autocapitalize="off"
                            value="{{ form_data.get('email', '') }}">
                 </div>
                 <div class="form-group">
                     <label for="senha">Senha inicial (mín. 8 caracteres)</label>
                     <input type="password" id="senha" name="senha" required minlength="8"
                            autocomplete="new-password">
+                    <small class="muted">Essa senha será exibida apenas uma vez após o cadastro — anote para repassar.</small>
                 </div>
             </div>
 
