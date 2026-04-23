@@ -85,7 +85,7 @@
                     <input type="hidden" name="submissao_id" value="{{ s.id }}">
                     <button type="submit" name="acao" value="aprovar" class="btn btn-primary">Aprovar</button>
                     <button type="submit" name="acao" value="devolver" class="btn btn-outline"
-                            onclick="return confirm('Devolver esta cotação para o fornecedor ajustar?');">
+                            data-confirm="Devolver esta cotação para o fornecedor ajustar?">
                         Devolver pra negociação
                     </button>
                 </form>
@@ -112,7 +112,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="submissao_id" value="{{ s.id }}">
                             <button type="submit" name="acao" value="reverter" class="btn btn-outline btn-sm"
-                                    onclick="return confirm('Reverter aprovacao?');">
+                                    data-confirm="Reverter aprovacao?">
                                 Reverter
                             </button>
                         </form>

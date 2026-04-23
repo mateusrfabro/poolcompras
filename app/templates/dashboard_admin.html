@@ -5,10 +5,10 @@
 <div class="dashboard">
     <h2>Painel Administrativo</h2>
 
-    {# Sub-nav separando operacional de analytics #}
     <div class="sub-nav">
-        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item sub-nav-active">Operacional</a>
-        <a href="{{ url_for('admin.analytics') }}" class="sub-nav-item">Indicadores e KPIs</a>
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item sub-nav-active">Painel</a>
+        <a href="{{ url_for('admin.analytics') }}" class="sub-nav-item">Indicadores</a>
+        <a href="{{ url_for('admin.relatorio') }}" class="sub-nav-item">Relatório</a>
     </div>
 
     <div class="stats-grid">
@@ -38,7 +38,7 @@
                 <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada_aberta.id) }}" class="btn btn-outline">Ver detalhes</a>
                 <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                    <button type="submit" class="btn btn-danger" onclick="return confirm('Fechar esta rodada?')">Fechar rodada</button>
+                    <button type="submit" class="btn btn-danger" data-confirm="Fechar esta rodada?">Fechar rodada</button>
                 </form>
             </div>
         </div>

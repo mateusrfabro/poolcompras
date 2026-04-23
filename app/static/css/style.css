@@ -305,6 +305,11 @@ body {
     color: var(--primary);
     white-space: nowrap;  /* evita R$ quebrar em 2 linhas */
     line-height: 1.2;
+    overflow-wrap: anywhere;  /* valores enormes podem quebrar se extrapolar */
+    max-width: 100%;
+}
+@media (max-width: 480px) {
+    .stat-number { font-size: 1.5rem; }
 }
 .stat-label {
     font-size: 0.85rem;
@@ -445,6 +450,7 @@ body {
 .alert-success { background: #d4edda; color: var(--success); }
 .alert-error { background: #f8d7da; color: var(--danger); }
 .alert-warning { background: #fff3cd; color: #856404; }
+.alert-info { background: #e0f2fe; color: #075985; }
 
 /* Paginas de erro (404, 403, 500) */
 .error-page {

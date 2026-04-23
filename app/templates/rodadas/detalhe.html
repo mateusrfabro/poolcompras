@@ -29,7 +29,7 @@
                           style="display:inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary btn-sm"
-                                onclick="return confirm('Encerrar coleta e iniciar negociação?')">
+                                data-confirm="Encerrar coleta e iniciar negociação?">
                             Encerrar coleta
                         </button>
                     </form>
@@ -43,7 +43,7 @@
                           style="display:inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary btn-sm"
-                                onclick="return confirm('Finalizar a rodada? Lanchonetes poderão aceitar a proposta.')">
+                                data-confirm="Finalizar a rodada? Lanchonetes poderão aceitar a proposta.">
                             Finalizar rodada
                         </button>
                     </form>
@@ -57,7 +57,7 @@
                           style="display:inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('Cancelar esta rodada? Essa ação não pode ser desfeita.')">
+                                data-confirm="Cancelar esta rodada? Essa ação não pode ser desfeita.">
                             Cancelar rodada
                         </button>
                     </form>

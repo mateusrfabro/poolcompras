@@ -132,7 +132,7 @@
                     </form>
                     <form method="POST" action="{{ url_for('fluxo.recusar_proposta', rodada_id=rodada.id) }}" style="display:inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline" onclick="return confirm('Recusar a proposta? Você ficará de fora desta rodada.')">Recusar</button>
+                        <button type="submit" class="btn btn-outline" data-confirm="Recusar a proposta? Você ficará de fora desta rodada.">Recusar</button>
                     </form>
                 </div>
 

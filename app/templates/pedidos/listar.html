@@ -43,7 +43,7 @@
                         {% if rodada.status == 'aberta' %}
                         <form method="POST" action="{{ url_for('pedidos.remover', item_id=item.id) }}" style="display:inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Remover este item?')">Remover</button>
+                            <button type="submit" class="btn btn-sm btn-danger" data-confirm="Remover este item?">Remover</button>
                         </form>
                         {% endif %}
                     </td>

@@ -65,10 +65,10 @@
                     </div>
                     <button type="submit" name="acao" value="aprovar" class="btn btn-primary">Aprovar</button>
                     <button type="submit" name="acao" value="devolver" class="btn btn-outline"
-                            onclick="return confirm('Devolver este pedido para a lanchonete ajustar?');">Devolver</button>
+                            data-confirm="Devolver este pedido para a lanchonete ajustar?">Devolver</button>
                     <button type="submit" name="acao" value="reprovar" class="btn btn-outline"
                             style="color: #c62828; border-color: #c62828;"
-                            onclick="return confirm('Reprovar este pedido? A lanchonete nao podera reenviar.');">Reprovar</button>
+                            data-confirm="Reprovar este pedido? A lanchonete nao podera reenviar.">Reprovar</button>
                 </form>
             </div>
         {% endfor %}
@@ -94,7 +94,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="participacao_id" value="{{ p.id }}">
                             <button type="submit" name="acao" value="reverter" class="btn btn-outline btn-sm"
-                                    onclick="return confirm('Reverter aprovacao? Pedido volta a aguardar moderacao.');">
+                                    data-confirm="Reverter aprovacao? Pedido volta a aguardar moderacao.">
                                 Reverter aprovação
                             </button>
                         </form>

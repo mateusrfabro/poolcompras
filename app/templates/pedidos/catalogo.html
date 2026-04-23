@@ -53,7 +53,7 @@
                 <form method="POST" action="{{ url_for('pedidos.repetir_ultimo_pedido') }}" style="display: inline;">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-primary btn-sm"
-                            onclick="return confirm('Copiar itens da rodada {{ ultima_rodada_pedido.nome }}? Itens que voce ja tem salvos nao serao sobrescritos.');">
+                            data-confirm="Copiar itens da rodada {{ ultima_rodada_pedido.nome }}? Itens que voce ja tem salvos nao serao sobrescritos.">
                         Usar meu último pedido
                     </button>
                 </form>
@@ -139,7 +139,7 @@
                     Salvar (rascunho)
                 </button>
                 <button type="submit" name="acao" value="enviar" class="btn btn-primary" style="flex: 2;"
-                        onclick="return confirm('Enviar o pedido para o admin? Depois de enviar voce ainda pode editar ate ser aprovado.');">
+                        data-confirm="Enviar o pedido para o admin? Depois de enviar voce ainda pode editar ate ser aprovado.">
                     {% if participacao and participacao.pedido_enviado_em %}
                         Reenviar pedido
                     {% else %}

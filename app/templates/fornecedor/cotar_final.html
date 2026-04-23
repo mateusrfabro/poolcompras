@@ -111,7 +111,7 @@
                         Salvar (rascunho)
                     </button>
                     <button type="submit" name="acao" value="enviar" class="btn btn-primary" style="flex: 2;"
-                            onclick="return confirm('Enviar esta cotação pra aprovação do admin?');">
+                            data-confirm="Enviar esta cotação pra aprovação do admin?">
                         {% if submissao and submissao.enviada_em %}Reenviar pra aprovação{% else %}Enviar pra aprovação{% endif %}
                     </button>
                 </div>
