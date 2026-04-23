@@ -19,12 +19,12 @@ Loga erros internamente.
 import logging
 import os
 
-import requests
 from flask import Blueprint, abort, jsonify, request, current_app
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from app import db, limiter
 from app.models import Usuario
+from app.services.notificacoes import post_telegram_raw
 
 logger = logging.getLogger(__name__)
 
@@ -138,15 +138,5 @@ def _processar_update(update: dict):
 
 
 def _enviar(chat_id, texto: str):
-    """Manda mensagem pelo bot. Usa o mesmo service generico."""
-    token = os.environ.get("TELEGRAM_BOT_TOKEN")
-    if not token:
-        return
-    try:
-        requests.post(
-            f"https://api.telegram.org/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": texto, "parse_mode": "HTML"},
-            timeout=5,
-        )
-    except requests.RequestException as e:
-        logger.warning("TELEGRAM_WEBHOOK_SEND_EXC err=%s", e)
+    """Wrapper fino sobre services/notificacoes.post_telegram_raw."""
+    post_telegram_raw(chat_id, texto, contexto="webhook")

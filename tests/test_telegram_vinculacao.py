@@ -72,7 +72,7 @@ def test_confirmar_encontra_chat_id_dispara_otp(app, client_lanchA):
     send_resp.json.return_value = {"ok": True}
 
     try:
-        with patch("app.routes.perfil.requests.get", return_value=updates_resp), \
+        with patch("app.routes.perfil.telegram.requests.get", return_value=updates_resp), \
              patch("app.services.notificacoes.requests.post", return_value=send_resp):
             csrf = _csrf(client_lanchA)
             r = client_lanchA.post("/perfil/telegram/confirmar",
@@ -223,7 +223,7 @@ def test_confirmar_nao_encontra_token_nao_salva(app, client_lanchA):
         }],
     }
     try:
-        with patch("app.routes.perfil.requests.get", return_value=updates_resp):
+        with patch("app.routes.perfil.telegram.requests.get", return_value=updates_resp):
             csrf = _csrf(client_lanchA)
             r = client_lanchA.post("/perfil/telegram/confirmar",
                                    data={"csrf_token": csrf}, follow_redirects=False)
@@ -243,7 +243,7 @@ def test_confirmar_sem_bot_token_avisa_admin(app, client_lanchA):
         sess["telegram_token"] = _gera_token(app, uid)
 
     csrf = _csrf(client_lanchA)
-    with patch("app.routes.perfil.requests.get") as mock_get:
+    with patch("app.routes.perfil.telegram.requests.get") as mock_get:
         r = client_lanchA.post("/perfil/telegram/confirmar",
                                data={"csrf_token": csrf}, follow_redirects=False)
         mock_get.assert_not_called()
@@ -259,7 +259,7 @@ def test_confirmar_token_de_outro_usuario_rejeitado(app, client_lanchA):
         sess["telegram_token"] = _gera_token(app, uid_outro)
 
     try:
-        with patch("app.routes.perfil.requests.get") as mock_get:
+        with patch("app.routes.perfil.telegram.requests.get") as mock_get:
             csrf = _csrf(client_lanchA)
             r = client_lanchA.post("/perfil/telegram/confirmar",
                                    data={"csrf_token": csrf}, follow_redirects=False)

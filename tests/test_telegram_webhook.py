@@ -57,7 +57,7 @@ def test_webhook_start_com_token_valido_vincula(app, client):
     send_resp.json.return_value = {"ok": True}
 
     try:
-        with patch("app.routes.telegram_webhook.requests.post",
+        with patch("app.services.notificacoes.requests.post",
                    return_value=send_resp) as mock_post:
             r = _post_update(client, "s1", {"update_id": 1, "message": {
                 "chat": {"id": 7777777}, "text": f"/start {token}",
@@ -82,7 +82,7 @@ def test_webhook_start_sem_token_responde_instrucoes(app, client):
     send_resp.json.return_value = {"ok": True}
 
     try:
-        with patch("app.routes.telegram_webhook.requests.post",
+        with patch("app.services.notificacoes.requests.post",
                    return_value=send_resp) as mock_post:
             r = _post_update(client, "s1", {"update_id": 2, "message": {
                 "chat": {"id": 888888}, "text": "/start",
@@ -117,7 +117,7 @@ def test_webhook_token_expirado_responde_erro(app, client):
     send_resp.json.return_value = {"ok": True}
 
     try:
-        with patch("app.routes.telegram_webhook.requests.post",
+        with patch("app.services.notificacoes.requests.post",
                    return_value=send_resp) as mock_post:
             r = _post_update(client, "s1", {"update_id": 3, "message": {
                 "chat": {"id": 999}, "text": f"/start {token_ruim}",
@@ -150,7 +150,7 @@ def test_webhook_chat_id_ja_vinculado_a_outro(app, client):
     send_resp.json.return_value = {"ok": True}
 
     try:
-        with patch("app.routes.telegram_webhook.requests.post",
+        with patch("app.services.notificacoes.requests.post",
                    return_value=send_resp) as mock_post:
             r = _post_update(client, "s1", {"update_id": 4, "message": {
                 "chat": {"id": 5555}, "text": f"/start {token}",
@@ -189,7 +189,7 @@ def test_confirmar_atalho_webhook_ja_vinculou(app, client_lanchA):
 
     # Mesmo sem TELEGRAM_BOT_TOKEN no env, o confirmar deve funcionar
     os.environ.pop("TELEGRAM_BOT_TOKEN", None)
-    with patch("app.routes.perfil.requests.get") as mock_get:
+    with patch("app.routes.perfil.telegram.requests.get") as mock_get:
         r = client_lanchA.post("/perfil/telegram/confirmar", follow_redirects=False)
         mock_get.assert_not_called()  # curto-circuito
     assert r.status_code == 302

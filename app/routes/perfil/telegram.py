@@ -1,10 +1,10 @@
-"""Edicao de perfil: o proprio usuario corrige seus dados cadastrais + senha.
+"""Vinculacao de Telegram: deep link + OTP + manual + desvincular.
 
-Regras:
-- Email eh readonly (troca de e-mail eh feature separada por nao ser trivial)
-- CNPJ da lanchonete: editavel (erros de cadastro precisam ser corrigidos por ela)
-- Troca de senha eh opcional: se senha_nova vazia, nao altera
-- Troca de senha exige senha_atual correta (protege de sessao sequestrada)
+Fluxo em 2 etapas pra prevenir sequestro de chat_id:
+1. Descoberta do chat_id (via deep link t.me/bot?start=<token> OU colado manualmente)
+2. Confirmacao por OTP: sistema envia codigo de 6 digitos pro chat_id descoberto.
+   So salva Usuario.telegram_chat_id se o user colar o codigo correto de volta.
+   Fecha o vetor "atacante cola chat_id alheio".
 """
 import hashlib
 import hmac
@@ -14,31 +14,21 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import requests
-from flask import Blueprint, render_template, redirect, url_for, flash, request, session, current_app
+from flask import render_template, redirect, url_for, flash, request, session, current_app
 from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
-from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db, limiter
 from app.services.notificacoes import enviar_telegram
+from . import perfil_bp
+from .dados import _bot_username
 
 logger = logging.getLogger(__name__)
 
-perfil_bp = Blueprint("perfil", __name__, url_prefix="/perfil")
-
-# Vinculacao Telegram — fluxo em 2 etapas:
-#   1. Descoberta do chat_id (via deep link t.me/bot?start=<token>  OU  colado manualmente)
-#   2. Confirmacao por OTP: sistema envia codigo de 6 digitos pro chat_id
-#      descoberto. So salva Usuario.telegram_chat_id se o user colar o codigo
-#      correto de volta. Fecha o vetor "atacante cola chat_id alheio".
 _TELEGRAM_SALT = "vincular-telegram"
 _TELEGRAM_TTL_SEG = 600  # 10 min — tempo pra abrir Telegram e dar start
 _TELEGRAM_OTP_TTL_SEG = 600
 _TELEGRAM_OTP_LEN = 6
-
-
-def _bot_username():
-    return current_app.config.get("TELEGRAM_BOT_USERNAME", "poolcomprasbot")
 
 
 def _telegram_serializer():
@@ -46,7 +36,7 @@ def _telegram_serializer():
 
 
 def _hash_codigo(codigo: str, secret: str) -> str:
-    """HMAC-SHA256 — guardamos hash em sess ao, nao o codigo em claro."""
+    """HMAC-SHA256 — guardamos hash em session, nao o codigo em claro."""
     return hmac.new(secret.encode(), codigo.encode(), hashlib.sha256).hexdigest()
 
 
@@ -87,109 +77,32 @@ def _iniciar_otp(chat_id) -> bool:
     return True
 
 
-# Campos sensiveis: mudanca exige reautenticacao com senha_atual.
-# Redireciona fluxo de pagamento — sem reauth, sessao sequestrada pode
-# redirecionar pagamentos pro atacante.
-_CAMPOS_SENSIVEIS_FORNECEDOR = ("chave_pix", "banco", "agencia", "conta")
-_CAMPOS_SENSIVEIS_LANCHONETE = ("cnpj",)
+def _buscar_chat_id_por_token(bot_token: str, token: str):
+    """Chama getUpdates e procura uma mensagem com '/start <token>'.
 
+    Retorna chat_id (int) se encontrar, None caso contrario.
+    Nao levanta excecao — falha eh feedback normal ao usuario.
+    """
+    url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+    try:
+        r = requests.get(url, timeout=8)
+        data = r.json() if r.status_code == 200 else {}
+    except requests.RequestException as e:
+        logger.warning("TELEGRAM_GET_UPDATES_EXC err=%s", e)
+        return None
 
-def _mudou(atual, novo_form):
-    """True se novo_form (string) diferir do atual (str/None)."""
-    atual_norm = (atual or "").strip()
-    return atual_norm != novo_form.strip()
+    if not data.get("ok"):
+        logger.warning("TELEGRAM_GET_UPDATES_FAIL body=%s", str(data)[:200])
+        return None
 
-
-@perfil_bp.route("/", methods=["GET", "POST"])
-@login_required
-@limiter.limit("20 per hour", methods=["POST"],
-               error_message="Muitas atualizacoes de perfil. Aguarde.")
-def editar():
-    usuario = current_user
-
-    if request.method == "POST":
-        senha_atual = request.form.get("senha_atual", "")
-        senha_nova = request.form.get("senha_nova", "")
-        senha_conf = request.form.get("senha_confirmacao", "")
-        # Troca de senha so dispara quando tem senha_nova/confirmacao — senha_atual
-        # sozinha eh usada pra autorizar mudanca de campo sensivel sem trocar senha.
-        vai_trocar_senha = bool(senha_nova or senha_conf)
-
-        # --- Detectar mudanca em campos sensiveis ---
-        mudou_sensivel = False
-        if current_user.is_fornecedor and usuario.fornecedor:
-            f = usuario.fornecedor
-            for campo in _CAMPOS_SENSIVEIS_FORNECEDOR:
-                if _mudou(getattr(f, campo), request.form.get(campo, "")):
-                    mudou_sensivel = True
-                    break
-        if current_user.is_lanchonete and usuario.lanchonete:
-            l = usuario.lanchonete
-            for campo in _CAMPOS_SENSIVEIS_LANCHONETE:
-                if _mudou(getattr(l, campo), request.form.get(campo, "")):
-                    mudou_sensivel = True
-                    break
-
-        # Mudanca de senha OU de campo sensivel exige senha_atual correta.
-        if vai_trocar_senha or mudou_sensivel:
-            if not check_password_hash(usuario.senha_hash, senha_atual):
-                if mudou_sensivel and not vai_trocar_senha:
-                    flash("Informe sua senha atual para alterar dados bancários/CNPJ.", "error")
-                else:
-                    flash("Senha atual incorreta. Nada foi salvo.", "error")
-                db.session.rollback()
-                return redirect(url_for("perfil.editar"))
-
-        # --- Dados do Usuario (comum aos 3 tipos) ---
-        usuario.nome_responsavel = request.form.get("nome_responsavel", "").strip() or usuario.nome_responsavel
-        usuario.telefone = request.form.get("telefone", "").strip()
-        # telegram_chat_id NAO eh setado aqui — fluxo dedicado /telegram/*
-        # garante que apenas o dono do chat pode vincular (via OTP).
-
-        # --- Dados especificos por tipo ---
-        if current_user.is_lanchonete and usuario.lanchonete:
-            l = usuario.lanchonete
-            l.nome_fantasia = request.form.get("nome_fantasia", "").strip() or l.nome_fantasia
-            l.cnpj = request.form.get("cnpj", "").strip() or None
-            l.endereco = request.form.get("endereco", "").strip()
-            l.bairro = request.form.get("bairro", "").strip()
-            l.cidade = request.form.get("cidade", "").strip() or "Londrina"
-        elif current_user.is_fornecedor and usuario.fornecedor:
-            f = usuario.fornecedor
-            f.razao_social = request.form.get("razao_social", "").strip() or f.razao_social
-            f.nome_contato = request.form.get("nome_contato", "").strip()
-            f.telefone = request.form.get("telefone_fornecedor", "").strip() or usuario.telefone
-            f.cidade = request.form.get("cidade", "").strip()
-            f.chave_pix = request.form.get("chave_pix", "").strip() or None
-            f.banco = request.form.get("banco", "").strip() or None
-            f.agencia = request.form.get("agencia", "").strip() or None
-            f.conta = request.form.get("conta", "").strip() or None
-            f.aparece_no_marketplace = "aparece_no_marketplace" in request.form
-
-        # --- Troca de senha (se fluxo iniciado acima, senha_atual ja foi validada) ---
-        if vai_trocar_senha:
-            if len(senha_nova) < 8:
-                flash("A nova senha deve ter pelo menos 8 caracteres.", "error")
-                db.session.rollback()
-                return redirect(url_for("perfil.editar"))
-            if senha_nova != senha_conf:
-                flash("As senhas não conferem.", "error")
-                db.session.rollback()
-                return redirect(url_for("perfil.editar"))
-            usuario.senha_hash = generate_password_hash(senha_nova)
-            usuario.senha_atualizada_em = datetime.now(timezone.utc)
-            flash("Perfil atualizado e senha trocada com sucesso.", "success")
-        else:
-            flash("Perfil atualizado com sucesso.", "success")
-
-        db.session.commit()
-        return redirect(url_for("perfil.editar"))
-
-    return render_template("perfil/editar.html", usuario=usuario,
-                           bot_username=_bot_username())
-
-
-# --------- Vinculacao de Telegram via deep link ---------
+    alvo = f"/start {token}"
+    for upd in data.get("result", []):
+        msg = upd.get("message") or {}
+        if (msg.get("text") or "").strip() == alvo:
+            chat = msg.get("chat") or {}
+            if chat.get("id"):
+                return chat["id"]
+    return None
 
 
 @perfil_bp.route("/telegram/iniciar", methods=["POST"])
@@ -306,7 +219,6 @@ def telegram_codigo():
               "warning")
         return redirect(url_for("perfil.editar"))
 
-    # Expirou?
     expira_em = datetime.fromisoformat(pendente["expira_em"])
     if datetime.now(timezone.utc) > expira_em:
         session.pop("telegram_otp_pendente", None)
@@ -352,31 +264,3 @@ def telegram_desvincular():
     db.session.commit()
     flash("Telegram desconectado. Notificacoes caem no log do servidor.", "info")
     return redirect(url_for("perfil.editar"))
-
-
-def _buscar_chat_id_por_token(bot_token: str, token: str):
-    """Chama getUpdates e procura uma mensagem com '/start <token>'.
-
-    Retorna chat_id (int) se encontrar, None caso contrario.
-    Nao levanta excecao — falha eh feedback normal ao usuario.
-    """
-    url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
-    try:
-        r = requests.get(url, timeout=8)
-        data = r.json() if r.status_code == 200 else {}
-    except requests.RequestException as e:
-        logger.warning("TELEGRAM_GET_UPDATES_EXC err=%s", e)
-        return None
-
-    if not data.get("ok"):
-        logger.warning("TELEGRAM_GET_UPDATES_FAIL body=%s", str(data)[:200])
-        return None
-
-    alvo = f"/start {token}"
-    for upd in data.get("result", []):
-        msg = upd.get("message") or {}
-        if (msg.get("text") or "").strip() == alvo:
-            chat = msg.get("chat") or {}
-            if chat.get("id"):
-                return chat["id"]
-    return None

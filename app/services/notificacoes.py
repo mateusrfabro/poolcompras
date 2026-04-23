@@ -32,6 +32,38 @@ def _tem_canal_ativo(usuario) -> bool:
     )
 
 
+def post_telegram_raw(chat_id, texto: str, contexto: str = "") -> bool:
+    """Envia texto pra chat_id bruto. Nao exige objeto Usuario.
+
+    Usado por enviar_telegram (com Usuario) e pelo webhook (so tem chat_id).
+    `contexto` aparece nos logs (ex: "usuario=3" ou "webhook"). Retorna True
+    se API respondeu 200+ok. Nao levanta.
+    """
+    token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not token:
+        return False
+    url = _TELEGRAM_API.format(token=token)
+    payload = {
+        "chat_id": chat_id,
+        "text": texto,
+        "parse_mode": "HTML",
+        "disable_web_page_preview": False,
+    }
+    ctx = f" {contexto}" if contexto else ""
+    try:
+        r = requests.post(url, json=payload, timeout=_TELEGRAM_TIMEOUT_SEG)
+        if r.status_code == 200 and r.json().get("ok"):
+            logger.info("TELEGRAM_OK%s chat=%s", ctx, chat_id)
+            return True
+        logger.warning(
+            "TELEGRAM_FAIL%s chat=%s status=%s body=%s",
+            ctx, chat_id, r.status_code, r.text[:200],
+        )
+    except requests.RequestException as e:
+        logger.warning("TELEGRAM_EXC%s chat=%s err=%s", ctx, chat_id, e)
+    return False
+
+
 def enviar_telegram(usuario, texto: str) -> bool:
     """Envia uma mensagem de texto pro chat_id do usuario via bot.
 
@@ -46,28 +78,11 @@ def enviar_telegram(usuario, texto: str) -> bool:
         _logar_fallback(usuario, texto)
         return False
 
-    token = os.environ["TELEGRAM_BOT_TOKEN"]
-    url = _TELEGRAM_API.format(token=token)
-    payload = {
-        "chat_id": usuario.telegram_chat_id,
-        "text": texto,
-        "parse_mode": "HTML",
-        "disable_web_page_preview": False,
-    }
-    try:
-        r = requests.post(url, json=payload, timeout=_TELEGRAM_TIMEOUT_SEG)
-        if r.status_code == 200 and r.json().get("ok"):
-            logger.info("TELEGRAM_OK usuario=%s", usuario.id)
-            return True
-        logger.warning(
-            "TELEGRAM_FAIL usuario=%s status=%s body=%s",
-            usuario.id, r.status_code, r.text[:200],
-        )
-    except requests.RequestException as e:
-        logger.warning("TELEGRAM_EXC usuario=%s err=%s", usuario.id, e)
-
-    _logar_fallback(usuario, texto)
-    return False
+    ok = post_telegram_raw(usuario.telegram_chat_id, texto,
+                           contexto=f"usuario={usuario.id}")
+    if not ok:
+        _logar_fallback(usuario, texto)
+    return ok
 
 
 def _logar_fallback(usuario, texto: str):
