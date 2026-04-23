@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Meu perfil — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h2>Meu perfil</h2>
+            <p class="page-sub">Atualize seus dados cadastrais e, opcionalmente, troque sua senha.</p>
+        </div>
+    </div>
+
+    <form method="POST" class="form-card" style="max-width: 760px;">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <h3>Dados de acesso</h3>
+        <div class="form-group">
+            <label>E-mail</label>
+            <input type="email" value="{{ usuario.email }}" disabled>
+            <small class="muted">Contate o admin para alterar o e-mail.</small>
+        </div>
+        <div class="form-group">
+            <label for="nome_responsavel">Nome do responsável</label>
+            <input type="text" id="nome_responsavel" name="nome_responsavel"
+                   value="{{ usuario.nome_responsavel }}" required>
+        </div>
+        <div class="form-group">
+            <label for="telefone">Telefone</label>
+            <input type="text" id="telefone" name="telefone"
+                   value="{{ usuario.telefone or '' }}" placeholder="(43) 99999-0000">
+        </div>
+
+        {% if current_user.is_lanchonete and usuario.lanchonete %}
+            <h3>Dados da lanchonete</h3>
+            <div class="form-group">
+                <label for="nome_fantasia">Nome fantasia</label>
+                <input type="text" id="nome_fantasia" name="nome_fantasia"
+                       value="{{ usuario.lanchonete.nome_fantasia }}" required>
+            </div>
+            <div class="form-group">
+                <label for="cnpj">CNPJ</label>
+                <input type="text" id="cnpj" name="cnpj"
+                       value="{{ usuario.lanchonete.cnpj or '' }}" placeholder="00.000.000/0000-00">
+            </div>
+            <div class="form-group">
+                <label for="endereco">Endereço</label>
+                <input type="text" id="endereco" name="endereco"
+                       value="{{ usuario.lanchonete.endereco or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="bairro">Bairro</label>
+                <input type="text" id="bairro" name="bairro"
+                       value="{{ usuario.lanchonete.bairro or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="cidade">Cidade</label>
+                <input type="text" id="cidade" name="cidade"
+                       value="{{ usuario.lanchonete.cidade or 'Londrina' }}">
+            </div>
+
+        {% elif current_user.is_fornecedor and usuario.fornecedor %}
+            <h3>Dados do fornecedor</h3>
+            <div class="form-group">
+                <label for="razao_social">Razão social</label>
+                <input type="text" id="razao_social" name="razao_social"
+                       value="{{ usuario.fornecedor.razao_social }}" required>
+            </div>
+            <div class="form-group">
+                <label for="nome_contato">Nome de contato</label>
+                <input type="text" id="nome_contato" name="nome_contato"
+                       value="{{ usuario.fornecedor.nome_contato or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="telefone_fornecedor">Telefone comercial</label>
+                <input type="text" id="telefone_fornecedor" name="telefone_fornecedor"
+                       value="{{ usuario.fornecedor.telefone or '' }}"
+                       placeholder="(43) 3333-0000">
+            </div>
+            <div class="form-group">
+                <label for="cidade">Cidade</label>
+                <input type="text" id="cidade" name="cidade"
+                       value="{{ usuario.fornecedor.cidade or '' }}">
+            </div>
+
+            <h3>Dados bancários</h3>
+            <div class="form-group">
+                <label for="chave_pix">Chave PIX</label>
+                <input type="text" id="chave_pix" name="chave_pix"
+                       value="{{ usuario.fornecedor.chave_pix or '' }}"
+                       placeholder="CPF/CNPJ, e-mail, telefone ou aleatória">
+            </div>
+            <div class="form-group">
+                <label for="banco">Banco</label>
+                <input type="text" id="banco" name="banco"
+                       value="{{ usuario.fornecedor.banco or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="agencia">Agência</label>
+                <input type="text" id="agencia" name="agencia"
+                       value="{{ usuario.fornecedor.agencia or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="conta">Conta</label>
+                <input type="text" id="conta" name="conta"
+                       value="{{ usuario.fornecedor.conta or '' }}">
+            </div>
+        {% endif %}
+
+        <h3>Trocar senha <span class="muted">(opcional)</span></h3>
+        <p class="muted" style="margin-top: -0.5rem;">Preencha os 3 campos apenas se quiser trocar sua senha.</p>
+        <div class="form-group">
+            <label for="senha_atual">Senha atual</label>
+            <input type="password" id="senha_atual" name="senha_atual" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+            <label for="senha_nova">Nova senha</label>
+            <input type="password" id="senha_nova" name="senha_nova" minlength="8"
+                   autocomplete="new-password">
+        </div>
+        <div class="form-group">
+            <label for="senha_confirmacao">Confirme a nova senha</label>
+            <input type="password" id="senha_confirmacao" name="senha_confirmacao" minlength="8"
+                   autocomplete="new-password">
+        </div>
+
+        <button type="submit" class="btn btn-primary">Salvar alterações</button>
+    </form>
+</div>
+{% endblock %}
