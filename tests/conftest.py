@@ -54,21 +54,20 @@ def app():
 
 def _seed_minimo():
     """Cria 2 lanchonetes, 1 fornecedor, 1 admin, 1 produto, 1 rodada."""
-    def novo_usuario(email, tipo, senha="testpass", admin=False):
+    def novo_usuario(email, tipo, senha="testpass"):
         u = Usuario(
             email=email,
             senha_hash=generate_password_hash(senha),
             nome_responsavel="Teste",
             telefone="(43) 99999-0000",
             tipo=tipo,
-            is_admin=admin,
         )
         db.session.add(u)
         db.session.flush()
         return u
 
     # Admin
-    novo_usuario("admin@test.com", "admin", admin=True)
+    novo_usuario("admin@test.com", "admin")
 
     # Lanchonete A
     u1 = novo_usuario("lancha@test.com", "lanchonete")

@@ -77,7 +77,6 @@ def seed():
                 nome_responsavel="Admin PoolCompras",
                 telefone="(43) 99999-0000",
                 tipo="admin",
-                is_admin=True,
             )
             db.session.add(admin)
             print("Admin criado: admin@poolcompras.com / admin123")

@@ -23,10 +23,10 @@
         {% for produto in produtos %}
         <div class="form-row">
             <div class="form-group" style="flex:2">
-                <label>{{ produto.nome }} ({{ produto.unidade }})</label>
+                <label for="preco_{{ produto.id }}">{{ produto.nome }} ({{ produto.unidade }})</label>
             </div>
             <div class="form-group" style="flex:1">
-                <input type="text" inputmode="numeric" name="preco_{{ produto.id }}"
+                <input type="text" inputmode="numeric" id="preco_{{ produto.id }}" name="preco_{{ produto.id }}"
                        class="money-input" placeholder="R$ 0,00">
             </div>
         </div>

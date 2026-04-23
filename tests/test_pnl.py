@@ -17,35 +17,13 @@ def _agora():
     return datetime.now(timezone.utc)
 
 
+from ._helpers import cenario_rodada_finalizada_com_aceite
+
+
 def _prepara_venda_aceita():
-    """Cenario: 1 rodada finalizada com cotacao vencida pelo forn primario
-    e participacao da lanchA com aceite_proposta=True."""
-    rodada = Rodada.query.first()
-    produto = Produto.query.first()
-    lanch = Lanchonete.query.filter_by(nome_fantasia="Lanch A").first()
-    forn = Fornecedor.query.first()
-
-    rp = RodadaProduto.query.filter_by(rodada_id=rodada.id, produto_id=produto.id).first()
-    rp.preco_partida = 20.00
-
-    db.session.add(Cotacao(
-        rodada_id=rodada.id, fornecedor_id=forn.id,
-        produto_id=produto.id, preco_unitario=15.00, selecionada=True,
-    ))
-    db.session.add(ItemPedido(
-        rodada_id=rodada.id, lanchonete_id=lanch.id,
-        produto_id=produto.id, quantidade=10,
-    ))
-    db.session.add(ParticipacaoRodada(
-        rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=_agora(),
-        pedido_aprovado_em=_agora(),
-        aceite_proposta=True,
-        aceite_em=_agora(),
-    ))
-    rodada.status = "finalizada"
-    db.session.commit()
-    return rodada.id, lanch.id, forn.id
+    """Wrapper pro cenario compartilhado; retorna (rodada_id, lanch_id, forn_id)."""
+    rodada_id, lanch_id, forn_id, _produto_id = cenario_rodada_finalizada_com_aceite()
+    return rodada_id, lanch_id, forn_id
 
 
 def test_pnl_zero_quando_sem_vendas(app, client_forn):

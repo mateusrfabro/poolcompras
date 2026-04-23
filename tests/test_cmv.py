@@ -6,37 +6,13 @@ from app.models import (
     ParticipacaoRodada, RodadaProduto, Fornecedor,
 )
 from app.services.cmv_lanchonete import calcular_cmv
+from ._helpers import cenario_rodada_finalizada_com_aceite
 
 
 def _prepara_compra_aceita():
-    """Cria cenario: rodada com RodadaProduto preco_partida, Cotacao vencedora,
-    ItemPedido aprovado e Participacao com aceite_proposta=True."""
-    rodada = Rodada.query.first()
-    produto = Produto.query.first()
-    lanch = Lanchonete.query.filter_by(nome_fantasia="Lanch A").first()
-    forn = Fornecedor.query.first()
-
-    rp = RodadaProduto.query.filter_by(rodada_id=rodada.id, produto_id=produto.id).first()
-    rp.preco_partida = 20.00
-
-    db.session.add(Cotacao(
-        rodada_id=rodada.id, fornecedor_id=forn.id,
-        produto_id=produto.id, preco_unitario=15.00, selecionada=True,
-    ))
-    db.session.add(ItemPedido(
-        rodada_id=rodada.id, lanchonete_id=lanch.id,
-        produto_id=produto.id, quantidade=10,
-    ))
-    db.session.add(ParticipacaoRodada(
-        rodada_id=rodada.id, lanchonete_id=lanch.id,
-        pedido_enviado_em=datetime.now(timezone.utc),
-        pedido_aprovado_em=datetime.now(timezone.utc),
-        aceite_proposta=True,
-        aceite_em=datetime.now(timezone.utc),
-    ))
-    rodada.status = "finalizada"
-    db.session.commit()
-    return rodada.id, lanch.id
+    """Wrapper pro cenario compartilhado; retorna (rodada_id, lanch_id)."""
+    rodada_id, lanch_id, _forn_id, _produto_id = cenario_rodada_finalizada_com_aceite()
+    return rodada_id, lanch_id
 
 
 def test_cmv_zero_quando_nao_comprou(app, client_lanchA):

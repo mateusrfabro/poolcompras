@@ -13,11 +13,11 @@
         {% for produto in produtos %}
         <div class="form-row" style="align-items: center;">
             <div class="form-group" style="flex:2">
-                <label>{{ produto.nome }} <span style="color: var(--gray-500);">({{ produto.unidade }})</span></label>
+                <label for="preco_{{ produto.id }}">{{ produto.nome }} <span style="color: var(--gray-500);">({{ produto.unidade }})</span></label>
                 <small style="color: var(--gray-500);">Demanda: {{ qtds.get(produto.id, 0) }} {{ produto.unidade }}</small>
             </div>
             <div class="form-group" style="flex:1">
-                <input type="text" inputmode="numeric" name="preco_{{ produto.id }}"
+                <input type="text" inputmode="numeric" id="preco_{{ produto.id }}" name="preco_{{ produto.id }}"
                        class="money-input" placeholder="R$ 0,00">
             </div>
         </div>

@@ -19,7 +19,6 @@ class Usuario(UserMixin, db.Model):
     nome_responsavel = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20))
     tipo = db.Column(db.String(20), default="lanchonete", index=True)  # admin, lanchonete, fornecedor
-    is_admin = db.Column(db.Boolean, default=False)  # legado — is_admin @property garante fonte unica
     ativo = db.Column(db.Boolean, default=True, nullable=False, index=True)
     criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     # Marcador pra invalidar tokens de reset + sessoes ao trocar senha.
@@ -38,6 +37,10 @@ class Usuario(UserMixin, db.Model):
         "Fornecedor", backref="responsavel", uselist=False,
         foreign_keys="Fornecedor.usuario_id",
     )
+
+    @property
+    def is_admin(self):
+        return self.tipo == "admin"
 
     @property
     def is_fornecedor(self):
