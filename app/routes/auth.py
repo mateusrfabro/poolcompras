@@ -1,10 +1,20 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
+from app.services.notificacoes import enviar_link_recuperacao
 
 auth_bp = Blueprint("auth", __name__)
+
+# Token de recuperacao de senha — sem tabela extra, assinado com SECRET_KEY
+_RECUPERACAO_SALT = "recuperar-senha"
+_RECUPERACAO_TTL_SEG = 3600  # 1 hora
+
+
+def _token_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -137,3 +147,71 @@ def registro_fornecedor():
 def logout():
     logout_user()
     return redirect(url_for("auth.login"))
+
+
+@auth_bp.route("/esqueci-senha", methods=["GET", "POST"])
+@limiter.limit("5 per hour", methods=["POST"],
+               error_message="Muitas tentativas recentes. Aguarde 1 hora.")
+def esqueci_senha():
+    """Recebe o e-mail, gera token assinado + chama service de notificacao."""
+    if current_user.is_authenticated:
+        return redirect(url_for("main.dashboard"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        usuario = Usuario.query.filter_by(email=email).first() if email else None
+
+        # Nao vazamos existencia do e-mail — mensagem identica em qualquer caso.
+        if usuario:
+            token = _token_serializer().dumps(usuario.id, salt=_RECUPERACAO_SALT)
+            link = url_for("auth.redefinir_senha", token=token, _external=True)
+            enviar_link_recuperacao(usuario, link)
+
+        flash(
+            "Se o e-mail existir no sistema, enviaremos as instruções em instantes.",
+            "success",
+        )
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/esqueci_senha.html")
+
+
+@auth_bp.route("/redefinir-senha/<token>", methods=["GET", "POST"])
+@limiter.limit("10 per hour", methods=["POST"],
+               error_message="Muitas tentativas recentes. Aguarde 1 hora.")
+def redefinir_senha(token):
+    if current_user.is_authenticated:
+        return redirect(url_for("main.dashboard"))
+
+    try:
+        user_id = _token_serializer().loads(
+            token, salt=_RECUPERACAO_SALT, max_age=_RECUPERACAO_TTL_SEG,
+        )
+    except SignatureExpired:
+        flash("Link expirado. Gere um novo em 'Esqueci minha senha'.", "error")
+        return redirect(url_for("auth.esqueci_senha"))
+    except BadSignature:
+        flash("Link inválido.", "error")
+        return redirect(url_for("auth.esqueci_senha"))
+
+    usuario = db.session.get(Usuario, user_id)
+    if not usuario:
+        flash("Usuário não encontrado.", "error")
+        return redirect(url_for("auth.esqueci_senha"))
+
+    if request.method == "POST":
+        senha = request.form.get("senha", "")
+        confirmacao = request.form.get("confirmacao", "")
+        if len(senha) < 8:
+            flash("A senha deve ter pelo menos 8 caracteres.", "error")
+            return render_template("auth/redefinir_senha.html", token=token)
+        if senha != confirmacao:
+            flash("As senhas não conferem.", "error")
+            return render_template("auth/redefinir_senha.html", token=token)
+
+        usuario.senha_hash = generate_password_hash(senha)
+        db.session.commit()
+        flash("Senha redefinida com sucesso. Faça login com a nova senha.", "success")
+        return redirect(url_for("auth.login"))
+
+    return render_template("auth/redefinir_senha.html", token=token)

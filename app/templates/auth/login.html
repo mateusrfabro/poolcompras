@@ -18,6 +18,9 @@
         </div>
         <button type="submit" class="btn btn-primary btn-block">Entrar</button>
     </form>
+    <p class="form-footer">
+        <a href="{{ url_for('auth.esqueci_senha') }}">Esqueci minha senha</a>
+    </p>
     <p class="form-footer">Ainda não tem conta? <a href="{{ url_for('auth.registro') }}">Cadastre-se</a></p>
 </div>
 {% endblock %}
