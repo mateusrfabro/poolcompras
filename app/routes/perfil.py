@@ -11,7 +11,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
-from app import db
+from app import db, limiter
 
 perfil_bp = Blueprint("perfil", __name__, url_prefix="/perfil")
 
@@ -31,6 +31,8 @@ def _mudou(atual, novo_form):
 
 @perfil_bp.route("/", methods=["GET", "POST"])
 @login_required
+@limiter.limit("20 per hour", methods=["POST"],
+               error_message="Muitas atualizacoes de perfil. Aguarde.")
 def editar():
     usuario = current_user
 
