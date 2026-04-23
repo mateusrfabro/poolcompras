@@ -44,13 +44,13 @@
     </div>
 
     {% if ultima_rodada_pedido and not pedido_bloqueado %}
-        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid var(--primary); background: #fff7ed;">
-            <div class="page-header" style="margin: 0;">
+        <div class="card card-hl-primary mb-4">
+            <div class="page-header mb-0">
                 <div>
                     <strong>Pedido usual</strong> — você já pediu na rodada <em>{{ ultima_rodada_pedido.nome }}</em>.
-                    <br><span class="muted" style="font-size: 0.85em;">Podemos copiar os itens do último pedido pra você só ajustar o que mudou.</span>
+                    <br><span class="muted text-sm">Podemos copiar os itens do último pedido pra você só ajustar o que mudou.</span>
                 </div>
-                <form method="POST" action="{{ url_for('pedidos.repetir_ultimo_pedido') }}" style="display: inline;">
+                <form method="POST" action="{{ url_for('pedidos.repetir_ultimo_pedido') }}" class="inline-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-primary btn-sm"
                             data-confirm="Copiar itens da rodada {{ ultima_rodada_pedido.nome }}? Itens que voce ja tem salvos nao serao sobrescritos.">
@@ -62,22 +62,22 @@
     {% endif %}
 
     {% if participacao and participacao.pedido_devolvido_em %}
-        <div class="card card-urgent" style="margin-bottom: 1rem;">
+        <div class="card card-urgent mb-4">
             <strong>Pedido devolvido pelo admin.</strong> Ajuste abaixo e clique em "Enviar pedido" novamente.
             {% if participacao.pedido_motivo_devolucao %}
                 <p><em>Motivo:</em> {{ participacao.pedido_motivo_devolucao }}</p>
             {% endif %}
         </div>
     {% elif participacao and participacao.pedido_aprovado_em %}
-        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid var(--success, #2e7d32);">
+        <div class="card card-hl-success mb-4">
             <strong>Pedido aprovado pelo admin.</strong> Nao eh mais possivel editar este pedido.
         </div>
     {% elif participacao and participacao.pedido_reprovado_em %}
-        <div class="card card-urgent" style="margin-bottom: 1rem;">
+        <div class="card card-urgent mb-4">
             <strong>Pedido reprovado pelo admin.</strong> Entre em contato para entender o motivo.
         </div>
     {% elif participacao and participacao.pedido_enviado_em %}
-        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid var(--primary);">
+        <div class="card card-hl-only mb-4">
             <strong>Pedido enviado em {{ participacao.pedido_enviado_em|datetime_br }}.</strong> Aguardando moderacao do admin.
             Voce ainda pode editar e reenviar.
         </div>
@@ -120,9 +120,8 @@
                                                step="0.1" min="0"
                                                placeholder="0"
                                                value="{{ meus_pedidos.get(rp.produto_id, '') }}"
-                                               style="width: 100px;"
                                                data-produto-id="{{ rp.produto_id }}"
-                                               class="input-qtd">
+                                               class="input-qtd w-input-num">
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -134,11 +133,11 @@
         {% endfor %}
 
         {% if not pedido_bloqueado %}
-            <div class="form-row" style="margin-top: 1.5rem; gap: 0.8rem;">
-                <button type="submit" name="acao" value="salvar" class="btn btn-outline" style="flex: 1;">
+            <div class="form-row form-actions-submit">
+                <button type="submit" name="acao" value="salvar" class="btn btn-outline btn-flex-1">
                     Salvar (rascunho)
                 </button>
-                <button type="submit" name="acao" value="enviar" class="btn btn-primary" style="flex: 2;"
+                <button type="submit" name="acao" value="enviar" class="btn btn-primary btn-flex-2"
                         data-confirm="Enviar o pedido para o admin? Depois de enviar voce ainda pode editar ate ser aprovado.">
                     {% if participacao and participacao.pedido_enviado_em %}
                         Reenviar pedido

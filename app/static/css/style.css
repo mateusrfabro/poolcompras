@@ -13,6 +13,69 @@
     border: 0;
 }
 
+/* Utilities pra reduzir style= inline (migracao CSP-friendly).
+   Escala: 0.25 / 0.5 / 0.75 / 1 / 1.5rem -> 1/2/3/4/5 */
+.mt-1 { margin-top: 0.25rem; }
+.mt-2 { margin-top: 0.5rem; }
+.mt-3 { margin-top: 0.75rem; }
+.mt-4 { margin-top: 1rem; }
+.mt-5 { margin-top: 1.5rem; }
+.mb-0 { margin-bottom: 0; }
+.mb-1 { margin-bottom: 0.25rem; }
+.mb-2 { margin-bottom: 0.5rem; }
+.mb-3 { margin-bottom: 0.75rem; }
+.mb-4 { margin-bottom: 1rem; }
+.mb-5 { margin-bottom: 1.5rem; }
+.mt-neg-1 { margin-top: -0.5rem; }  /* collapse espaco do <h2> acima */
+
+.inline-block { display: inline-block; }
+.inline-form  { display: inline; }
+.d-block      { display: block; }
+
+.flex-form    { display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap; }
+.flex-row-gap { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+
+.text-sm      { font-size: 0.85em; }
+.cursor-pointer { cursor: pointer; }
+
+.w-narrow     { max-width: 760px; }  /* forms centralizados */
+.w-input-num  { width: 100px; }  /* inputs numericos compactos */
+
+/* Form-group dentro de .flex-form que cresce e tem minimo de 200px. */
+.form-group-flex-main { flex: 1; min-width: 200px; margin-bottom: 0; }
+
+/* Cards destacados com borda lateral colorida — status do pedido. */
+.card-hl-primary { border-left: 4px solid var(--primary); background: #fff7ed; }
+.card-hl-success { border-left: 4px solid var(--success, #2e7d32); }
+.card-hl-only    { border-left: 4px solid var(--primary); }
+
+/* Botoes do rodape do form de catalogo (submit dual salvar/enviar). */
+.form-actions-submit { margin-top: 1.5rem; gap: 0.8rem; }
+.btn-flex-1 { flex: 1; }
+.btn-flex-2 { flex: 2; }
+
+/* Card "cotacao aprovada" — verde com background claro. */
+.card-hl-success-bg { border-left: 4px solid var(--success, #2e7d32); background: #eafaf1; }
+
+/* Input R$ mais largo (preco final em cotacao). */
+.w-input-money { width: 150px; }
+
+/* Linha total em tabela tfoot. */
+.tfoot-total { background: #fff7ed; font-weight: 600; }
+
+/* Valores de economia (positiva/negativa/neutra) — classes ao inves de style inline. */
+.economia-pos     { color: #2e7d32; }
+.economia-neg     { color: #c62828; }
+.economia-neutro  { color: var(--gray-700); }
+.text-emphasis    { font-size: 1.05em; }
+.text-xs          { font-size: 0.8em; }
+
+/* Subtitulo de secao com espaco extra acima. */
+.section-title-mt { margin-top: 2rem; }
+
+/* Timestamp em lista de notas — alinhado a direita. */
+.nota-ts { float: right; }
+
 :root {
     --primary: #e85d04;
     --primary-dark: #d45203;

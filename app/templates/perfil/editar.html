@@ -10,7 +10,7 @@
         </div>
     </div>
 
-    <form method="POST" class="form-card" style="max-width: 760px;">
+    <form method="POST" class="form-card w-narrow">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
         <h3>Dados de acesso</h3>
@@ -83,7 +83,7 @@
             </div>
 
             <h3>Dados bancários</h3>
-            <p class="muted" style="margin-top: -0.5rem;">
+            <p class="muted mt-neg-1">
                 Alterar qualquer campo bancário exige sua senha atual (informe abaixo).
             </p>
             <div class="form-group">
@@ -116,7 +116,7 @@
                     Exibir minha empresa na vitrine pública <code>/marketplace</code>
                     (razão social + cidade + nota média)
                 </label>
-                <small class="muted" style="display:block; margin-top:.25rem;">
+                <small class="muted d-block mt-1">
                     Desmarcado por padrão. Se marcar, autorizo a exibição desses dados
                     a visitantes não-logados (LGPD).
                 </small>
@@ -125,7 +125,7 @@
 
         <h3>Notificações por Telegram <span class="muted">(opcional)</span></h3>
         {% if usuario.telegram_chat_id %}
-            <div class="alert alert-success" style="margin-bottom: 1rem;">
+            <div class="alert alert-success mb-4">
                 Telegram conectado ✓ — chat_id <code>{{ usuario.telegram_chat_id }}</code>
             </div>
             <div class="form-group">
@@ -135,11 +135,11 @@
             </div>
             <!-- Form separado: desvincular NAO precisa passar pelos campos do form principal -->
         {% else %}
-            <p class="muted" style="margin-top: -0.5rem;">
+            <p class="muted mt-neg-1">
                 Receba avisos do PoolCompras no Telegram (reset de senha, propostas,
                 pagamentos, entregas).
             </p>
-            <ol class="muted" style="margin-top: 0.5rem;">
+            <ol class="muted mt-2">
                 <li>Clique em <strong>Conectar Telegram</strong> abaixo — vamos abrir o bot <strong>@poolcomprasbot</strong> no Telegram.</li>
                 <li>No Telegram, aperte <strong>Iniciar</strong> (ou envie <code>/start</code>).</li>
                 <li>Volte aqui e clique <strong>Concluir conexão</strong> — fazemos o resto.</li>
@@ -152,7 +152,7 @@
            nao conectado. #}
 
         <h3>Trocar senha <span class="muted">(opcional)</span></h3>
-        <p class="muted" style="margin-top: -0.5rem;">Preencha os 3 campos apenas se quiser trocar sua senha.</p>
+        <p class="muted mt-neg-1">Preencha os 3 campos apenas se quiser trocar sua senha.</p>
         <div class="form-group">
             <label for="senha_atual">Senha atual</label>
             <input type="password" id="senha_atual" name="senha_atual" autocomplete="current-password">
@@ -174,8 +174,7 @@
     {# Forms independentes pra conectar/desconectar Telegram — separados do
        form principal pra nao confundir com submit de perfil. #}
     {% if usuario.telegram_chat_id %}
-        <form method="POST" action="{{ url_for('perfil.telegram_desvincular') }}"
-              style="margin-top: 1rem;">
+        <form method="POST" action="{{ url_for('perfil.telegram_desvincular') }}" class="mt-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-outline"
                     data-confirm="Desconectar Telegram? Você não vai mais receber notificações.">
@@ -183,29 +182,27 @@
             </button>
         </form>
     {% else %}
-        <p class="muted" style="margin-top: 1rem;">
+        <p class="muted mt-4">
             <strong>Dica:</strong> mantenha esta aba aberta — o link do bot abre em nova aba.
             Você tem 10 minutos pra concluir.
         </p>
-        <div style="margin-top: 0.75rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+        <div class="mt-3 flex-row-gap">
             <form method="POST" action="{{ url_for('perfil.telegram_iniciar') }}"
-                  target="_blank" rel="noopener noreferrer" style="display: inline;">
+                  target="_blank" rel="noopener noreferrer" class="inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary">1. Conectar Telegram</button>
             </form>
-            <form method="POST" action="{{ url_for('perfil.telegram_confirmar') }}"
-                  style="display: inline;">
+            <form method="POST" action="{{ url_for('perfil.telegram_confirmar') }}" class="inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-outline">2. Já dei /start, concluir</button>
             </form>
         </div>
 
-        <details style="margin-top: 1.25rem;">
-            <summary class="muted" style="cursor: pointer;">Prefere colar o chat_id manualmente?</summary>
-            <form method="POST" action="{{ url_for('perfil.telegram_manual') }}"
-                  style="margin-top: 0.75rem; display: flex; gap: 0.5rem; align-items: flex-end; flex-wrap: wrap;">
+        <details class="mt-5">
+            <summary class="muted cursor-pointer">Prefere colar o chat_id manualmente?</summary>
+            <form method="POST" action="{{ url_for('perfil.telegram_manual') }}" class="mt-3 flex-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                <div class="form-group form-group-flex-main">
                     <label for="chat_id">chat_id</label>
                     <input type="text" id="chat_id" name="chat_id"
                            placeholder="Ex: 123456789"
@@ -214,7 +211,7 @@
                 </div>
                 <button type="submit" class="btn btn-outline">Enviar código</button>
             </form>
-            <small class="muted" style="display: block; margin-top: 0.5rem;">
+            <small class="muted d-block mt-2">
                 Obtenha seu chat_id em <strong>@userinfobot</strong>.
                 Mesmo digitado, exigimos confirmação via código enviado pelo bot
                 — chat_id de outra pessoa não consegue ser vinculado.

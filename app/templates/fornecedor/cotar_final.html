@@ -18,17 +18,17 @@
 
     {# Status da submissao #}
     {% if submissao and submissao.aprovada_em %}
-        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid var(--success, #2e7d32); background: #eafaf1;">
+        <div class="card card-hl-success-bg mb-4">
             <strong>Cotação aprovada pelo admin</strong> em {{ submissao.aprovada_em|datetime_br }}.
             <br><span class="muted">Os preços estão disponíveis para as lanchonetes aceitarem a proposta.</span>
         </div>
     {% elif submissao and submissao.devolvida_em %}
-        <div class="card card-urgent" style="margin-bottom: 1rem;">
+        <div class="card card-urgent mb-4">
             <strong>Cotação devolvida pelo admin</strong> em {{ submissao.devolvida_em|datetime_br }}.
             <br><span class="muted">Ajuste os preços abaixo conforme a negociação e reenvie.</span>
         </div>
     {% elif submissao and submissao.enviada_em %}
-        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid var(--primary);">
+        <div class="card card-hl-only mb-4">
             <strong>Cotação enviada em {{ submissao.enviada_em|datetime_br }}.</strong>
             Aguardando aprovação do admin.
         </div>
@@ -56,7 +56,7 @@
                     <tr>
                         <td>
                             <strong>{{ l.produto.nome }}</strong><br>
-                            <span class="muted" style="font-size: 0.8em;">{{ l.produto.categoria }}</span>
+                            <span class="muted text-xs">{{ l.produto.categoria }}</span>
                         </td>
                         <td>{{ l.produto.subcategoria or '—' }}</td>
                         <td><strong>{{ l.volume|fmt_un(l.produto.unidade) }}</strong></td>
@@ -69,18 +69,17 @@
                             {% else %}
                                 <input type="text" inputmode="numeric"
                                        name="preco_final_{{ l.produto.id }}"
-                                       class="money-input"
+                                       class="money-input w-input-money"
                                        placeholder="R$ 0,00"
-                                       value="{{ l.final if l.final is not none else '' }}"
-                                       style="width: 150px;">
+                                       value="{{ l.final if l.final is not none else '' }}">
                             {% endif %}
                         </td>
                         <td>
                             {% if l.economia_pct is not none %}
-                                <strong style="color: {% if l.economia_pct > 0 %}#2e7d32{% elif l.economia_pct < 0 %}#c62828{% else %}var(--gray-700){% endif %};">
+                                <strong class="{% if l.economia_pct > 0 %}economia-pos{% elif l.economia_pct < 0 %}economia-neg{% else %}economia-neutro{% endif %}">
                                     {{ '%.1f'|format(l.economia_pct)|replace('.', ',') }}%
                                 </strong>
-                                <br><span class="muted" style="font-size: 0.85em;">
+                                <br><span class="muted text-sm">
                                     {{ l.economia_rs|brl }} total
                                 </span>
                             {% else %}
@@ -91,12 +90,12 @@
                     {% endfor %}
                 </tbody>
                 <tfoot>
-                    <tr style="background: #fff7ed; font-weight: 600;">
+                    <tr class="tfoot-total">
                         <td colspan="3">Total da rodada</td>
                         <td>{{ total_partida|brl }}</td>
                         <td>{{ total_final|brl }}</td>
                         <td>
-                            <strong style="color: {% if economia_total_rs > 0 %}#2e7d32{% elif economia_total_rs < 0 %}#c62828{% else %}var(--gray-700){% endif %}; font-size: 1.05em;">
+                            <strong class="text-emphasis {% if economia_total_rs > 0 %}economia-pos{% elif economia_total_rs < 0 %}economia-neg{% else %}economia-neutro{% endif %}">
                                 {{ economia_total_rs|brl }}
                             </strong>
                             <br><span class="muted">{{ '%.1f'|format(economia_total_pct)|replace('.', ',') }}% médio</span>
@@ -106,11 +105,11 @@
             </table></div>
 
             {% if not bloqueado %}
-                <div class="form-row" style="margin-top: 1.5rem; gap: 0.8rem;">
-                    <button type="submit" name="acao" value="salvar" class="btn btn-outline" style="flex: 1;">
+                <div class="form-row form-actions-submit">
+                    <button type="submit" name="acao" value="salvar" class="btn btn-outline btn-flex-1">
                         Salvar (rascunho)
                     </button>
-                    <button type="submit" name="acao" value="enviar" class="btn btn-primary" style="flex: 2;"
+                    <button type="submit" name="acao" value="enviar" class="btn btn-primary btn-flex-2"
                             data-confirm="Enviar esta cotação pra aprovação do admin?">
                         {% if submissao and submissao.enviada_em %}Reenviar pra aprovação{% else %}Enviar pra aprovação{% endif %}
                     </button>
@@ -121,7 +120,7 @@
 
     {# Historico de notas (aparece se ja existe submissao e foi devolvida pelo menos uma vez) #}
     {% if submissao and (submissao.devolvida_em or notas) %}
-        <h3 class="section-title" style="margin-top: 2rem;">Negociação com o admin</h3>
+        <h3 class="section-title section-title-mt">Negociação com o admin</h3>
         <div class="card">
             {% if notas %}
                 <div class="notas-historico">
@@ -130,7 +129,7 @@
                             <div class="nota-head">
                                 <strong>{{ 'Admin' if n.autor_tipo == 'admin' else 'Fornecedor' }}</strong>
                                 <span class="muted">— {{ n.autor_usuario.email if n.autor_usuario else '' }}</span>
-                                <span class="muted" style="float: right;">{{ n.criado_em|datetime_br }}</span>
+                                <span class="muted nota-ts">{{ n.criado_em|datetime_br }}</span>
                             </div>
                             <div class="nota-texto">{{ n.texto }}</div>
                         </div>
@@ -141,7 +140,7 @@
             {% endif %}
 
             {% if not bloqueado and submissao.devolvida_em %}
-                <form method="POST" action="{{ url_for('fornecedor.adicionar_nota_negociacao', rodada_id=rodada.id) }}" style="margin-top: 1rem;">
+                <form method="POST" action="{{ url_for('fornecedor.adicionar_nota_negociacao', rodada_id=rodada.id) }}" class="mt-4">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <div class="form-group">
                         <label for="texto">Sua mensagem</label>
