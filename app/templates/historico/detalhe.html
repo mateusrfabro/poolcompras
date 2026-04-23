@@ -256,7 +256,7 @@
         </div>
     {% endif %}
 
-    {# Fase 2: linha do tempo do fluxo da rodada #}
+    {# Fase 2: linha do tempo do fluxo da rodada (derivada da participacao) #}
     {% if fases %}
         <h3 class="section-title">Linha do tempo</h3>
         <ol class="timeline">
@@ -274,5 +274,8 @@
             {% endfor %}
         </ol>
     {% endif %}
+
+    {# Auditoria: eventos crus registrados na tabela EventoRodada (quem fez o que) #}
+    {% include "_components/timeline_eventos.html" %}
 </div>
 {% endblock %}

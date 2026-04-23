@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% block title %}Meu P&amp;L — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h2>Meu P&amp;L</h2>
+            <p class="page-sub">Receita efetiva de <strong>{{ fornecedor.razao_social }}</strong> nas rodadas vencidas e aceitas pelas lanchonetes.</p>
+        </div>
+    </div>
+
+    <div class="sub-nav">
+        <a href="{{ url_for('fornecedor.dashboard') }}" class="sub-nav-item">Painel</a>
+        <a href="{{ url_for('fornecedor.analytics') }}" class="sub-nav-item">Meu Desempenho</a>
+        <a href="{{ url_for('fornecedor.pnl') }}" class="sub-nav-item sub-nav-active">Meu P&amp;L</a>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-card-primary">
+            <span class="stat-number">{{ kpis.receita_total|brl }}</span>
+            <span class="stat-label">Receita total</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ kpis.ticket_medio|brl }}</span>
+            <span class="stat-label">Ticket médio por rodada</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ kpis.rodadas_vendidas }}</span>
+            <span class="stat-label">Rodadas com venda</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">
+                {{ kpis.margem_vs_partida|brl }}
+            </span>
+            <span class="stat-label">Margem vs. preço de partida</span>
+            <span class="stat-hint">
+                {% if kpis.margem_vs_partida_pct < 0 %}
+                    Você apertou {{ 0 - kpis.margem_vs_partida_pct }}% vs preço inicial
+                {% elif kpis.margem_vs_partida_pct > 0 %}
+                    Vendeu {{ kpis.margem_vs_partida_pct }}% acima do inicial
+                {% else %}
+                    Sem variação
+                {% endif %}
+            </span>
+        </div>
+    </div>
+
+    {% if kpis.rodadas_vendidas == 0 %}
+    <div class="analytics-card">
+        <p class="muted">Você ainda não tem rodadas com venda concluída. Após vencer cotações e as lanchonetes aceitarem a proposta, sua receita aparecerá aqui.</p>
+    </div>
+    {% else %}
+
+    <div class="analytics-grid">
+        <div class="analytics-card">
+            <h3>Top clientes</h3>
+            {% if top_clientes %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr><th>Cliente</th><th>Itens</th><th>Receita</th><th>% do total</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, gasto, itens, pct in top_clientes %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>{{ itens }}</td>
+                            <td>{{ gasto|brl }}</td>
+                            <td>{{ pct }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Sem dados de cliente.</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-card">
+            <h3>Top produtos vendidos</h3>
+            {% if top_produtos %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Volume</th>
+                            <th>Preço médio</th>
+                            <th>Receita</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, un, qtd, receita, preco_medio in top_produtos %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>{{ qtd|fmt_un(un) }}</td>
+                            <td>{{ preco_medio|brl }}</td>
+                            <td>{{ receita|brl }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Sem produtos registrados ainda.</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-card" style="grid-column: 1 / -1;">
+            <h3>Vendas por rodada</h3>
+            <div class="table-wrapper"><table class="table">
+                <thead>
+                    <tr>
+                        <th>Rodada</th>
+                        <th>Data</th>
+                        <th>Itens</th>
+                        <th>Clientes</th>
+                        <th>Receita</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in por_rodada %}
+                    <tr>
+                        <td>{{ r.rodada_nome }}</td>
+                        <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+                        <td>{{ r.itens }}</td>
+                        <td>{{ r.clientes or '—' }}</td>
+                        <td><strong>{{ r.receita|brl }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table></div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -203,5 +203,8 @@
         {% endif %}
         <a href="{{ url_for('rodadas.cotar', rodada_id=rodada.id) }}" class="btn btn-primary">Inserir cotação</a>
     {% endif %}
+
+    {# Timeline de eventos (auditoria — cada perfil ve o que lhe diz respeito) #}
+    {% include "_components/timeline_eventos.html" %}
 </div>
 {% endblock %}

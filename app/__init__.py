@@ -247,4 +247,37 @@ def create_app(config_name="default"):
         delta = alvo - datetime.now(timezone.utc).replace(tzinfo=None)
         return 0 < delta.total_seconds() <= 86400  # <= 24h
 
+    # Filter: traduz EventoRodada.tipo para rotulo PT-BR pra timeline.
+    # Nao emojificado (identidade visual do projeto usa texto puro).
+    EVENTO_LABELS = {
+        "pedido_enviado":         ("Pedido enviado pra moderação", "info"),
+        "rodada_fechada":         ("Rodada fechada pelo admin", "info"),
+        "cotacao_enviada":        ("Cotação enviada", "info"),
+        "proposta_consolidada":   ("Proposta consolidada", "info"),
+        "proposta_aceita":        ("Proposta aceita pela lanchonete", "ok"),
+        "proposta_recusada":      ("Proposta recusada pela lanchonete", "problema"),
+        "comprovante_enviado":    ("Comprovante de pagamento enviado", "ok"),
+        "pagamento_confirmado":   ("Pagamento confirmado pelo fornecedor", "ok"),
+        "entrega_informada":      ("Entrega informada pelo fornecedor", "ok"),
+        "recebimento_confirmado": ("Recebimento confirmado pela lanchonete", "ok"),
+        "recebimento_problema":   ("Problema no recebimento", "problema"),
+        "avaliacao_enviada":      ("Avaliação enviada", "ok"),
+        "rodada_finalizada":      ("Rodada finalizada pelo admin", "ok"),
+        "rodada_cancelada":       ("Rodada cancelada pelo admin", "problema"),
+        "rodada_em_negociacao":   ("Rodada entrou em negociação", "info"),
+        "deadline_vencido":       ("Deadline vencido", "problema"),
+    }
+
+    @app.template_filter("evento_label")
+    def evento_label(tipo):
+        """Converte EventoRodada.tipo -> label amigavel. Desconhecidos: mostra tipo cru."""
+        label, _ = EVENTO_LABELS.get(tipo, (tipo.replace("_", " ").capitalize(), "info"))
+        return label
+
+    @app.template_filter("evento_status")
+    def evento_status(tipo):
+        """Converte EventoRodada.tipo -> classe css ('ok' | 'problema' | 'info')."""
+        _, status = EVENTO_LABELS.get(tipo, (tipo, "info"))
+        return status
+
     return app

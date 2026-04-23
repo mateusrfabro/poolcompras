@@ -3,7 +3,8 @@ from flask_login import login_required, current_user
 from datetime import datetime
 from sqlalchemy import func
 from app import db
-from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada, RodadaProduto, SubmissaoCotacao
+from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada, RodadaProduto, SubmissaoCotacao, EventoRodada
+from sqlalchemy.orm import joinedload
 
 rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")
 
@@ -131,6 +132,24 @@ def detalhe(rodada_id):
         .filter_by(rodada_id=rodada_id).all()
     )
 
+    # Timeline de eventos da rodada (auditoria — visivel a todos perfis).
+    # Nao-admin/nao-dono da lanchonete veem apenas eventos globais (lanchonete_id=NULL),
+    # pra nao vazar atividade de outras lanchonetes.
+    eventos_q = EventoRodada.query.options(joinedload(EventoRodada.ator))\
+        .filter(EventoRodada.rodada_id == rodada_id)
+    if current_user.is_admin:
+        eventos = eventos_q.order_by(EventoRodada.criado_em.asc()).all()
+    elif current_user.is_lanchonete and current_user.lanchonete:
+        # Lanchonete ve os proprios eventos + globais
+        eventos = eventos_q.filter(
+            (EventoRodada.lanchonete_id == current_user.lanchonete.id)
+            | (EventoRodada.lanchonete_id.is_(None))
+        ).order_by(EventoRodada.criado_em.asc()).all()
+    else:
+        # Fornecedor e demais: apenas eventos globais
+        eventos = eventos_q.filter(EventoRodada.lanchonete_id.is_(None))\
+            .order_by(EventoRodada.criado_em.asc()).all()
+
     return render_template(
         "rodadas/detalhe.html",
         rodada=rodada,
@@ -141,6 +160,7 @@ def detalhe(rodada_id):
         pedidos_pendentes_moderacao=pedidos_pendentes_moderacao,
         cotacoes_pendentes_aprovacao=cotacoes_pendentes_aprovacao,
         submissoes_status=submissoes_todas,
+        eventos=eventos,
     )
 
 

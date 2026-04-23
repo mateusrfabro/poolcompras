@@ -117,6 +117,29 @@ def dashboard():
     )
 
 
+@fornecedor_bp.route("/pnl")
+@login_required
+@fornecedor_required
+def pnl():
+    """Meu P&L: receita efetiva, margem vs preco de partida, top clientes e produtos."""
+    fornecedor = current_user.fornecedor
+    if not fornecedor:
+        flash("Complete seu cadastro.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
+
+    from app.services.pnl_fornecedor import calcular_pnl
+    dados = calcular_pnl(fornecedor.id)
+
+    return render_template(
+        "fornecedor/pnl.html",
+        fornecedor=fornecedor,
+        kpis=dados["kpis"],
+        top_clientes=dados["top_clientes"],
+        top_produtos=dados["top_produtos"],
+        por_rodada=dados["por_rodada"],
+    )
+
+
 @fornecedor_bp.route("/analytics")
 @login_required
 @fornecedor_required

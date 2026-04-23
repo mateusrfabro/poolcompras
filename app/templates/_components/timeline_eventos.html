@@ -1,0 +1,34 @@
+{# Componente reutilizavel de timeline de eventos de uma rodada.
+
+Espera variavel `eventos` (lista de EventoRodada com .ator eager-loaded).
+Opcional: `titulo` (padrao "Histórico desta rodada").
+
+Uso:
+    {% set eventos = eventos %}
+    {% include "_components/timeline_eventos.html" %}
+#}
+<div class="analytics-card">
+    <h3>{{ titulo|default("Histórico desta rodada") }}</h3>
+    {% if eventos %}
+        <ol class="timeline-eventos">
+            {% for e in eventos %}
+                <li class="timeline-item timeline-{{ e.tipo|evento_status }}">
+                    <div class="timeline-line-1">
+                        <strong>{{ e.tipo|evento_label }}</strong>
+                        <span class="muted"> — {{ e.criado_em|datetime_br }}</span>
+                    </div>
+                    {% if e.descricao %}
+                        <div class="timeline-line-2">{{ e.descricao }}</div>
+                    {% endif %}
+                    {% if e.ator %}
+                        <div class="timeline-line-3 muted">
+                            por {{ e.ator.nome_responsavel }}
+                        </div>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ol>
+    {% else %}
+        <p class="muted">Nenhum evento registrado ainda.</p>
+    {% endif %}
+</div>
