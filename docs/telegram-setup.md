@@ -70,11 +70,46 @@ Se não chegou, o log do servidor diz o motivo:
 | Pagamento confirmado | Lanchonete |
 | Entrega informada | Lanchonete |
 
-## Próximos passos (opcional, futuro)
+## Webhook (produção com URL HTTPS pública)
 
-- **Webhook em produção**: quando Ademar subir VM com URL HTTPS pública,
-  setar webhook (`setWebhook?url=https://.../webhook/telegram`) substitui
-  o `getUpdates`. Vantagem: responde comandos em tempo real, sem precisar
-  do usuário clicar "Já dei /start".
-- **Comandos no bot**: `/status`, `/proximas-rodadas`, `/meu-pedido` etc.
-  Requer webhook.
+Código do webhook já está em `app/routes/telegram_webhook.py`. Quando a VM
+Ademar estiver no ar:
+
+### 1. Env vars
+
+```
+TELEGRAM_BOT_TOKEN=123456:ABC...
+TELEGRAM_WEBHOOK_URL=https://poolcompras.xyz          # base HTTPS publica
+TELEGRAM_WEBHOOK_SECRET=<32+ chars aleatorios>        # gere com openssl rand -hex 32
+```
+
+### 2. Registrar webhook no Telegram
+
+```bash
+flask telegram set-webhook       # registra https://<URL>/webhook/telegram/<secret>
+flask telegram info              # mostra url atual + pendencias + ultimo erro
+flask telegram remove-webhook    # volta pro modo getUpdates (dev)
+```
+
+### 3. Efeitos na UX
+
+Com webhook ativo, a vinculação fica **100% automática**:
+
+1. User clica "Conectar Telegram" → abre `t.me/poolcomprasbot?start=<token>`
+2. No Telegram, aperta "Iniciar"
+3. Webhook recebe, valida token, salva `chat_id`, bot responde "Conectado!"
+4. User volta no site, clica "Já dei /start, concluir" → sistema detecta
+   que o `chat_id` já foi salvo e confirma sem precisar de OTP
+
+Sem webhook, o fluxo cai em `getUpdates` on-demand + OTP — continua
+funcionando, mas exige 1 clique a mais e tem race condition multi-user.
+
+### 4. Segurança
+
+- URL tem secret path (`/webhook/telegram/<secret>`) — sem secret correto
+  retorna 404 (não revela existência).
+- Rota isenta de CSRF (Telegram não manda token).
+- Tokens `/start <token>` são assinados com `SECRET_KEY` (itsdangerous)
+  e têm TTL de 10min — atacante não consegue forjar.
+- `telegram_chat_id` tem `unique=True` no DB — mesmo chat não pode ser
+  vinculado a 2 contas simultâneas.

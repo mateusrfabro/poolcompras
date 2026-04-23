@@ -207,7 +207,20 @@ def telegram_iniciar():
 @login_required
 @limiter.limit("20 per hour", error_message="Muitas tentativas. Aguarde.")
 def telegram_confirmar():
-    """Apos /start no bot, busca chat_id via getUpdates + dispara OTP."""
+    """Apos /start no bot, finaliza a vinculacao.
+
+    Curto-circuito: se o webhook ja vinculou (e.g. chat_id salvo no DB em
+    background quando o user deu /start <token>), apenas confirma sucesso
+    sem disparar OTP. Se nao vinculou (webhook desativado), cai no fluxo
+    getUpdates + OTP.
+    """
+    # Curto-circuito webhook — se chat_id ja foi salvo, deu certo.
+    db.session.refresh(current_user)
+    if current_user.telegram_chat_id:
+        session.pop("telegram_token", None)
+        flash("Telegram conectado!", "success")
+        return redirect(url_for("perfil.editar"))
+
     token_esperado = session.pop("telegram_token", None)
     if not token_esperado:
         flash("Sessao de conexao expirada. Clique 'Conectar Telegram' novamente.", "warning")
