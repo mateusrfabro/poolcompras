@@ -155,7 +155,7 @@
             {% for u in ultimas_rodadas %}
                 <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=u.rodada.id) }}" class="ultima-rodada-card">
                     <div class="ultima-rodada-nome">{{ u.rodada.nome }}</div>
-                    <div class="ultima-rodada-data">{{ u.rodada.data_abertura.strftime('%d/%m/%Y') }}</div>
+                    <div class="ultima-rodada-data">{{ u.rodada.data_abertura|data_br }}</div>
                     <div class="ultima-rodada-preview">
                         <strong>{{ u.vitorias }}/{{ u.cotacoes }}</strong>
                         <span class="muted">cotações escolhidas</span>

@@ -21,7 +21,7 @@
             <a href="{{ url_for('pedidos.novo') }}" class="btn btn-primary">Fazer primeiro pedido</a>
         </div>
     {% else %}
-        <p class="subtitle">Rodada: {{ rodada.nome }} (fecha {{ rodada.data_fechamento.strftime('%d/%m/%Y') }})</p>
+        <p class="subtitle">Rodada: {{ rodada.nome }} (fecha {{ rodada.data_fechamento|data_br }})</p>
         <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>

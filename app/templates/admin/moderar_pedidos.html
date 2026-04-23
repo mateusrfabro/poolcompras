@@ -23,7 +23,7 @@
     </h3>
 
     {% if not enviados %}
-        <div class="card"><p class="muted">Nenhum pedido aguardando moderação no momento.</p></div>
+        <div class="empty-state"><p>Nenhum pedido aguardando moderação no momento.</p></div>
     {% else %}
         {% for p in enviados %}
             <div class="card" style="margin-bottom: 1rem;">

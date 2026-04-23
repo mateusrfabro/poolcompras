@@ -131,7 +131,7 @@
             {% for u in ultimas_rodadas %}
                 <a href="{{ url_for('historico.detalhe', rodada_id=u.rodada.id) }}" class="ultima-rodada-card">
                     <div class="ultima-rodada-nome">{{ u.rodada.nome }}</div>
-                    <div class="ultima-rodada-data">{{ u.rodada.data_abertura.strftime('%d/%m/%Y') }}</div>
+                    <div class="ultima-rodada-data">{{ u.rodada.data_abertura|data_br }}</div>
                     {% if u.total > 0 %}
                         <div class="ultima-rodada-preview">
                             <strong>{{ u.total|brl }}</strong>

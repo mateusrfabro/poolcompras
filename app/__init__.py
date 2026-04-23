@@ -252,6 +252,18 @@ def create_app(config_name="default"):
             return "—"
         return alvo.strftime("%d/%m/%Y às %H:%M")
 
+    # Filter: formata so a data em PT-BR ("18/04/2026"). Usar em listagens.
+    @app.template_filter("data_br")
+    def format_data_br(data):
+        from datetime import date, datetime as dt
+        if data is None:
+            return "—"
+        if isinstance(data, dt):
+            return data.strftime("%d/%m/%Y")
+        if isinstance(data, date):
+            return data.strftime("%d/%m/%Y")
+        return "—"
+
     # Filter: booleano de urgencia (prazo hoje ou amanha)
     @app.template_filter("urgente")
     def is_urgente(data):

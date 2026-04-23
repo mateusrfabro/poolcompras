@@ -38,7 +38,7 @@
             <tbody>
                 {% for rp, p, r, f in registros %}
                 <tr>
-                    <td>{{ rp.criado_em.strftime('%d/%m/%Y %H:%M') if rp.criado_em else '—' }}</td>
+                    <td>{{ rp.criado_em|datetime_br if rp.criado_em else '—' }}</td>
                     <td>
                         <a href="{{ url_for('rodadas.detalhe', rodada_id=r.id) }}">{{ r.nome }}</a>
                     </td>

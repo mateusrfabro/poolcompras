@@ -120,7 +120,7 @@
                     {% for r in por_rodada %}
                     <tr>
                         <td>{{ r.rodada_nome }}</td>
-                        <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+                        <td>{{ r.data|data_br if r.data else '—' }}</td>
                         <td>{{ r.itens }}</td>
                         <td>{{ r.clientes or '—' }}</td>
                         <td><strong>{{ r.receita|brl }}</strong></td>

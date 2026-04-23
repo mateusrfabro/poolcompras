@@ -33,7 +33,7 @@
     {% if rodada_aberta %}
         <div class="card card-highlight">
             <h3>Rodada ativa: {{ rodada_aberta.nome }}</h3>
-            <p>Aberta até {{ rodada_aberta.data_fechamento.strftime('%d/%m/%Y') }}</p>
+            <p>Aberta até {{ rodada_aberta.data_fechamento|data_br }}</p>
             <div class="card-actions">
                 <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada_aberta.id) }}" class="btn btn-outline">Ver detalhes</a>
                 <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}">

@@ -9,8 +9,8 @@
         <div>
             <h2>{{ rodada.nome }}</h2>
             <p class="page-sub">
-                Aberta em {{ rodada.data_abertura.strftime('%d/%m/%Y às %H:%M') }}
-                &middot; Fechamento {{ rodada.data_fechamento.strftime('%d/%m/%Y às %H:%M') }}
+                Aberta em {{ rodada.data_abertura|datetime_br }}
+                &middot; Fechamento {{ rodada.data_fechamento|datetime_br }}
             </p>
         </div>
         <div>
@@ -199,7 +199,7 @@
 
             {% elif participacao.recebimento_ok is none %}
                 <p>O fornecedor informou a entrega para
-                    <strong>{{ participacao.entrega_data.strftime('%d/%m/%Y') if participacao.entrega_data else '—' }}</strong>.
+                    <strong>{{ participacao.entrega_data|data_br if participacao.entrega_data else '—' }}</strong>.
                     Como foi o recebimento?</p>
                 <form method="POST" action="{{ url_for('fluxo.confirmar_recebimento', rodada_id=rodada.id) }}" class="action-card-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

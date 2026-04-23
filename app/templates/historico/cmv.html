@@ -112,7 +112,7 @@
                         <td>
                             <a href="{{ url_for('historico.detalhe', rodada_id=r.rodada_id) }}">{{ r.rodada_nome }}</a>
                         </td>
-                        <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+                        <td>{{ r.data|data_br if r.data else '—' }}</td>
                         <td>{{ r.itens }}</td>
                         <td>{{ r.fornecedores or '—' }}</td>
                         <td>{{ r.economia|brl }}</td>

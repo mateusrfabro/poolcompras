@@ -82,7 +82,7 @@
                 {% for r in dados.rodadas %}
                 <tr>
                     <td><a href="{{ url_for('rodadas.detalhe', rodada_id=r.id) }}">{{ r.nome }}</a></td>
-                    <td>{{ r.data_abertura.strftime('%d/%m/%Y') }}</td>
+                    <td>{{ r.data_abertura|data_br }}</td>
                     <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
                 </tr>
                 {% endfor %}

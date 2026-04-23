@@ -22,7 +22,7 @@
     </h3>
 
     {% if not enviadas %}
-        <div class="card"><p class="muted">Nenhuma cotação aguardando aprovação.</p></div>
+        <div class="empty-state"><p>Nenhuma cotação aguardando aprovação.</p></div>
     {% else %}
         {% for s in enviadas %}
             <div class="card" style="margin-bottom: 1rem;">

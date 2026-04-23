@@ -63,6 +63,9 @@
     </nav>
 
     <main class="container">
+        {# H1 acessivel (leitores de tela). Visualmente oculto — a identidade
+           visual continua a usar os h2 do page-header. #}
+        <h1 class="sr-only">{{ self.title() }}</h1>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-container" aria-live="polite" aria-atomic="true">
