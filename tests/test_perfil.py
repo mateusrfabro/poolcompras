@@ -48,6 +48,7 @@ def test_perfil_admin_renderiza(client_admin):
 
 
 def test_lanchonete_edita_proprios_dados(app, client_lanchA):
+    """Mudanca de CNPJ eh campo sensivel — exige senha_atual."""
     csrf = _get_csrf(client_lanchA, "/perfil/")
     client_lanchA.post("/perfil/", data={
         "csrf_token": csrf,
@@ -58,6 +59,7 @@ def test_lanchonete_edita_proprios_dados(app, client_lanchA):
         "endereco": "Rua Teste, 100",
         "bairro": "Centro",
         "cidade": "Londrina",
+        "senha_atual": "testpass",  # necessario pra mudar CNPJ
     })
 
     u = Usuario.query.filter_by(email="lancha@test.com").first()
@@ -68,7 +70,27 @@ def test_lanchonete_edita_proprios_dados(app, client_lanchA):
     assert u.lanchonete.endereco == "Rua Teste, 100"
 
 
+def test_lanchonete_edita_nao_sensivel_sem_senha_atual(app, client_lanchA):
+    """Mudar so campos nao-sensiveis (nome/telefone/endereco) NAO exige senha."""
+    csrf = _get_csrf(client_lanchA, "/perfil/")
+    original_cnpj = Usuario.query.filter_by(email="lancha@test.com").first().lanchonete.cnpj
+    client_lanchA.post("/perfil/", data={
+        "csrf_token": csrf,
+        "nome_responsavel": "Novo Nome",
+        "telefone": "(43) 98888-2222",
+        "nome_fantasia": "Lanch A Editada",
+        "cnpj": original_cnpj or "",  # mantem mesmo valor
+        "endereco": "Rua Nova",
+        "bairro": "",
+        "cidade": "Londrina",
+    })
+    u = Usuario.query.filter_by(email="lancha@test.com").first()
+    assert u.nome_responsavel == "Novo Nome"
+    assert u.lanchonete.endereco == "Rua Nova"
+
+
 def test_fornecedor_edita_dados_bancarios(app, client_forn):
+    """Mudanca de chave_pix/banco/agencia/conta exige senha_atual."""
     csrf = _get_csrf(client_forn, "/perfil/")
     client_forn.post("/perfil/", data={
         "csrf_token": csrf,
@@ -82,6 +104,7 @@ def test_fornecedor_edita_dados_bancarios(app, client_forn):
         "banco": "341",
         "agencia": "1234",
         "conta": "56789-0",
+        "senha_atual": "testpass",  # necessario pra mudar dados bancarios
     })
 
     f = Fornecedor.query.first()
@@ -90,6 +113,20 @@ def test_fornecedor_edita_dados_bancarios(app, client_forn):
     assert f.banco == "341"
     assert f.agencia == "1234"
     assert f.conta == "56789-0"
+
+
+def test_fornecedor_mudanca_pix_sem_senha_bloqueada(app, client_forn):
+    """Atacante com sessao sequestrada nao deve conseguir redirecionar PIX."""
+    csrf = _get_csrf(client_forn, "/perfil/")
+    client_forn.post("/perfil/", data={
+        "csrf_token": csrf,
+        "nome_responsavel": "Atacante",
+        "telefone": "",
+        "razao_social": "Fornec Teste",
+        "chave_pix": "atacante-pix@evil.com",  # tenta mudar sem senha_atual
+    })
+    f = Fornecedor.query.first()
+    assert f.chave_pix != "atacante-pix@evil.com"
 
 
 def test_troca_senha_sucesso(app, client_lanchA):
@@ -166,7 +203,9 @@ def test_lanchonete_A_nao_altera_lanchonete_B(app, client_lanchA):
     nome_original_b = db.session.get(Lanchonete, lanchB_id).nome_fantasia
 
     csrf = _get_csrf(client_lanchA, "/perfil/")
-    # Tenta passar campo 'lanchonete_id' ou 'usuario_id' — rota ignora
+    # Tenta passar campo 'lanchonete_id' ou 'usuario_id' — rota ignora.
+    # Mantem cnpj original (campo sensivel: mudanca exigiria senha_atual).
+    cnpj_original = Usuario.query.filter_by(email="lancha@test.com").first().lanchonete.cnpj
     client_lanchA.post("/perfil/", data={
         "csrf_token": csrf,
         "lanchonete_id": lanchB_id,
@@ -174,6 +213,7 @@ def test_lanchonete_A_nao_altera_lanchonete_B(app, client_lanchA):
         "nome_responsavel": "Teste",
         "telefone": "",
         "nome_fantasia": "TENTATIVA DE HIJACK",
+        "cnpj": cnpj_original or "",
     })
 
     # Lanchonete B intacta

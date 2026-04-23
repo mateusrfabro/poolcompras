@@ -107,11 +107,28 @@ def detalhe(rodada_id):
         if atual is None or c.preco_unitario < atual.preco_unitario:
             melhor_por_produto[c.produto_id] = c
 
+    # Protecao contra vazamento competitivo: fornecedor so ve preco_final/vencedor
+    # nas linhas onde ele proprio venceu, enquanto a rodada ainda nao terminou.
+    # Apos 'finalizada'/'cancelada', todos veem tudo (transparencia do resultado).
+    rodada_encerrada = rodada.status in ("finalizada", "cancelada")
+    esconder_concorrencia = (
+        current_user.is_fornecedor
+        and current_user.fornecedor
+        and not rodada_encerrada
+    )
+    meu_forn_id = current_user.fornecedor.id if current_user.is_fornecedor and current_user.fornecedor else None
+
     agregado_enriquecido = []
     for item in agregado:
         melhor = melhor_por_produto.get(item.id)
         preco_final = float(melhor.preco_unitario) if melhor else None
         forn = melhor.fornecedor if melhor else None
+
+        # Oculta do fornecedor rival enquanto a rodada nao terminou
+        if esconder_concorrencia and melhor and melhor.fornecedor_id != meu_forn_id:
+            preco_final = None
+            forn = None
+
         subtotal = (preco_final * float(item.total_quantidade)) if preco_final else None
         agregado_enriquecido.append({
             "id": item.id,
