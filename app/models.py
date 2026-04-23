@@ -22,8 +22,14 @@ class Usuario(UserMixin, db.Model):
     is_admin = db.Column(db.Boolean, default=False)
     criado_em = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
-    lanchonete = db.relationship("Lanchonete", backref="responsavel", uselist=False)
-    fornecedor = db.relationship("Fornecedor", backref="responsavel", uselist=False)
+    lanchonete = db.relationship(
+        "Lanchonete", backref="responsavel", uselist=False,
+        foreign_keys="Lanchonete.usuario_id",
+    )
+    fornecedor = db.relationship(
+        "Fornecedor", backref="responsavel", uselist=False,
+        foreign_keys="Fornecedor.usuario_id",
+    )
 
     @property
     def is_fornecedor(self):
