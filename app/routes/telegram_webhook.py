@@ -21,6 +21,7 @@ import os
 
 from flask import Blueprint, abort, jsonify, request, current_app
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from sqlalchemy import select
 
 from app import db, limiter
 from app.models import Usuario
@@ -118,10 +119,12 @@ def _processar_update(update: dict):
 
     # Se outro user ja usou este chat_id, bloqueia (unique constraint tambem
     # bloqueia, mas aqui damos mensagem amigavel antes do erro DB).
-    ja_usado = Usuario.query.filter(
-        Usuario.telegram_chat_id == chat_id,
-        Usuario.id != usuario.id,
-    ).first()
+    ja_usado = db.session.execute(
+        select(Usuario).where(
+            Usuario.telegram_chat_id == chat_id,
+            Usuario.id != usuario.id,
+        )
+    ).scalar_one_or_none()
     if ja_usado:
         _enviar(chat_id,
                 "Este Telegram ja esta vinculado a outra conta do PoolCompras. "

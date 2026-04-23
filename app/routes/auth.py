@@ -3,10 +3,18 @@ from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
+from sqlalchemy import select
 from werkzeug.security import generate_password_hash, check_password_hash
 from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
 from app.services.notificacoes import enviar_link_recuperacao
+
+
+def _usuario_por_email(email: str) -> Usuario | None:
+    """Helper SQLA 2.0 pra buscar Usuario por email (padrao usado em 4 rotas)."""
+    return db.session.execute(
+        select(Usuario).where(Usuario.email == email)
+    ).scalar_one_or_none()
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +57,7 @@ def login():
         email = request.form.get("email", "").strip().lower()
         senha = request.form.get("senha", "")
 
-        usuario = Usuario.query.filter_by(email=email).first()
+        usuario = _usuario_por_email(email)
         # Equalizar tempo de resposta: mesmo quando o email nao existe,
         # faz check_password_hash contra hash dummy pra nao vazar existencia
         # via timing (bcrypt eh o grosso do custo).
@@ -100,7 +108,7 @@ def registro():
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
             return render_template("auth/registro.html")
 
-        if Usuario.query.filter_by(email=email).first():
+        if _usuario_por_email(email):
             flash("Este e-mail já está cadastrado.", "error")
             return render_template("auth/registro.html")
 
@@ -150,7 +158,7 @@ def registro_fornecedor():
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
             return render_template("auth/registro_fornecedor.html")
 
-        if Usuario.query.filter_by(email=email).first():
+        if _usuario_por_email(email):
             flash("Este e-mail já está cadastrado.", "error")
             return render_template("auth/registro_fornecedor.html")
 
@@ -202,7 +210,7 @@ def esqueci_senha():
 
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
-        usuario = Usuario.query.filter_by(email=email).first() if email else None
+        usuario = _usuario_por_email(email) if email else None
 
         # Nao vazamos existencia do e-mail — mensagem identica em qualquer caso.
         if usuario:
