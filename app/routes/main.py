@@ -6,6 +6,7 @@ from app.models import (
     Lanchonete, Rodada, ItemPedido, Produto,
     ParticipacaoRodada,
 )
+from app.services.dashboard_lanchonete import dashboard_data
 
 main_bp = Blueprint("main", __name__)
 
@@ -82,7 +83,6 @@ def dashboard():
     pendencias = []
     ultimas_rodadas = []
     if lanchonete:
-        from app.services.dashboard_lanchonete import dashboard_data
         data = dashboard_data(lanchonete.id)
         pendencias = data["pendencias"]
         kpis = data["kpis"]

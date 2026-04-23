@@ -245,13 +245,27 @@ def relatorio():
     }
 
     if exportar:
+        # Evita N+1: pre-agrega counts em 2 queries agrupadas por rodada_id.
+        pedidos_por_rodada = dict(
+            db.session.query(ItemPedido.rodada_id, func.count(ItemPedido.id))
+            .filter(ItemPedido.rodada_id.in_(rod_ids))
+            .group_by(ItemPedido.rodada_id)
+            .all()
+        ) if rod_ids else {}
+        cotacoes_por_rodada = dict(
+            db.session.query(Cotacao.rodada_id, func.count(Cotacao.id))
+            .filter(Cotacao.rodada_id.in_(rod_ids))
+            .group_by(Cotacao.rodada_id)
+            .all()
+        ) if rod_ids else {}
+
         return csv_response(
             filename=f"relatorio_{de}_a_{ate}.csv",
             headers=["rodada", "data_abertura", "status", "pedidos", "cotacoes"],
             rows=[
                 [r.nome, r.data_abertura.strftime("%Y-%m-%d"), r.status,
-                 str(ItemPedido.query.filter_by(rodada_id=r.id).count()),
-                 str(Cotacao.query.filter_by(rodada_id=r.id).count())]
+                 str(pedidos_por_rodada.get(r.id, 0)),
+                 str(cotacoes_por_rodada.get(r.id, 0))]
                 for r in rodadas
             ],
         )

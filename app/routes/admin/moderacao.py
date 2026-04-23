@@ -172,18 +172,35 @@ def aprovar_cotacoes(rodada_id):
     enviadas = [s for s in submissoes if s.aprovada_em is None]
     aprovadas = [s for s in submissoes if s.aprovada_em is not None]
 
-    resumo_por_sub = {}
-    notas_por_sub = {}
-    for s in submissoes:
-        cots = (
+    # Batch: 1 query pra todas cotacoes + 1 query pra todas notas (evita N+1)
+    forn_ids = [s.fornecedor_id for s in submissoes]
+    sub_ids = [s.id for s in submissoes]
+
+    resumo_por_sub = {s.id: [] for s in submissoes}
+    if forn_ids:
+        todas_cots = (
             db.session.query(Cotacao, Produto)
             .join(Produto, Cotacao.produto_id == Produto.id)
-            .filter(Cotacao.rodada_id == rodada_id, Cotacao.fornecedor_id == s.fornecedor_id)
+            .filter(Cotacao.rodada_id == rodada_id,
+                    Cotacao.fornecedor_id.in_(forn_ids))
             .all()
         )
-        resumo_por_sub[s.id] = cots
-        notas_por_sub[s.id] = NotaNegociacao.query.filter_by(submissao_id=s.id)\
-            .order_by(NotaNegociacao.criado_em.asc()).all()
+        forn_to_sub = {s.fornecedor_id: s.id for s in submissoes}
+        for c, p in todas_cots:
+            sub_id = forn_to_sub.get(c.fornecedor_id)
+            if sub_id is not None:
+                resumo_por_sub[sub_id].append((c, p))
+
+    notas_por_sub = {s.id: [] for s in submissoes}
+    if sub_ids:
+        todas_notas = (
+            NotaNegociacao.query
+            .filter(NotaNegociacao.submissao_id.in_(sub_ids))
+            .order_by(NotaNegociacao.criado_em.asc())
+            .all()
+        )
+        for n in todas_notas:
+            notas_por_sub[n.submissao_id].append(n)
 
     return render_template(
         "admin/aprovar_cotacoes.html",

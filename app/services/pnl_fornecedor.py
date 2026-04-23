@@ -10,11 +10,7 @@ paridade com o que aparece no CMV da lanchonete — o somatorio de CMV de
 todas lanchonetes = soma dos P&L de todos fornecedores.
 """
 from collections import defaultdict
-from app import db
-from app.models import (
-    Rodada, Produto, Lanchonete, ItemPedido, Cotacao, RodadaProduto,
-    ParticipacaoRodada,
-)
+from app.services.vendas_efetivadas import linhas_efetivadas
 
 
 def calcular_pnl(fornecedor_id: int) -> dict:
@@ -32,38 +28,7 @@ def calcular_pnl(fornecedor_id: int) -> dict:
     margem_vs_partida = receita final - receita que teria sido com preco_partida
     (positivo = fornecedor manteve margem apertando menos que o esperado).
     """
-    linhas = (
-        db.session.query(
-            Rodada.id.label("rodada_id"),
-            Rodada.nome.label("rodada_nome"),
-            Rodada.data_abertura.label("data"),
-            Produto.id.label("produto_id"),
-            Produto.nome.label("produto_nome"),
-            Produto.unidade.label("unidade"),
-            Lanchonete.id.label("lanchonete_id"),
-            Lanchonete.nome_fantasia.label("cliente"),
-            ItemPedido.quantidade.label("quantidade"),
-            Cotacao.preco_unitario.label("preco_final"),
-            RodadaProduto.preco_partida.label("preco_partida"),
-        )
-        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
-        .join(Lanchonete, Lanchonete.id == ItemPedido.lanchonete_id)
-        .join(ParticipacaoRodada,
-              (ParticipacaoRodada.rodada_id == ItemPedido.rodada_id) &
-              (ParticipacaoRodada.lanchonete_id == ItemPedido.lanchonete_id))
-        .join(Produto, Produto.id == ItemPedido.produto_id)
-        .join(Cotacao,
-              (Cotacao.rodada_id == ItemPedido.rodada_id) &
-              (Cotacao.produto_id == ItemPedido.produto_id) &
-              (Cotacao.fornecedor_id == fornecedor_id) &
-              (Cotacao.selecionada.is_(True)))
-        .outerjoin(RodadaProduto,
-                   (RodadaProduto.rodada_id == ItemPedido.rodada_id) &
-                   (RodadaProduto.produto_id == ItemPedido.produto_id))
-        .filter(ParticipacaoRodada.aceite_proposta.is_(True))
-        .order_by(Rodada.data_abertura.desc(), Produto.nome)
-        .all()
-    )
+    linhas = linhas_efetivadas(fornecedor_id=fornecedor_id)
 
     receita_total = 0.0
     receita_seria_partida = 0.0

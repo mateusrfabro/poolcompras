@@ -7,6 +7,8 @@ from app import db
 from app.models import (
     Rodada, Cotacao, Produto, Lanchonete, AvaliacaoRodada,
 )
+from app.services.pendencias import pendencias_fornecedor
+from app.services.pnl_fornecedor import calcular_pnl
 from . import fornecedor_bp, fornecedor_required
 
 
@@ -30,7 +32,6 @@ def dashboard():
 
     pendencias_por_rodada = []
     if fornecedor:
-        from app.services.pendencias import pendencias_fornecedor
         pendencias_por_rodada = pendencias_fornecedor(fornecedor.id)
 
     participacoes_pendentes = [
@@ -79,29 +80,35 @@ def dashboard():
             .limit(3)
             .all()
         )
+        # Evita N+1: pre-agrega em 3 queries agrupadas (uma por metrica) em vez
+        # de 3 queries por rodada.
+        rod_ids = [r.id for r in rodadas_cotadas]
+        cotadas = dict(
+            db.session.query(Cotacao.rodada_id, func.count(Cotacao.id))
+            .filter(Cotacao.rodada_id.in_(rod_ids),
+                    Cotacao.fornecedor_id == fornecedor.id)
+            .group_by(Cotacao.rodada_id).all()
+        ) if rod_ids else {}
+        vits = dict(
+            db.session.query(Cotacao.rodada_id, func.count(Cotacao.id))
+            .filter(Cotacao.rodada_id.in_(rod_ids),
+                    Cotacao.fornecedor_id == fornecedor.id,
+                    Cotacao.selecionada.is_(True))
+            .group_by(Cotacao.rodada_id).all()
+        ) if rod_ids else {}
+        notas = dict(
+            db.session.query(AvaliacaoRodada.rodada_id, func.avg(AvaliacaoRodada.estrelas))
+            .filter(AvaliacaoRodada.rodada_id.in_(rod_ids),
+                    AvaliacaoRodada.fornecedor_id == fornecedor.id)
+            .group_by(AvaliacaoRodada.rodada_id).all()
+        ) if rod_ids else {}
+
         for r in rodadas_cotadas:
-            total_cotado = (
-                db.session.query(func.count(Cotacao.id))
-                .filter(Cotacao.rodada_id == r.id, Cotacao.fornecedor_id == fornecedor.id)
-                .scalar()
-            ) or 0
-            vitorias = (
-                db.session.query(func.count(Cotacao.id))
-                .filter(Cotacao.rodada_id == r.id,
-                        Cotacao.fornecedor_id == fornecedor.id,
-                        Cotacao.selecionada.is_(True))
-                .scalar()
-            ) or 0
-            nota = (
-                db.session.query(func.avg(AvaliacaoRodada.estrelas))
-                .filter(AvaliacaoRodada.rodada_id == r.id,
-                        AvaliacaoRodada.fornecedor_id == fornecedor.id)
-                .scalar()
-            )
+            nota = notas.get(r.id)
             ultimas_rodadas.append({
                 "rodada": r,
-                "cotacoes": total_cotado,
-                "vitorias": vitorias,
+                "cotacoes": cotadas.get(r.id, 0),
+                "vitorias": vits.get(r.id, 0),
                 "nota": round(float(nota), 1) if nota else None,
             })
 
@@ -127,7 +134,6 @@ def pnl():
         flash("Complete seu cadastro.", "error")
         return redirect(url_for("fornecedor.dashboard"))
 
-    from app.services.pnl_fornecedor import calcular_pnl
     dados = calcular_pnl(fornecedor.id)
 
     return render_template(

@@ -16,7 +16,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db, limiter
 from app.models import (
     Rodada, ParticipacaoRodada, EventoRodada, Cotacao, Fornecedor,
-    AvaliacaoRodada,
+    AvaliacaoRodada, SubmissaoCotacao,
 )
 from app.services.storage import get_storage
 
@@ -44,7 +44,6 @@ def _ja_aceita_fase_aceite(rodada):
     if rodada.status == "finalizada":
         return True
     if rodada.status == "em_negociacao":
-        from app.models import SubmissaoCotacao
         return db.session.query(SubmissaoCotacao.id).filter_by(
             rodada_id=rodada.id
         ).filter(SubmissaoCotacao.aprovada_em.isnot(None)).first() is not None

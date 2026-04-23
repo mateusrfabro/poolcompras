@@ -7,11 +7,7 @@ Regra: so conta linhas onde a lanchonete ACEITOU a proposta (aceite_proposta=Tru
 e onde existe Cotacao selecionada (selecionada=True) pro produto naquela rodada.
 """
 from collections import defaultdict
-from app import db
-from app.models import (
-    Rodada, Produto, Fornecedor, ItemPedido, Cotacao, RodadaProduto,
-    ParticipacaoRodada,
-)
+from app.services.vendas_efetivadas import linhas_efetivadas
 
 
 def calcular_cmv(lanchonete_id: int) -> dict:
@@ -26,39 +22,7 @@ def calcular_cmv(lanchonete_id: int) -> dict:
         "por_rodada":     [{rodada_id, rodada_nome, data, gasto, economia, itens, fornecedor}],
     }
     """
-    # 1. Linhas brutas: cada item comprado na rodada (aceita) com preco selecionado
-    linhas = (
-        db.session.query(
-            Rodada.id.label("rodada_id"),
-            Rodada.nome.label("rodada_nome"),
-            Rodada.data_abertura.label("data"),
-            Produto.id.label("produto_id"),
-            Produto.nome.label("produto_nome"),
-            Produto.categoria.label("categoria"),
-            Produto.unidade.label("unidade"),
-            ItemPedido.quantidade.label("quantidade"),
-            Cotacao.preco_unitario.label("preco_final"),
-            RodadaProduto.preco_partida.label("preco_partida"),
-            Fornecedor.razao_social.label("fornecedor"),
-        )
-        .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
-        .join(ParticipacaoRodada,
-              (ParticipacaoRodada.rodada_id == ItemPedido.rodada_id) &
-              (ParticipacaoRodada.lanchonete_id == ItemPedido.lanchonete_id))
-        .join(Produto, Produto.id == ItemPedido.produto_id)
-        .join(Cotacao,
-              (Cotacao.rodada_id == ItemPedido.rodada_id) &
-              (Cotacao.produto_id == ItemPedido.produto_id) &
-              (Cotacao.selecionada.is_(True)))
-        .outerjoin(RodadaProduto,
-                   (RodadaProduto.rodada_id == ItemPedido.rodada_id) &
-                   (RodadaProduto.produto_id == ItemPedido.produto_id))
-        .outerjoin(Fornecedor, Fornecedor.id == Cotacao.fornecedor_id)
-        .filter(ItemPedido.lanchonete_id == lanchonete_id)
-        .filter(ParticipacaoRodada.aceite_proposta.is_(True))
-        .order_by(Rodada.data_abertura.desc(), Produto.nome)
-        .all()
-    )
+    linhas = linhas_efetivadas(lanchonete_id=lanchonete_id)
 
     # 2. Agrega KPIs + top categorias + top produtos + por rodada
     gasto_total = 0.0
