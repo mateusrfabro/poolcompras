@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, contains_eager
 from app import db
 from app.models import Produto, Rodada, ItemPedido, RodadaProduto, ParticipacaoRodada
 from app.services.csv_export import csv_response
@@ -81,13 +81,15 @@ def catalogo():
         flash("Nenhuma rodada aberta no momento.", "warning")
         return redirect(url_for("pedidos.listar"))
 
-    # Carrega catalogo da rodada (apenas aprovados ou do admin)
+    # Carrega catalogo da rodada (apenas aprovados ou do admin).
+    # contains_eager popula rp.produto com o mesmo join — sem N+1 no loop abaixo.
     catalogo = (
         RodadaProduto.query
         .filter_by(rodada_id=rodada.id)
         .filter((RodadaProduto.aprovado.is_(None))
                 | (RodadaProduto.aprovado.is_(True)))
         .join(Produto)
+        .options(contains_eager(RodadaProduto.produto))
         .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
         .all()
     )

@@ -2,6 +2,7 @@
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
+from sqlalchemy.orm import contains_eager
 
 from app import db
 from app.models import (
@@ -140,6 +141,7 @@ def cotar_catalogo(rodada_id):
         .filter((RodadaProduto.aprovado.is_(None))
                 | (RodadaProduto.aprovado.is_(True)))
         .join(Produto)
+        .options(contains_eager(RodadaProduto.produto))
         .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
         .all()
     )
@@ -174,12 +176,15 @@ def cotar_catalogo(rodada_id):
             except ValueError:
                 preco_novo = None
 
+            # ativo=False: produto sugerido nao polui catalogo global ate admin aprovar.
+            # RodadaProduto.produto (relationship) continua acessivel; filtros por
+            # Produto.ativo (listagem admin/analytics) ignoram pendentes — correto.
             produto_novo = Produto(
                 nome=nome_novo,
                 categoria=categoria_nova,
                 subcategoria=subcategoria_nova,
                 unidade=unidade_nova,
-                ativo=True,
+                ativo=False,
                 descricao=f"Sugerido por {fornecedor.razao_social}",
             )
             db.session.add(produto_novo)

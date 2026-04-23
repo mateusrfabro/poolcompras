@@ -36,6 +36,9 @@ def rodada_aprovar_produtos(rodada_id):
 
         if acao == "aprovar":
             rp.aprovado = True
+            # Produto sugerido nasce inativo; aprovacao libera no catalogo global.
+            if rp.produto and not rp.produto.ativo:
+                rp.produto.ativo = True
             flash(f"Produto '{rp.produto.nome}' aprovado.", "success")
         elif acao == "recusar":
             # Apenas marca a SUGESTAO como recusada nesta rodada.
@@ -126,14 +129,22 @@ def moderar_pedidos(rodada_id):
     aprovados = [p for p in participacoes if p.pedido_aprovado_em is not None]
     reprovados = [p for p in participacoes if p.pedido_reprovado_em is not None]
 
-    itens_por_participacao = {}
-    for p in participacoes:
-        itens_por_participacao[p.id] = (
+    # 1 query agrupada em vez de N (1 por lanchonete). Evita N+1 com 50+ lanchonetes.
+    lanchonete_ids = [p.lanchonete_id for p in participacoes]
+    itens_por_participacao = {p.id: [] for p in participacoes}
+    if lanchonete_ids:
+        itens_all = (
             ItemPedido.query
             .options(joinedload(ItemPedido.produto))
-            .filter_by(rodada_id=rodada_id, lanchonete_id=p.lanchonete_id)
+            .filter(ItemPedido.rodada_id == rodada_id)
+            .filter(ItemPedido.lanchonete_id.in_(lanchonete_ids))
             .all()
         )
+        part_by_lanch = {p.lanchonete_id: p.id for p in participacoes}
+        for item in itens_all:
+            pid = part_by_lanch.get(item.lanchonete_id)
+            if pid is not None:
+                itens_por_participacao[pid].append(item)
 
     return render_template(
         "admin/moderar_pedidos.html",

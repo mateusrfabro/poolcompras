@@ -8,15 +8,15 @@ Cada acao:
 4. Gera EventoRodada correspondente (log imutavel)
 5. Commit transacional; rollback em erro
 """
-from datetime import datetime, timezone, date
-from flask import Blueprint, request, redirect, url_for, flash, abort
+from datetime import datetime, timezone, date, timedelta
+from flask import Blueprint, request, redirect, url_for, flash, abort, render_template
 from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db, limiter
 from app.models import (
     Rodada, ParticipacaoRodada, EventoRodada, Cotacao, Fornecedor,
-    AvaliacaoRodada, SubmissaoCotacao, Lanchonete,
+    AvaliacaoRodada, SubmissaoCotacao, Lanchonete, ItemPedido,
 )
 from app.services.storage import get_storage
 from app.services.notificacoes import notificar_evento
@@ -78,7 +78,6 @@ def _registrar_evento(rodada_id, tipo, descricao, lanchonete_id=None, ator_id=No
 
 def _notificar_fornecedores_comprovante(rodada, lanchonete):
     """Notifica fornecedores vencedores que a lanchonete X enviou comprovante."""
-    from app.models import ItemPedido
     # Fornecedores distintos que venceram algum item dessa lanchonete nessa rodada
     forn_ids = {
         fid for (fid,) in db.session.query(Cotacao.fornecedor_id)
@@ -333,7 +332,6 @@ def avaliar(rodada_id):
 @login_required
 def avaliar_detalhado(rodada_id):
     """Tela de detalhe: nota por fornecedor quando a geral foi baixa (<=3)."""
-    from flask import render_template
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     p = ParticipacaoRodada.query.filter_by(
         rodada_id=rodada_id, lanchonete_id=lanchonete.id,
@@ -448,7 +446,6 @@ def informar_entrega(rodada_id, lanchonete_id):
 
     # Rejeita datas absurdas (digito errado ou ataque)
     hoje = date.today()
-    from datetime import timedelta
     if entrega_dt < hoje - timedelta(days=30) or entrega_dt > hoje + timedelta(days=365):
         flash("Data de entrega fora da janela aceitavel.", "error")
         return redirect(url_for("fornecedor.dashboard"))

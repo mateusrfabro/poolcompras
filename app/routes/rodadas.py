@@ -94,9 +94,8 @@ def detalhe(rodada_id):
         .filter(SubmissaoCotacao.aprovada_em.isnot(None)).all()
     }
     # Cotacoes elegiveis: so de submissoes aprovadas (ou todas se nao houver fluxo novo em uso)
-    from sqlalchemy.orm import joinedload as _jl
     cotacoes_full = (
-        Cotacao.query.options(_jl(Cotacao.fornecedor))
+        Cotacao.query.options(joinedload(Cotacao.fornecedor))
         .filter_by(rodada_id=rodada_id).all()
     )
     melhor_por_produto = {}
@@ -145,7 +144,7 @@ def detalhe(rodada_id):
 
     # Status das submissoes (visivel a todos perfis)
     submissoes_todas = (
-        SubmissaoCotacao.query.options(_jl(SubmissaoCotacao.fornecedor))
+        SubmissaoCotacao.query.options(joinedload(SubmissaoCotacao.fornecedor))
         .filter_by(rodada_id=rodada_id).all()
     )
 

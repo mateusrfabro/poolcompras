@@ -177,6 +177,10 @@ class Cotacao(db.Model):
             postgresql_where=db.text("selecionada IS TRUE"),
             sqlite_where=db.text("selecionada IS TRUE"),
         ),
+        # Query mais quente do fornecedor: filter_by(rodada_id=X, fornecedor_id=Y).
+        db.Index("ix_cotacao_rodada_fornecedor", "rodada_id", "fornecedor_id"),
+        # Ranking de menor preco por produto na rodada.
+        db.Index("ix_cotacao_rodada_produto", "rodada_id", "produto_id"),
     )
 
 
@@ -246,6 +250,21 @@ class ParticipacaoRodada(db.Model):
     __table_args__ = (
         UniqueConstraint("rodada_id", "lanchonete_id",
                          name="uq_participacao_rodada_lanchonete"),
+        # Fila de moderacao: pedidos enviados ainda sem decisao do admin.
+        db.Index(
+            "ix_participacao_pedido_pendente",
+            "rodada_id",
+            postgresql_where=db.text(
+                "pedido_enviado_em IS NOT NULL "
+                "AND pedido_aprovado_em IS NULL "
+                "AND pedido_reprovado_em IS NULL"
+            ),
+            sqlite_where=db.text(
+                "pedido_enviado_em IS NOT NULL "
+                "AND pedido_aprovado_em IS NULL "
+                "AND pedido_reprovado_em IS NULL"
+            ),
+        ),
     )
 
 
@@ -314,6 +333,11 @@ class EventoRodada(db.Model):
     rodada     = db.relationship("Rodada", backref="eventos")
     lanchonete = db.relationship("Lanchonete")
     ator       = db.relationship("Usuario")
+
+    __table_args__ = (
+        # Timeline ordenada por rodada: evita sort externo em detalhes de rodada.
+        db.Index("ix_evento_rodada_criado", "rodada_id", "criado_em"),
+    )
 
 
 # ---------- Fase A.1: catalogo da rodada (produtos selecionados + preco de partida) ----------

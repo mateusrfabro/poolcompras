@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
+from sqlalchemy.orm import contains_eager
 
 from app import db
 from app.models import (
@@ -52,6 +53,7 @@ def cotar_final(rodada_id):
         .filter((RodadaProduto.aprovado.is_(None))
                 | (RodadaProduto.aprovado.is_(True)))
         .join(Produto)
+        .options(contains_eager(RodadaProduto.produto))
         .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
         .all()
     )
