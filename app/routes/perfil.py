@@ -6,14 +6,34 @@ Regras:
 - Troca de senha eh opcional: se senha_nova vazia, nao altera
 - Troca de senha exige senha_atual correta (protege de sessao sequestrada)
 """
+import logging
+import os
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+
+import requests
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
+from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db, limiter
+from app.services.notificacoes import enviar_telegram
+
+logger = logging.getLogger(__name__)
 
 perfil_bp = Blueprint("perfil", __name__, url_prefix="/perfil")
+
+# Vinculacao Telegram: token assinado embutido no deep link do bot.
+# Usuario clica "Conectar Telegram" -> abrimos t.me/<bot>?start=<token>.
+# Quando ele manda /start <token> pro bot, chamamos getUpdates, procuramos
+# pelo token, extraimos chat_id e salvamos.
+_TELEGRAM_SALT = "vincular-telegram"
+_TELEGRAM_TTL_SEG = 600  # 10 min — tempo suficiente pra abrir Telegram e clicar start
+_TELEGRAM_BOT_USERNAME = "poolcomprasbot"
+
+
+def _telegram_serializer():
+    return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
 
 # Campos sensiveis: mudanca exige reautenticacao com senha_atual.
@@ -114,4 +134,117 @@ def editar():
         db.session.commit()
         return redirect(url_for("perfil.editar"))
 
-    return render_template("perfil/editar.html", usuario=usuario)
+    return render_template("perfil/editar.html", usuario=usuario,
+                           bot_username=_TELEGRAM_BOT_USERNAME)
+
+
+# --------- Vinculacao de Telegram via deep link ---------
+
+
+@perfil_bp.route("/telegram/iniciar", methods=["POST"])
+@login_required
+@limiter.limit("10 per hour", error_message="Muitas tentativas. Aguarde.")
+def telegram_iniciar():
+    """Gera token assinado + redireciona pro deep link do bot.
+
+    Usuario vai abrir o Telegram com /start <token>. Depois volta e clica
+    'Concluir conexao' que chama /telegram/confirmar.
+    """
+    token = _telegram_serializer().dumps(current_user.id, salt=_TELEGRAM_SALT)
+    deep_link = f"https://t.me/{_TELEGRAM_BOT_USERNAME}?start={token}"
+    # Guardamos o token na session pra /confirmar saber o que procurar
+    from flask import session
+    session["telegram_token"] = token
+    return redirect(deep_link)
+
+
+@perfil_bp.route("/telegram/confirmar", methods=["POST"])
+@login_required
+@limiter.limit("20 per hour", error_message="Muitas tentativas. Aguarde.")
+def telegram_confirmar():
+    """Apos o usuario ter dado /start no bot, chama getUpdates pra descobrir
+    o chat_id dele via match do token assinado.
+
+    Se encontrar: salva chat_id + envia mensagem de confirmacao.
+    Senao: flash orienta ir no @userinfobot ou tentar de novo.
+    """
+    from flask import session
+    token_esperado = session.pop("telegram_token", None)
+    if not token_esperado:
+        flash("Sessao de conexao expirada. Clique 'Conectar Telegram' novamente.", "warning")
+        return redirect(url_for("perfil.editar"))
+
+    # Valida que token ainda pertence a este user + nao expirou
+    try:
+        user_id = _telegram_serializer().loads(
+            token_esperado, salt=_TELEGRAM_SALT, max_age=_TELEGRAM_TTL_SEG,
+        )
+        if user_id != current_user.id:
+            raise BadSignature("token de outro usuario")
+    except (BadSignature, SignatureExpired):
+        flash("Link de conexao invalido ou expirado. Tente novamente.", "error")
+        return redirect(url_for("perfil.editar"))
+
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    if not bot_token:
+        flash("Bot Telegram nao esta configurado no servidor. Contate o admin.", "error")
+        return redirect(url_for("perfil.editar"))
+
+    chat_id = _buscar_chat_id_por_token(bot_token, token_esperado)
+    if not chat_id:
+        flash(
+            "Nao encontramos seu /start no Telegram. Verifique se abriu o bot "
+            "@poolcomprasbot e apertou 'Iniciar' dentro de 10 minutos. "
+            "Se preferir, cole o chat_id manualmente abaixo.",
+            "warning",
+        )
+        return redirect(url_for("perfil.editar"))
+
+    # Salva + manda mensagem de confirmacao
+    current_user.telegram_chat_id = str(chat_id)
+    db.session.commit()
+    enviar_telegram(
+        current_user,
+        "<b>Telegram conectado!</b>\n\nA partir de agora voce recebe "
+        "notificacoes do PoolCompras aqui. Se quiser desvincular, volte em "
+        "Meu perfil → Desconectar Telegram.",
+    )
+    flash("Telegram conectado! Voce deve ter recebido uma mensagem de confirmacao.", "success")
+    return redirect(url_for("perfil.editar"))
+
+
+@perfil_bp.route("/telegram/desvincular", methods=["POST"])
+@login_required
+def telegram_desvincular():
+    current_user.telegram_chat_id = None
+    db.session.commit()
+    flash("Telegram desconectado. Notificacoes caem no log do servidor.", "info")
+    return redirect(url_for("perfil.editar"))
+
+
+def _buscar_chat_id_por_token(bot_token: str, token: str):
+    """Chama getUpdates e procura uma mensagem com '/start <token>'.
+
+    Retorna chat_id (int) se encontrar, None caso contrario.
+    Nao levanta excecao — falha eh feedback normal ao usuario.
+    """
+    url = f"https://api.telegram.org/bot{bot_token}/getUpdates"
+    try:
+        r = requests.get(url, timeout=8)
+        data = r.json() if r.status_code == 200 else {}
+    except requests.RequestException as e:
+        logger.warning("TELEGRAM_GET_UPDATES_EXC err=%s", e)
+        return None
+
+    if not data.get("ok"):
+        logger.warning("TELEGRAM_GET_UPDATES_FAIL body=%s", str(data)[:200])
+        return None
+
+    alvo = f"/start {token}"
+    for upd in data.get("result", []):
+        msg = upd.get("message") or {}
+        if (msg.get("text") or "").strip() == alvo:
+            chat = msg.get("chat") or {}
+            if chat.get("id"):
+                return chat["id"]
+    return None

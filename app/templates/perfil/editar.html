@@ -110,24 +110,44 @@
         {% endif %}
 
         <h3>Notificações por Telegram <span class="muted">(opcional)</span></h3>
-        <p class="muted" style="margin-top: -0.5rem;">
-            Receba avisos do PoolCompras no Telegram (reset de senha, propostas,
-            pagamentos, entregas). Como conectar:
-        </p>
-        <ol class="muted" style="margin-top: 0.5rem;">
-            <li>No Telegram, procure por <strong>@userinfobot</strong> e envie <code>/start</code> — ele vai responder com seu <strong>Id</strong> (número).</li>
-            <li>Cole o Id no campo abaixo e salve.</li>
-            <li>Busque <strong>@poolcomprasbot</strong> e envie qualquer mensagem (ex: <code>oi</code>) — isso abre a conversa para que o bot possa te enviar notificações.</li>
-        </ol>
-        <div class="form-group">
-            <label for="telegram_chat_id">Seu chat_id do Telegram</label>
-            <input type="text" id="telegram_chat_id" name="telegram_chat_id"
-                   value="{{ usuario.telegram_chat_id or '' }}"
-                   placeholder="Ex: 123456789"
-                   pattern="^-?\d{5,20}$"
-                   inputmode="numeric">
-            <small class="muted">Deixe vazio para desativar notificações por Telegram.</small>
-        </div>
+        {% if usuario.telegram_chat_id %}
+            <div class="alert alert-success" style="margin-bottom: 1rem;">
+                Telegram conectado ✓ — chat_id <code>{{ usuario.telegram_chat_id }}</code>
+            </div>
+            <div class="form-group">
+                <small class="muted">
+                    Você recebe avisos de reset de senha, propostas, pagamentos e entregas no Telegram.
+                </small>
+            </div>
+            <!-- Form separado: desvincular NAO precisa passar pelos campos do form principal -->
+        {% else %}
+            <p class="muted" style="margin-top: -0.5rem;">
+                Receba avisos do PoolCompras no Telegram (reset de senha, propostas,
+                pagamentos, entregas).
+            </p>
+            <ol class="muted" style="margin-top: 0.5rem;">
+                <li>Clique em <strong>Conectar Telegram</strong> abaixo — vamos abrir o bot <strong>@poolcomprasbot</strong> no Telegram.</li>
+                <li>No Telegram, aperte <strong>Iniciar</strong> (ou envie <code>/start</code>).</li>
+                <li>Volte aqui e clique <strong>Concluir conexão</strong> — fazemos o resto.</li>
+            </ol>
+        {% endif %}
+
+        {# Campo manual escondido por padrao — so aparece via toggle "vincular manual" #}
+        <details style="margin-top: 1rem;">
+            <summary class="muted" style="cursor: pointer;">Prefere colar o chat_id manualmente?</summary>
+            <div class="form-group" style="margin-top: 0.75rem;">
+                <label for="telegram_chat_id">chat_id (numérico)</label>
+                <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+                       value="{{ usuario.telegram_chat_id or '' }}"
+                       placeholder="Ex: 123456789"
+                       pattern="^-?\d{5,20}$"
+                       inputmode="numeric">
+                <small class="muted">
+                    Obtenha em <strong>@userinfobot</strong> no Telegram (mande <code>/start</code>
+                    e copie o número Id). Deixe vazio para desativar.
+                </small>
+            </div>
+        </details>
 
         <h3>Trocar senha <span class="muted">(opcional)</span></h3>
         <p class="muted" style="margin-top: -0.5rem;">Preencha os 3 campos apenas se quiser trocar sua senha.</p>
@@ -148,5 +168,31 @@
 
         <button type="submit" class="btn btn-primary">Salvar alterações</button>
     </form>
+
+    {# Forms independentes pra conectar/desconectar Telegram — separados do
+       form principal pra nao confundir com submit de perfil. #}
+    {% if usuario.telegram_chat_id %}
+        <form method="POST" action="{{ url_for('perfil.telegram_desvincular') }}"
+              style="margin-top: 1rem;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline"
+                    data-confirm="Desconectar Telegram? Você não vai mais receber notificações.">
+                Desconectar Telegram
+            </button>
+        </form>
+    {% else %}
+        <div style="margin-top: 1rem; display: flex; gap: 0.75rem; flex-wrap: wrap;">
+            <form method="POST" action="{{ url_for('perfil.telegram_iniciar') }}"
+                  style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-primary">Conectar Telegram</button>
+            </form>
+            <form method="POST" action="{{ url_for('perfil.telegram_confirmar') }}"
+                  style="display: inline;">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-outline">Já dei /start, concluir</button>
+            </form>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

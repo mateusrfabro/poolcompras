@@ -2,95 +2,79 @@
 
 Bot gratuito — sem custo mensal, sem templates aprovados, sem Z-API.
 
-## Parte 1 — Criar o bot (Mateus faz 1x)
+## Parte 1 — Criar o bot (Mateus, 1x)
 
 1. Abra o Telegram e procure por **@BotFather**.
 2. Envie `/newbot`.
 3. Responda com **nome de exibição** (ex: `PoolCompras`).
-4. Responda com **username** — precisa terminar em `bot`. Ex: `PoolComprasBot`.
-   Se já estiver em uso, tente `PoolComprasLondrinaBot` ou similar.
-5. O BotFather vai mandar uma mensagem com o **token** no formato
-   `123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11` — **guarde esse token**.
-6. (Opcional mas recomendado) ainda com o BotFather, envie `/setdescription`,
-   escolha seu bot e cole uma descrição tipo:
-   > Notificações do PoolCompras — central de compras cooperativa de Londrina.
-   > Envie /start para receber seu código de vinculação.
+4. Responda com **username** terminando em `bot` (ex: `PoolComprasBot`).
+5. BotFather vai mandar o **token** — guarde.
 
 ## Parte 2 — Configurar o token no servidor
 
-No ambiente onde o PoolCompras roda (dev local ou VM do Ademar), adicione a
-variável de ambiente **`TELEGRAM_BOT_TOKEN`**:
+Em dev local (arquivo `.env` do projeto, que está no `.gitignore`):
+```
+TELEGRAM_BOT_TOKEN=123456789:ABC-DEF...
+```
 
-**Local (Windows/Bash):**
+Em prod (systemd, variável de ambiente da VM):
 ```bash
-export TELEGRAM_BOT_TOKEN="123456789:ABC-DEF1234ghIkl-zyx57W2v1u123ew11"
-python run.py
+export TELEGRAM_BOT_TOKEN="123456789:ABC-DEF..."
 ```
 
-**Prod (.env ou systemd):**
-```
-TELEGRAM_BOT_TOKEN=123456789:ABC-...
-```
+Sem a variável setada, o PoolCompras cai em fallback (loga no servidor).
 
-Sem essa variável setada, o PoolCompras cai no fallback silencioso (loga a
-notificação) — nada quebra.
+## Parte 3 — Usuário vincula (UX automática — 3 cliques)
 
-## Parte 3 — Cada usuário vincula seu chat_id
+1. Logar no PoolCompras → **Meu perfil**.
+2. Clicar **Conectar Telegram** → sistema abre o bot `@poolcomprasbot`
+   no Telegram com um token de vinculação embutido.
+3. No Telegram, apertar **Iniciar** (ou enviar `/start`).
+4. Voltar no PoolCompras → clicar **Já dei /start, concluir** → sistema
+   descobre o chat_id automaticamente e envia uma mensagem de confirmação.
 
-Cada admin/lanchonete/fornecedor precisa fazer isso UMA vez.
+Pronto. A vinculação é 1-via-1 (o token só serve pro usuário que pediu).
+TTL de 10 min — se passar disso, basta clicar "Conectar Telegram" de novo.
 
-### Forma simples (recomendada — funciona já)
+### Fallback manual
 
-1. No Telegram, procure por **@userinfobot** (bot público do Telegram).
-2. Envie `/start`. Ele responde com:
-   ```
-   Id: 987654321
-   First: Seu Nome
-   ...
-   ```
-3. Copie o número de **Id**.
-4. Entre no PoolCompras → **Meu perfil** → campo **"Seu chat_id do Telegram"**
-   → cole o número → **Salvar alterações**.
-5. Procure o bot do PoolCompras (ex: `@PoolComprasBot`) e envie qualquer
-   mensagem (ex: `oi`). Isso **abre a conversa** — o Telegram só entrega
-   mensagens de bots pra quem já iniciou conversa.
+Se por algum motivo o fluxo automático não funcionar (proxy bloqueando,
+múltiplos usuários clicando ao mesmo tempo esgotando `getUpdates`, etc),
+há um toggle **"Prefere colar o chat_id manualmente?"** dentro de
+Meu Perfil. Nele o usuário pode:
 
-A partir daí, você recebe notificações de: reset de senha, propostas
-aprovadas/devolvidas, pagamentos confirmados, entregas informadas.
+1. No Telegram, abrir `@userinfobot` e mandar `/start` → recebe o Id.
+2. Colar o Id no campo e salvar.
+3. Falar `oi` pro `@poolcomprasbot` (abre conversa).
 
-### Forma nativa (quando tiver VM pública)
+## Parte 4 — Validar
 
-Quando o Ademar subir em produção com URL pública (HTTPS):
+Ao conectar, o sistema envia uma mensagem "<b>Telegram conectado!</b>".
+Se não chegou, o log do servidor diz o motivo:
 
-1. Configurar webhook: `curl "https://api.telegram.org/bot<TOKEN>/setWebhook?url=https://poolcompras.exemplo/webhook/telegram"`
-2. Adicionar rota Flask que recebe `/start` e responde automaticamente com
-   o chat_id do próprio Telegram update. (Não implementado ainda — a via
-   `@userinfobot` supre bem até lá.)
+| Log | Significa |
+|---|---|
+| `TELEGRAM_OK usuario=X` | Chegou. |
+| `TELEGRAM_FAIL ... 403` | Usuário bloqueou o bot. |
+| `NOTIF_FALLBACK` | Token não setado ou chat_id vazio. |
+| `TELEGRAM_GET_UPDATES_FAIL` | Token errado ou API fora. |
 
-## Parte 4 — Validar que chegou
-
-1. Com chat_id salvo no perfil e `TELEGRAM_BOT_TOKEN` setado no servidor,
-   faça logout e clique em **"Esqueci minha senha"**.
-2. Informe seu e-mail cadastrado.
-3. Em poucos segundos o bot envia no Telegram o link de recuperação.
-
-Se não chegou:
-- Você abriu conversa com o bot? (Telegram bloqueia entrega inicial.)
-- Log do servidor mostra `TELEGRAM_OK usuario=X`? Se sim, é sua conta Telegram.
-- Log mostra `TELEGRAM_FAIL ... 403 Forbidden`? Você bloqueou o bot ou não
-  iniciou a conversa.
-- Log mostra `NOTIF_FALLBACK`? Token ou chat_id não estão configurados.
-
-## Eventos que notificam hoje
+## Eventos que notificam
 
 | Evento | Quem recebe |
 |---|---|
-| Reset de senha solicitado | Dono do e-mail |
-| Pedido aprovado / devolvido / reprovado | Lanchonete |
-| Cotação final aprovada / devolvida | Fornecedor |
+| Reset de senha | Dono do e-mail |
+| Pedido aprovado/devolvido/reprovado | Lanchonete |
+| Cotação final aprovada/devolvida | Fornecedor |
 | Comprovante de pagamento enviado | Fornecedor(es) vencedor(es) |
-| Pagamento confirmado pelo fornecedor | Lanchonete |
-| Entrega informada pelo fornecedor | Lanchonete |
+| Pagamento confirmado | Lanchonete |
+| Entrega informada | Lanchonete |
 
-Futuro: proposta consolidada disponível pra aceite, alertas de deadline,
-avaliações recebidas.
+## Próximos passos (opcional, futuro)
+
+- **Webhook em produção**: quando Ademar subir VM com URL HTTPS pública,
+  setar webhook (`setWebhook?url=https://.../webhook/telegram`) substitui
+  o `getUpdates`. Vantagem: responde comandos em tempo real, sem precisar
+  do usuário clicar "Já dei /start".
+- **Comandos no bot**: `/status`, `/proximas-rodadas`, `/meu-pedido` etc.
+  Requer webhook.
