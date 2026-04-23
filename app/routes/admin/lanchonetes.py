@@ -20,7 +20,7 @@ def lanchonetes():
 @login_required
 @admin_required
 def lanchonete_editar(lanchonete_id):
-    lanchonete = Lanchonete.query.get_or_404(lanchonete_id)
+    lanchonete = db.get_or_404(Lanchonete, lanchonete_id)
     if request.method == "POST":
         lanchonete.nome_fantasia = request.form["nome_fantasia"].strip()
         lanchonete.cnpj = request.form.get("cnpj", "").strip() or None

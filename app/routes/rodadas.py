@@ -18,7 +18,7 @@ def listar():
 @rodadas_bp.route("/<int:rodada_id>")
 @login_required
 def detalhe(rodada_id):
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     # Pool unificado: SOMENTE pedidos aprovados pelo admin
     # (pendentes/rascunho/devolvidos/reprovados nao entram no agregado da rodada)
@@ -151,7 +151,7 @@ def cotar(rodada_id):
         flash("Apenas administradores podem inserir cotações.", "error")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     fornecedores = Fornecedor.query.filter_by(ativo=True).all()
 
     produtos_ids = (

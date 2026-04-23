@@ -101,7 +101,7 @@ def analytics():
 @admin_required
 def rodada_funil(rodada_id):
     """Onde os pedidos travam na rodada: convidadas -> iniciaram -> enviaram -> aprovadas -> aceitaram -> pagaram -> receberam -> avaliaram."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     convidadas = Lanchonete.query.filter_by(ativa=True).count()
 

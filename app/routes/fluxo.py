@@ -80,7 +80,7 @@ def _so_dona_lanchonete(rodada_id):
     """Garante que current_user e a dona da lanchonete participante. Retorna (rodada, lanchonete)."""
     if not current_user.is_lanchonete or not current_user.lanchonete:
         abort(403)
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     return rodada, current_user.lanchonete
 
 
@@ -88,7 +88,7 @@ def _so_fornecedor_da_rodada(rodada_id):
     """Garante que current_user e fornecedor que cotou nessa rodada."""
     if not current_user.is_fornecedor or not current_user.fornecedor:
         abort(403)
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     cotou = Cotacao.query.filter_by(
         rodada_id=rodada_id, fornecedor_id=current_user.fornecedor.id,
     ).first()

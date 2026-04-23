@@ -142,7 +142,7 @@ def detalhe(rodada_id):
         flash("Complete seu cadastro primeiro.", "error")
         return redirect(url_for("main.dashboard"))
 
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     # Garante que a lanchonete participou desta rodada
     participou = (

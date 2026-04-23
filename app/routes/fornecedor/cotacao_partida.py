@@ -15,7 +15,7 @@ from . import fornecedor_bp, fornecedor_required
 @login_required
 @fornecedor_required
 def ver_demanda(rodada_id):
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     # Demanda agregada — SOMENTE pedidos aprovados pelo admin
     agregado = (
@@ -57,7 +57,7 @@ def ver_demanda(rodada_id):
 @fornecedor_required
 def enviar_cotacao(rodada_id):
     """Rota legada: cotacao direta (status fechada/cotando)."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     fornecedor = current_user.fornecedor
 
     if rodada.status not in ("fechada", "cotando"):
@@ -124,7 +124,7 @@ def enviar_cotacao(rodada_id):
 @fornecedor_required
 def cotar_catalogo(rodada_id):
     """Fornecedor preenche preço de partida nos produtos do catálogo + sugere novos."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status != "aguardando_cotacao":
         flash("Esta rodada não está mais aberta para cotação.", "warning")
         return redirect(url_for("fornecedor.dashboard"))

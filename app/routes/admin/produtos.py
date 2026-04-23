@@ -72,7 +72,7 @@ def produto_novo():
 @login_required
 @admin_required
 def produto_editar(produto_id):
-    produto = Produto.query.get_or_404(produto_id)
+    produto = db.get_or_404(Produto, produto_id)
 
     if request.method == "POST":
         subcategoria = request.form.get("subcategoria", "").strip()
@@ -121,7 +121,7 @@ def produtos_exportar():
 @admin_required
 def produto_historico_precos(produto_id):
     """Evolucao do preco de um SKU ao longo das rodadas: preco de partida + cotacoes finais + vencedor."""
-    produto = Produto.query.get_or_404(produto_id)
+    produto = db.get_or_404(Produto, produto_id)
 
     aparicoes = (
         db.session.query(RodadaProduto, Rodada)

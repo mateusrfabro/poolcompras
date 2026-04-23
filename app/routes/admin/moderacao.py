@@ -17,7 +17,7 @@ from . import admin_bp, admin_required
 @admin_required
 def rodada_aprovar_produtos(rodada_id):
     """Admin aprova ou recusa produtos sugeridos pelos fornecedores."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     pendentes = (
         RodadaProduto.query
         .filter_by(rodada_id=rodada_id, aprovado=None)
@@ -57,7 +57,7 @@ def rodada_aprovar_produtos(rodada_id):
 @admin_required
 def moderar_pedidos(rodada_id):
     """Admin aprova/devolve/reprova pedidos enviados pelas lanchonetes."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     if request.method == "POST":
         participacao_id = request.form.get("participacao_id", type=int)
@@ -132,7 +132,7 @@ def moderar_pedidos(rodada_id):
 @admin_required
 def aprovar_cotacoes(rodada_id):
     """Admin aprova/devolve cotacoes finais enviadas pelos fornecedores."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     if request.method == "POST":
         submissao_id = request.form.get("submissao_id", type=int)

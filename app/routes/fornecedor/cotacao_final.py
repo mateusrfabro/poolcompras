@@ -21,7 +21,7 @@ def cotar_final(rodada_id):
     Disponivel quando rodada.status == 'em_negociacao'. Mostra lado a lado:
     preco de partida, preco final (input), e economia calculada.
     """
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status != "em_negociacao":
         flash("Esta rodada nao esta em fase de negociacao.", "warning")
         return redirect(url_for("fornecedor.dashboard"))

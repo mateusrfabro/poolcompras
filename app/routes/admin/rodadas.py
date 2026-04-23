@@ -37,7 +37,7 @@ def rodada_nova():
 @admin_required
 def rodada_catalogo(rodada_id):
     """Tela onde o admin seleciona os produtos que farao parte da rodada."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     produtos_ativos = (
         Produto.query.filter_by(ativo=True)
         .order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
@@ -94,7 +94,7 @@ def rodada_catalogo(rodada_id):
 @login_required
 @admin_required
 def rodada_fechar(rodada_id):
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     rodada.status = "fechada"
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
@@ -112,7 +112,7 @@ def rodada_fechar(rodada_id):
 @admin_required
 def rodada_encerrar_coleta(rodada_id):
     """Admin encerra coleta de pedidos das lanchonetes -> status em_negociacao."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status != "aberta":
         flash("Só é possível encerrar coleta de rodadas abertas.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
@@ -133,7 +133,7 @@ def rodada_encerrar_coleta(rodada_id):
 @admin_required
 def rodada_finalizar(rodada_id):
     """Admin finaliza a negociação -> rodada 'finalizada' (lanchonetes aceitam)."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status != "em_negociacao":
         flash("Só é possível finalizar rodadas em negociação.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
@@ -172,7 +172,7 @@ def rodada_finalizar(rodada_id):
 @login_required
 @admin_required
 def rodada_cancelar(rodada_id):
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status == "cancelada":
         flash("Esta rodada já foi cancelada.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
@@ -193,7 +193,7 @@ def rodada_cancelar(rodada_id):
 @admin_required
 def rodada_liberar(rodada_id):
     """Admin libera a rodada para as lanchonetes (muda status -> aberta)."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status not in ("aguardando_cotacao", "aguardando_aprovacao"):
         flash("Rodada não está pronta para ser liberada.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
@@ -234,7 +234,7 @@ def rodadas_exportar():
 @admin_required
 def rodada_detalhe_exportar(rodada_id):
     """Exporta demanda agregada + cotações da rodada em CSV pra admin."""
-    rodada = Rodada.query.get_or_404(rodada_id)
+    rodada = db.get_or_404(Rodada, rodada_id)
 
     # Demanda agregada — pool unificado: somente pedidos aprovados
     demanda = (

@@ -44,7 +44,7 @@ def fornecedor_novo():
 @login_required
 @admin_required
 def fornecedor_editar(fornecedor_id):
-    fornecedor = Fornecedor.query.get_or_404(fornecedor_id)
+    fornecedor = db.get_or_404(Fornecedor, fornecedor_id)
     if request.method == "POST":
         fornecedor.razao_social = request.form["razao_social"].strip()
         fornecedor.nome_contato = request.form.get("nome_contato", "").strip()
