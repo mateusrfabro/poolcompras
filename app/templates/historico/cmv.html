@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}Meu CMV — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <div>
+            <h2>Meu CMV</h2>
+            <p class="page-sub">Quanto <strong>{{ lanchonete.nome_fantasia }}</strong> gastou em compras pelo PoolCompras, e quanto economizou.</p>
+        </div>
+    </div>
+
+    <div class="sub-nav">
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item">Painel</a>
+        <a href="{{ url_for('historico.analytics') }}" class="sub-nav-item">Meu Resumo</a>
+        <a href="{{ url_for('historico.cmv') }}" class="sub-nav-item sub-nav-active">Meu CMV</a>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card stat-card-primary">
+            <span class="stat-number">{{ kpis.gasto_total|brl }}</span>
+            <span class="stat-label">Gasto total em compras</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ kpis.economia_total|brl }}</span>
+            <span class="stat-label">Economia acumulada</span>
+            <span class="stat-hint">{{ kpis.economia_pct }}% vs preço de partida</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ kpis.ticket_medio|brl }}</span>
+            <span class="stat-label">Ticket médio por rodada</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-number">{{ kpis.rodadas_compradas }}</span>
+            <span class="stat-label">Rodadas compradas</span>
+        </div>
+    </div>
+
+    {% if kpis.rodadas_compradas == 0 %}
+    <div class="analytics-card">
+        <p class="muted">Você ainda não aceitou nenhuma proposta. Após aceitar propostas em rodadas finalizadas, seus gastos aparecerão aqui.</p>
+    </div>
+    {% else %}
+
+    <div class="analytics-grid">
+        <div class="analytics-card">
+            <h3>Gasto por categoria</h3>
+            {% if top_categorias %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr><th>Categoria</th><th>Gasto</th><th>% do total</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, gasto, pct in top_categorias %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>{{ gasto|brl }}</td>
+                            <td>{{ pct }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Sem dados de categoria.</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-card">
+            <h3>Top produtos por gasto</h3>
+            {% if top_produtos %}
+                <div class="table-wrapper"><table class="table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Volume</th>
+                            <th>Preço médio pago</th>
+                            <th>Total gasto</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for nome, un, qtd, gasto, preco_medio in top_produtos %}
+                        <tr>
+                            <td>{{ nome }}</td>
+                            <td>{{ qtd|fmt_un(un) }}</td>
+                            <td>{{ preco_medio|brl }}</td>
+                            <td>{{ gasto|brl }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table></div>
+            {% else %}
+                <p class="muted">Sem produtos registrados ainda.</p>
+            {% endif %}
+        </div>
+
+        <div class="analytics-card" style="grid-column: 1 / -1;">
+            <h3>Minhas rodadas compradas</h3>
+            <div class="table-wrapper"><table class="table">
+                <thead>
+                    <tr>
+                        <th>Rodada</th>
+                        <th>Data</th>
+                        <th>Itens</th>
+                        <th>Fornecedor(es)</th>
+                        <th>Economia</th>
+                        <th>Gasto</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in por_rodada %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('historico.detalhe', rodada_id=r.rodada_id) }}">{{ r.rodada_nome }}</a>
+                        </td>
+                        <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+                        <td>{{ r.itens }}</td>
+                        <td>{{ r.fornecedores or '—' }}</td>
+                        <td>{{ r.economia|brl }}</td>
+                        <td><strong>{{ r.gasto|brl }}</strong></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table></div>
+        </div>
+    </div>
+
+    {% endif %}
+</div>
+{% endblock %}

@@ -505,3 +505,28 @@ def analytics():
         meus_fornecedores=meus_fornecedores,
         historico_notas=historico_notas,
     )
+
+
+@historico_bp.route("/cmv")
+@login_required
+def cmv():
+    """Meu CMV: gasto efetivo em compras aceitas, economia obtida, top categorias/produtos."""
+    if current_user.is_admin or current_user.is_fornecedor:
+        flash("Esta área é apenas para lanchonetes.", "warning")
+        return redirect(url_for("main.dashboard"))
+    lanchonete = current_user.lanchonete
+    if not lanchonete:
+        flash("Complete seu cadastro primeiro.", "error")
+        return redirect(url_for("main.dashboard"))
+
+    from app.services.cmv_lanchonete import calcular_cmv
+    dados = calcular_cmv(lanchonete.id)
+
+    return render_template(
+        "historico/cmv.html",
+        lanchonete=lanchonete,
+        kpis=dados["kpis"],
+        top_categorias=dados["top_categorias"],
+        top_produtos=dados["top_produtos"],
+        por_rodada=dados["por_rodada"],
+    )
