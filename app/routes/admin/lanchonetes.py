@@ -1,9 +1,10 @@
-"""Rotas admin de Lanchonetes (listar, editar, export)."""
+"""Rotas admin de Lanchonetes (listar, nova, editar, export)."""
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
+from werkzeug.security import generate_password_hash
 
 from app import db
-from app.models import Lanchonete
+from app.models import Lanchonete, Usuario
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
 
@@ -14,6 +15,60 @@ from . import admin_bp, admin_required
 def lanchonetes():
     lista = Lanchonete.query.order_by(Lanchonete.nome_fantasia).all()
     return render_template("admin/lanchonetes.html", lanchonetes=lista)
+
+
+@admin_bp.route("/lanchonetes/nova", methods=["GET", "POST"])
+@login_required
+@admin_required
+def lanchonete_nova():
+    """Admin cadastra lanchonete + responsavel (Usuario) num unico form.
+
+    Lanchonete.usuario_id e nullable=False, entao o Usuario eh obrigatorio.
+    """
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        senha = request.form.get("senha", "")
+        nome_responsavel = request.form.get("nome_responsavel", "").strip()
+
+        # Validacoes minimas — as demais podem ser completadas depois pela propria lanchonete
+        if not email or not senha or not nome_responsavel:
+            flash("E-mail, senha e nome do responsavel sao obrigatorios.", "error")
+            return render_template("admin/lanchonete_form.html", lanchonete=None,
+                                   form_data=request.form)
+        if len(senha) < 8:
+            flash("Senha deve ter pelo menos 8 caracteres.", "error")
+            return render_template("admin/lanchonete_form.html", lanchonete=None,
+                                   form_data=request.form)
+        if Usuario.query.filter_by(email=email).first():
+            flash("Ja existe um usuario com esse e-mail.", "error")
+            return render_template("admin/lanchonete_form.html", lanchonete=None,
+                                   form_data=request.form)
+
+        usuario = Usuario(
+            email=email,
+            senha_hash=generate_password_hash(senha),
+            nome_responsavel=nome_responsavel,
+            telefone=request.form.get("telefone", "").strip(),
+            tipo="lanchonete",
+        )
+        db.session.add(usuario)
+        db.session.flush()
+
+        lanchonete = Lanchonete(
+            usuario_id=usuario.id,
+            nome_fantasia=request.form["nome_fantasia"].strip(),
+            cnpj=request.form.get("cnpj", "").strip() or None,
+            endereco=request.form.get("endereco", "").strip(),
+            bairro=request.form.get("bairro", "").strip(),
+            cidade=request.form.get("cidade", "").strip() or "Londrina",
+            ativa="ativa" in request.form,
+        )
+        db.session.add(lanchonete)
+        db.session.commit()
+        flash(f"Lanchonete '{lanchonete.nome_fantasia}' cadastrada. Login: {email}", "success")
+        return redirect(url_for("admin.lanchonetes"))
+
+    return render_template("admin/lanchonete_form.html", lanchonete=None, form_data={})
 
 
 @admin_bp.route("/lanchonetes/<int:lanchonete_id>/editar", methods=["GET", "POST"])

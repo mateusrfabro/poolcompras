@@ -1,12 +1,15 @@
 {% extends "base.html" %}
-{% block title %}Editar Lanchonete — PoolCompras{% endblock %}
+{% block title %}{{ "Nova" if not lanchonete else "Editar" }} Lanchonete — PoolCompras{% endblock %}
+
+{% set criando = not lanchonete %}
+{% set dados = form_data if criando else lanchonete %}
 
 {% block content %}
 <div class="form-page">
     <a href="{{ url_for('admin.lanchonetes') }}" class="btn-back">Voltar para Lanchonetes</a>
-    <h2>Editar Lanchonete</h2>
+    <h2>{{ "Nova Lanchonete" if criando else "Editar Lanchonete" }}</h2>
 
-    {% if lanchonete.responsavel %}
+    {% if not criando and lanchonete.responsavel %}
         <p class="subtitle">
             Responsável: <strong>{{ lanchonete.responsavel.nome_responsavel }}</strong>
             &middot; {{ lanchonete.responsavel.email }}
@@ -16,10 +19,41 @@
     <form method="POST" class="form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 
+        {% if criando %}
+            <h3>Dados do responsável (login)</h3>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="nome_responsavel">Nome completo</label>
+                    <input type="text" id="nome_responsavel" name="nome_responsavel" required
+                           value="{{ form_data.get('nome_responsavel', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="telefone">WhatsApp</label>
+                    <input type="text" id="telefone" name="telefone"
+                           placeholder="(43) 99999-9999"
+                           value="{{ form_data.get('telefone', '') }}">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="email">E-mail de acesso</label>
+                    <input type="email" id="email" name="email" required
+                           value="{{ form_data.get('email', '') }}">
+                </div>
+                <div class="form-group">
+                    <label for="senha">Senha inicial (mín. 8 caracteres)</label>
+                    <input type="password" id="senha" name="senha" required minlength="8"
+                           autocomplete="new-password">
+                </div>
+            </div>
+
+            <h3 style="margin-top: 1.5rem;">Dados da lanchonete</h3>
+        {% endif %}
+
         <div class="form-group">
             <label for="nome_fantasia">Nome fantasia</label>
             <input type="text" id="nome_fantasia" name="nome_fantasia" required
-                   value="{{ lanchonete.nome_fantasia }}">
+                   value="{{ dados.nome_fantasia if not criando else form_data.get('nome_fantasia', '') }}">
         </div>
 
         <div class="form-row">
@@ -28,12 +62,12 @@
                 <input type="text" id="cnpj" name="cnpj"
                        inputmode="numeric" maxlength="18"
                        placeholder="00.000.000/0000-00"
-                       value="{{ lanchonete.cnpj or '' }}">
+                       value="{{ (dados.cnpj if not criando else form_data.get('cnpj', '')) or '' }}">
             </div>
             <div class="form-group">
                 <label for="cidade">Cidade</label>
                 <input type="text" id="cidade" name="cidade"
-                       value="{{ lanchonete.cidade or 'Londrina' }}">
+                       value="{{ (dados.cidade if not criando else form_data.get('cidade', '')) or 'Londrina' }}">
             </div>
         </div>
 
@@ -41,23 +75,26 @@
             <div class="form-group">
                 <label for="endereco">Endereço</label>
                 <input type="text" id="endereco" name="endereco"
-                       value="{{ lanchonete.endereco or '' }}">
+                       value="{{ (dados.endereco if not criando else form_data.get('endereco', '')) or '' }}">
             </div>
             <div class="form-group">
                 <label for="bairro">Bairro</label>
                 <input type="text" id="bairro" name="bairro"
-                       value="{{ lanchonete.bairro or '' }}">
+                       value="{{ (dados.bairro if not criando else form_data.get('bairro', '')) or '' }}">
             </div>
         </div>
 
         <div class="form-group">
             <label>
-                <input type="checkbox" name="ativa" {{ 'checked' if lanchonete.ativa }}>
+                <input type="checkbox" name="ativa"
+                       {{ 'checked' if (criando or lanchonete.ativa) }}>
                 Lanchonete ativa (pode criar pedidos e participar de rodadas)
             </label>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block">Salvar</button>
+        <button type="submit" class="btn btn-primary btn-block">
+            {{ "Cadastrar" if criando else "Salvar" }}
+        </button>
     </form>
 </div>
 {% endblock %}
