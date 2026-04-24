@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app
+from urllib.parse import urlparse, urljoin
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, session
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from sqlalchemy import select
@@ -15,6 +16,22 @@ def _usuario_por_email(email: str) -> Usuario | None:
     return db.session.execute(
         select(Usuario).where(Usuario.email == email)
     ).scalar_one_or_none()
+
+
+def _proximo_url_seguro(alvo: str | None) -> str | None:
+    """Retorna `alvo` se apontar pra mesmo host do app; senao None.
+
+    Protege contra open redirect no ?next= do login. Aceita apenas paths
+    relativos ou URLs absolutas com host == request.host.
+    """
+    if not alvo:
+        return None
+    ref = urlparse(request.host_url)
+    destino = urlparse(urljoin(request.host_url, alvo))
+    # So http/https + mesmo host. Bloqueia javascript:, data:, //evil.com etc.
+    if destino.scheme in ("http", "https") and destino.netloc == ref.netloc:
+        return alvo
+    return None
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +90,15 @@ def login():
                                email, _client_ip())
                 flash("Conta desativada. Contate o administrador.", "error")
                 return render_template("auth/login.html")
+            # Defesa contra session fixation: zera o cookie de sessao antes de
+            # autenticar. Cookie que o atacante possa ter plantado eh descartado.
+            session.clear()
             login_user(usuario)
             logger.info("LOGIN_OK usuario=%s email=%s tipo=%s ip=%s",
                         usuario.id, email, usuario.tipo, _client_ip())
-            next_page = request.args.get("next")
-            return redirect(next_page or url_for("main.dashboard"))
+            # Validacao anti open-redirect: so aceita next apontando pro proprio host.
+            proximo = _proximo_url_seguro(request.args.get("next"))
+            return redirect(proximo or url_for("main.dashboard"))
 
         # Nao revela se o email existe ou nao (timing ja equalizado acima)
         logger.warning("LOGIN_FAIL email=%s ip=%s usuario_existe=%s",
@@ -132,6 +153,7 @@ def registro():
         db.session.add(lanchonete)
         db.session.commit()
 
+        session.clear()
         login_user(usuario)
         flash("Cadastro realizado! Bem-vindo ao PoolCompras.", "success")
         return redirect(url_for("main.dashboard"))
@@ -183,6 +205,7 @@ def registro_fornecedor():
         db.session.add(fornecedor)
         db.session.commit()
 
+        session.clear()
         login_user(usuario)
         flash("Cadastro realizado! Bem-vindo ao PoolCompras.", "success")
         return redirect(url_for("fornecedor.dashboard"))

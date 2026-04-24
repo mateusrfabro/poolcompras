@@ -12,6 +12,10 @@ db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 login_manager.login_message = "Faça login para acessar o sistema."
+# session_protection=strong regenera _id da sessao quando detecta troca de
+# user-agent/IP e descarta sessao nao autenticada. Camada extra contra
+# session fixation (alem do session.clear() explicito no login).
+login_manager.session_protection = "strong"
 csrf = CSRFProtect()
 migrate = Migrate()
 # Rate-limiter: chave = IP do cliente; backend padrao em memoria (suficiente para
