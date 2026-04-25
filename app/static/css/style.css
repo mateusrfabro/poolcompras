@@ -206,12 +206,17 @@ body {
     font-size: 0.8rem !important;
     font-weight: 500;
     transition: all 0.15s;
+    background: transparent;
+    cursor: pointer;
+    font-family: inherit;
 }
 .btn-logout:hover {
     background: rgba(255, 255, 255, 0.1);
     color: var(--white) !important;
     border-color: rgba(255, 255, 255, 0.5);
 }
+/* Form do logout fica inline (parece um botao no nav). */
+.form-logout { display: inline; margin: 0; padding: 0; }
 
 /* Botao voltar (padronizado em telas internas) */
 .btn-back {

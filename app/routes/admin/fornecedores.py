@@ -1,11 +1,14 @@
 """Rotas admin de Fornecedores (CRUD + export)."""
+import logging
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 
 from app import db
 from app.models import Fornecedor
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
+
+logger = logging.getLogger(__name__)
 
 
 @admin_bp.route("/fornecedores")
@@ -34,6 +37,10 @@ def fornecedor_novo():
         )
         db.session.add(fornecedor)
         db.session.commit()
+        logger.info(
+            "ADMIN_FORNECEDOR_CRIADO admin=%s fornecedor=%s razao=%s",
+            current_user.id, fornecedor.id, fornecedor.razao_social,
+        )
         flash("Fornecedor cadastrado!", "success")
         return redirect(url_for("admin.fornecedores"))
 

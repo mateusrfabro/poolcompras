@@ -5,6 +5,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db, limiter
+from app.auth_decorators import lanchonete_required
 from app.models import ParticipacaoRodada, EventoRodada
 from app.services.storage import get_storage
 from . import (
@@ -16,6 +17,8 @@ from . import (
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/aceitar", methods=["POST"])
 @login_required
+@lanchonete_required
+@limiter.limit("60 per hour")
 def aceitar_proposta(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     if not _ja_aceita_fase_aceite(rodada):
@@ -43,6 +46,8 @@ def aceitar_proposta(rodada_id):
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/recusar", methods=["POST"])
 @login_required
+@lanchonete_required
+@limiter.limit("60 per hour")
 def recusar_proposta(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     if not _ja_aceita_fase_aceite(rodada):
@@ -67,6 +72,7 @@ def recusar_proposta(rodada_id):
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/comprovante", methods=["POST"])
 @login_required
+@lanchonete_required
 @limiter.limit("20 per hour", error_message="Muitos uploads. Aguarde uma hora.")
 def enviar_comprovante(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
@@ -121,6 +127,8 @@ def enviar_comprovante(rodada_id):
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/confirmar-recebimento", methods=["POST"])
 @login_required
+@lanchonete_required
+@limiter.limit("30 per hour")
 def confirmar_recebimento(rodada_id):
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     p = ParticipacaoRodada.query.filter_by(

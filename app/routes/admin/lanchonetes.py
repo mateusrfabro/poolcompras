@@ -1,12 +1,15 @@
 """Rotas admin de Lanchonetes (listar, nova, editar, export)."""
+import logging
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 from werkzeug.security import generate_password_hash
 
 from app import db
 from app.models import Lanchonete, Usuario
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
+
+logger = logging.getLogger(__name__)
 
 
 @admin_bp.route("/lanchonetes")
@@ -67,6 +70,10 @@ def lanchonete_nova():
         )
         db.session.add(lanchonete)
         db.session.commit()
+        logger.info(
+            "ADMIN_USUARIO_CRIADO admin=%s tipo=lanchonete usuario=%s email=%s",
+            current_user.id, lanchonete.usuario_id, email,
+        )
         flash(f"Lanchonete '{lanchonete.nome_fantasia}' cadastrada. Login: {email}", "success")
         return redirect(url_for("admin.lanchonetes"))
 

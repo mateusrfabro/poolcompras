@@ -36,12 +36,24 @@ def test_dashboard_sem_auth_redireciona_para_login(client):
 
 
 def test_logout(client_lanchA):
-    r = client_lanchA.get("/logout", follow_redirects=False)
+    """Logout via POST + CSRF token."""
+    import re
+    r0 = client_lanchA.get("/dashboard")
+    m = re.search(rb'name="csrf_token"[^>]*value="([^"]+)"', r0.data)
+    csrf = m.group(1).decode() if m else None
+
+    r = client_lanchA.post("/logout", data={"csrf_token": csrf}, follow_redirects=False)
     assert r.status_code == 302
-    # Apos logout, dashboard deve redirecionar
+    # Apos logout, dashboard deve redirecionar pra /login
     r2 = client_lanchA.get("/dashboard", follow_redirects=False)
     assert r2.status_code == 302
     assert "/login" in r2.headers["Location"]
+
+
+def test_logout_get_bloqueado(client_lanchA):
+    """Defesa contra <img src='/logout'> derrubando sessao via CSRF."""
+    r = client_lanchA.get("/logout", follow_redirects=False)
+    assert r.status_code == 405  # Method Not Allowed
 
 
 def test_historico_bloqueia_admin(client_admin):

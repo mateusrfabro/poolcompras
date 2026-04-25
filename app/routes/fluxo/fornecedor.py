@@ -4,7 +4,7 @@ from flask import request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import db
+from app import db, limiter
 from app.models import ParticipacaoRodada, EventoRodada, Lanchonete
 from app.services.notificacoes import notificar_evento
 from . import (
@@ -16,6 +16,7 @@ from . import (
 @fluxo_bp.route("/rodada/<int:rodada_id>/lanchonete/<int:lanchonete_id>/pagamento",
                 methods=["POST"])
 @login_required
+@limiter.limit("60 per hour")
 def confirmar_pagamento(rodada_id, lanchonete_id):
     rodada, _fornecedor = _so_fornecedor_da_rodada(rodada_id)
     # Ownership: fornecedor so confirma pagamento de lanchonete cujos itens ele venceu.
@@ -60,6 +61,7 @@ def confirmar_pagamento(rodada_id, lanchonete_id):
 @fluxo_bp.route("/rodada/<int:rodada_id>/lanchonete/<int:lanchonete_id>/entrega",
                 methods=["POST"])
 @login_required
+@limiter.limit("60 per hour")
 def informar_entrega(rodada_id, lanchonete_id):
     rodada, _fornecedor = _so_fornecedor_da_rodada(rodada_id)
     if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):

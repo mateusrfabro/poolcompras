@@ -34,9 +34,6 @@
             </tbody>
         </table></div>
 
-        {% if rodada.status in ('fechada', 'cotando') %}
-            <a href="{{ url_for('fornecedor.enviar_cotacao', rodada_id=rodada.id) }}" class="btn btn-primary">Enviar meus preços</a>
-        {% endif %}
     {% endif %}
 
     {% if minhas_cotacoes %}

@@ -3,7 +3,8 @@ from flask import request, redirect, url_for, flash, render_template
 from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import db
+from app import db, limiter
+from app.auth_decorators import lanchonete_required
 from app.models import (
     ParticipacaoRodada, EventoRodada, Cotacao, Fornecedor, AvaliacaoRodada,
 )
@@ -12,6 +13,8 @@ from . import fluxo_bp, _agora, _registrar_evento, _so_dona_lanchonete
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/avaliar", methods=["POST"])
 @login_required
+@lanchonete_required
+@limiter.limit("30 per hour")
 def avaliar(rodada_id):
     """Nota geral da rodada (1-5).
     Se >= 4: replica para todos os fornecedores da rodada automaticamente.
@@ -72,6 +75,8 @@ def avaliar(rodada_id):
 @fluxo_bp.route("/rodada/<int:rodada_id>/avaliar-detalhado",
                 methods=["GET", "POST"])
 @login_required
+@lanchonete_required
+@limiter.limit("30 per hour", methods=["POST"])
 def avaliar_detalhado(rodada_id):
     """Tela de detalhe: nota por fornecedor quando a geral foi baixa (<=3)."""
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)

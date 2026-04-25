@@ -42,8 +42,9 @@ def _troca_para(client, email, senha="testpass"):
 
     Evita o quirk onde 2 test_clients no mesmo app_context compartilham
     session e o segundo login nao tem efeito (visto antes no IDOR).
+    Logout virou POST (defesa contra logout-CSRF). CSRF desabilitado em testes.
     """
-    client.get("/logout", follow_redirects=False)
+    client.post("/logout", follow_redirects=False)
     client.post("/login", data={"email": email, "senha": senha},
                 follow_redirects=False)
 
@@ -105,10 +106,10 @@ def test_lanchonete_recusa_proposta(app, client_lanchA):
 
 
 def test_fornecedor_nao_aceita_proposta(app, client_forn):
-    """Decorator _so_dona_lanchonete bloqueia non-lanchonete com 403."""
+    """@lanchonete_required redireciona non-lanchonete com 302 (flash + dashboard)."""
     rodada_id, _, _ = _prepara_rodada_finalizada()
     r = client_forn.post(f"/fluxo/rodada/{rodada_id}/aceitar", follow_redirects=False)
-    assert r.status_code == 403
+    assert r.status_code == 302  # decorator redireciona pro dashboard
 
 
 def test_lanchonete_B_nao_afeta_participacao_de_A(app, client_lanchB):

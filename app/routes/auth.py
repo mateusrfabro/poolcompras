@@ -213,12 +213,15 @@ def registro_fornecedor():
     return render_template("auth/registro_fornecedor.html")
 
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 @login_required
 def logout():
+    """Logout via POST + CSRF token. GET nao funciona (defesa contra
+    `<img src="/logout">` derrubando sessao da vitima)."""
     uid = current_user.id
     email = current_user.email
     logout_user()
+    session.clear()
     logger.info("LOGOUT usuario=%s email=%s ip=%s", uid, email, _client_ip())
     return redirect(url_for("auth.login"))
 

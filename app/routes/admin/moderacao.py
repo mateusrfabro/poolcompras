@@ -1,4 +1,5 @@
 """Rotas admin de moderacao: pedidos de lanchonetes, produtos sugeridos e cotacoes finais."""
+import logging
 from datetime import datetime, timezone
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
@@ -11,6 +12,8 @@ from app.models import (
 )
 from app.services.notificacoes import notificar_evento
 from . import admin_bp, admin_required
+
+logger = logging.getLogger(__name__)
 
 
 @admin_bp.route("/rodadas/<int:rodada_id>/aprovar-produtos", methods=["GET", "POST"])
@@ -48,6 +51,11 @@ def rodada_aprovar_produtos(rodada_id):
             flash(f"Produto '{rp.produto.nome}' recusado nesta rodada.", "success")
 
         db.session.commit()
+        logger.info(
+            "ADMIN_APROVAR_PRODUTO admin=%s acao=%s rodada=%s rp=%s produto=%s",
+            current_user.id, acao, rodada_id, rp_id,
+            rp.produto_id if rp.produto else None,
+        )
         return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
 
     return render_template(
@@ -109,6 +117,10 @@ def moderar_pedidos(rodada_id):
             flash(f"Aprovacao de {nome_lanchonete} revertida. Pedido voltou a aguardar moderacao.", "info")
 
         db.session.commit()
+        logger.info(
+            "ADMIN_MODERAR_PEDIDO admin=%s acao=%s rodada=%s lanchonete=%s",
+            current_user.id, acao, rodada_id, part.lanchonete_id,
+        )
 
         # Notifica a lanchonete do desfecho
         if notif_titulo and part.lanchonete and part.lanchonete.responsavel:
@@ -196,6 +208,10 @@ def aprovar_cotacoes(rodada_id):
             flash(f"Aprovacao de {nome_forn} revertida.", "info")
 
         db.session.commit()
+        logger.info(
+            "ADMIN_APROVAR_COTACAO admin=%s acao=%s rodada=%s submissao=%s fornecedor=%s",
+            current_user.id, acao, rodada_id, submissao_id, sub.fornecedor_id,
+        )
 
         if notif_titulo and sub.fornecedor and sub.fornecedor.responsavel:
             notificar_evento(sub.fornecedor.responsavel, notif_titulo, notif_detalhes)

@@ -52,7 +52,10 @@
                 {% endif %}
 
                 <a href="{{ url_for('perfil.editar') }}">Meu perfil</a>
-                <a href="{{ url_for('auth.logout') }}" class="btn-logout">Sair</a>
+                <form method="POST" action="{{ url_for('auth.logout') }}" class="form-logout">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn-logout">Sair</button>
+                </form>
 
             {% else %}
                 <a href="{{ url_for('marketplace.listar') }}">Fornecedores</a>

@@ -1,4 +1,5 @@
 """Rotas admin do ciclo de vida de Rodadas + exports."""
+import logging
 from datetime import datetime
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
@@ -11,6 +12,8 @@ from app.models import (
 )
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
+
+logger = logging.getLogger(__name__)
 
 
 @admin_bp.route("/rodadas/nova", methods=["GET", "POST"])
@@ -26,6 +29,8 @@ def rodada_nova():
         )
         db.session.add(rodada)
         db.session.commit()
+        logger.info("ADMIN_RODADA_CRIADA admin=%s rodada=%s nome=%s",
+                    current_user.id, rodada.id, rodada.nome)
         flash("Rodada criada! Agora monte o catálogo de produtos.", "success")
         return redirect(url_for("admin.rodada_catalogo", rodada_id=rodada.id))
 
@@ -164,6 +169,8 @@ def rodada_finalizar(rodada_id):
         descricao="Rodada finalizada pelo admin",
     ))
     db.session.commit()
+    logger.info("ADMIN_RODADA_FINALIZADA admin=%s rodada=%s",
+                current_user.id, rodada_id)
     flash("Rodada finalizada! Lanchonetes podem agora aceitar a proposta.", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
@@ -184,6 +191,8 @@ def rodada_cancelar(rodada_id):
         descricao="Rodada cancelada pelo admin",
     ))
     db.session.commit()
+    logger.warning("ADMIN_RODADA_CANCELADA admin=%s rodada=%s nome=%s",
+                   current_user.id, rodada_id, rodada.nome)
     flash(f"Rodada '{rodada.nome}' cancelada.", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
@@ -207,6 +216,8 @@ def rodada_liberar(rodada_id):
 
     rodada.status = "aberta"
     db.session.commit()
+    logger.info("ADMIN_RODADA_LIBERADA admin=%s rodada=%s",
+                current_user.id, rodada_id)
     flash("Rodada liberada para as lanchonetes!", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
