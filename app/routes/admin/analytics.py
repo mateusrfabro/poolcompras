@@ -2,7 +2,7 @@
 from datetime import datetime
 from flask import render_template, flash, request
 from flask_login import login_required
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from app import db
 from app.models import (
@@ -21,19 +21,24 @@ def analytics():
     total_lanchonetes = Lanchonete.query.filter_by(ativa=True).count()
     total_fornecedores = Fornecedor.query.filter_by(ativo=True).count()
     total_produtos = Produto.query.filter_by(ativo=True).count()
-    total_rodadas = Rodada.query.count()
-    rodadas_finalizadas = Rodada.query.filter_by(status="finalizada").count()
 
-    total_participacoes = ParticipacaoRodada.query.count()
-    participacoes_completas = ParticipacaoRodada.query.filter(
-        ParticipacaoRodada.avaliacao_geral.isnot(None)
-    ).count()
+    # Consolida 2 queries em 1: total + finalizadas de Rodada.
+    rodada_stats = db.session.query(
+        func.count(Rodada.id).label("total"),
+        func.count(case((Rodada.status == Rodada.STATUS_FINALIZADA, 1))).label("finalizadas"),
+    ).one()
+    total_rodadas = rodada_stats.total
+    rodadas_finalizadas = rodada_stats.finalizadas
 
-    media_avaliacao = (
-        db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
-        .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .scalar()
-    ) or 0
+    # Consolida 3 queries em 1: total + completas + avg(avaliacao_geral).
+    part_stats = db.session.query(
+        func.count(ParticipacaoRodada.id).label("total"),
+        func.count(ParticipacaoRodada.avaliacao_geral).label("completas"),  # COUNT ignora NULL
+        func.avg(ParticipacaoRodada.avaliacao_geral).label("media"),
+    ).one()
+    total_participacoes = part_stats.total
+    participacoes_completas = part_stats.completas
+    media_avaliacao = part_stats.media or 0
 
     top_fornecedores = (
         db.session.query(
@@ -152,17 +157,18 @@ def rodada_funil(rodada_id):
 @admin_required
 def historico_aprovacoes():
     """Lista todos os produtos sugeridos por fornecedores, com status de aprovacao."""
-    registros = (
+    base_query = (
         db.session.query(RodadaProduto, Produto, Rodada, Fornecedor)
         .join(Produto, RodadaProduto.produto_id == Produto.id)
         .join(Rodada, RodadaProduto.rodada_id == Rodada.id)
         .join(Fornecedor, RodadaProduto.adicionado_por_fornecedor_id == Fornecedor.id)
         .filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None))
         .order_by(RodadaProduto.criado_em.desc())
-        .all()
     )
 
     if request.args.get("exportar") == "csv":
+        # Export traz tudo — usuario que pediu CSV quer historico completo.
+        registros = base_query.all()
         rows = []
         for rp, p, r, f in registros:
             status = "Pendente" if rp.aprovado is None else ("Aprovado" if rp.aprovado else "Recusado")
@@ -181,7 +187,13 @@ def historico_aprovacoes():
             delimiter=",",
         )
 
-    return render_template("admin/historico_aprovacoes.html", registros=registros)
+    page = request.args.get("page", 1, type=int)
+    paginacao = base_query.paginate(page=page, per_page=50, error_out=False)
+    return render_template(
+        "admin/historico_aprovacoes.html",
+        registros=paginacao.items,
+        paginacao=paginacao,
+    )
 
 
 @admin_bp.route("/relatorio", methods=["GET"])

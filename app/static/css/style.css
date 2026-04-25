@@ -574,6 +574,39 @@ body {
     font-size: 1rem;
 }
 
+/* Paginacao */
+.paginacao {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 1.5rem 0;
+    flex-wrap: wrap;
+}
+.paginacao-link {
+    padding: 0.5rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+}
+.paginacao-link:hover {
+    background: var(--gray-100);
+}
+.paginacao-disabled {
+    color: var(--gray-500);
+    cursor: not-allowed;
+}
+.paginacao-disabled:hover {
+    background: transparent;
+}
+.paginacao-info {
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+
 /* Footer */
 .footer {
     text-align: center;

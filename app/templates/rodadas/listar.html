@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_components/paginacao.html" import paginacao_nav %}
 {% block title %}Rodadas - PoolCompras{% endblock %}
 
 {% block content %}
@@ -38,6 +39,8 @@
                 {% endfor %}
             </tbody>
         </table></div>
+
+        {{ paginacao_nav(paginacao, 'rodadas.listar') }}
     {% endif %}
 </div>
 {% endblock %}

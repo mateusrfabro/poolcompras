@@ -130,8 +130,15 @@ def registro():
             return render_template("auth/registro.html")
 
         if _usuario_por_email(email):
-            flash("Este e-mail já está cadastrado.", "error")
-            return render_template("auth/registro.html")
+            # Nao revela se e-mail existe (anti-enumeration). Em prod com email
+            # transacional, o ideal eh enviar mensagem "alguem tentou criar
+            # conta com seu email" pro dono real do endereco.
+            logger.info("REGISTRO_TENTATIVA_DUPLICADA email=%s ip=%s",
+                        email, _client_ip())
+            flash("Não foi possível concluir o cadastro. Se você já tem conta, "
+                  "faça login. Se esqueceu a senha, use 'Esqueci minha senha'.",
+                  "warning")
+            return redirect(url_for("auth.login"))
 
         usuario = Usuario(
             email=email,
@@ -181,8 +188,13 @@ def registro_fornecedor():
             return render_template("auth/registro_fornecedor.html")
 
         if _usuario_por_email(email):
-            flash("Este e-mail já está cadastrado.", "error")
-            return render_template("auth/registro_fornecedor.html")
+            # Anti-enumeration (mesmo padrao do registro lanchonete).
+            logger.info("REGISTRO_FORN_TENTATIVA_DUPLICADA email=%s ip=%s",
+                        email, _client_ip())
+            flash("Não foi possível concluir o cadastro. Se você já tem conta, "
+                  "faça login. Se esqueceu a senha, use 'Esqueci minha senha'.",
+                  "warning")
+            return redirect(url_for("auth.login"))
 
         usuario = Usuario(
             email=email,

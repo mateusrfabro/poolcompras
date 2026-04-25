@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_components/paginacao.html" import paginacao_nav %}
 {% block title %}Histórico de Aprovações — PoolCompras{% endblock %}
 
 {% block content %}
@@ -61,6 +62,8 @@
                 {% endfor %}
             </tbody>
         </table></div>
+
+        {{ paginacao_nav(paginacao, 'admin.historico_aprovacoes') }}
     {% endif %}
 </div>
 {% endblock %}

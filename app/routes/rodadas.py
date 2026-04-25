@@ -12,8 +12,23 @@ rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")
 @rodadas_bp.route("/")
 @login_required
 def listar():
-    rodadas = Rodada.query.order_by(Rodada.data_abertura.desc()).all()
-    return render_template("rodadas/listar.html", rodadas=rodadas)
+    """Lista paginada de rodadas (mais recentes primeiro).
+
+    Default: 25 por pagina. Tres meses de uso = ~12 rodadas/semana = paginas
+    suficientes pra navegacao sem dor.
+    """
+    page = request.args.get("page", 1, type=int)
+    per_page = 25
+    paginacao = (
+        Rodada.query
+        .order_by(Rodada.data_abertura.desc())
+        .paginate(page=page, per_page=per_page, error_out=False)
+    )
+    return render_template(
+        "rodadas/listar.html",
+        rodadas=paginacao.items,
+        paginacao=paginacao,
+    )
 
 
 @rodadas_bp.route("/<int:rodada_id>")

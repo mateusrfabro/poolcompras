@@ -82,6 +82,7 @@ def cotar_catalogo(rodada_id):
     if request.method == "POST":
         # 1. Atualiza precos de partida
         count_precos = 0
+        count_invalidos = 0
         for rp in catalogo:
             preco_str = request.form.get(f"preco_{rp.id}", "").strip()
             if preco_str:
@@ -90,8 +91,10 @@ def cotar_catalogo(rodada_id):
                     if 0 < preco <= 100000:
                         rp.preco_partida = preco
                         count_precos += 1
+                    else:
+                        count_invalidos += 1
                 except ValueError:
-                    pass
+                    count_invalidos += 1
 
         # 2. Produto sugerido (opcional)
         nome_novo = request.form.get("novo_nome", "").strip()
@@ -144,13 +147,20 @@ def cotar_catalogo(rodada_id):
                 rodada_id=rodada_id, preco_partida=None,
             ).count()
             if sem_preco == 0:
-                rodada.status = "aberta"
+                rodada.status = Rodada.STATUS_ABERTA
                 db.session.commit()
                 flash(f"Cotação salva! {count_precos} preços atualizados. Rodada liberada para lanchonetes.", "success")
             else:
                 flash(f"Cotação salva. {sem_preco} produto(s) ainda sem preço.", "success")
         else:
             flash(f"Cotação salva. {count_precos} preços atualizados.", "success")
+
+        if count_invalidos:
+            flash(
+                f"{count_invalidos} preço(s) ignorado(s) por valor inválido "
+                "(use número entre 0,01 e 100.000).",
+                "warning",
+            )
 
         return redirect(url_for("fornecedor.cotar_catalogo", rodada_id=rodada_id))
 

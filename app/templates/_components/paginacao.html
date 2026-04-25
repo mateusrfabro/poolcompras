@@ -1,0 +1,27 @@
+{# Macro de paginacao reutilizavel.
+   Espera `paginacao` (objeto Pagination do Flask-SQLAlchemy) e `endpoint`
+   (string com rota — ex: 'rodadas.listar'). #}
+{% macro paginacao_nav(paginacao, endpoint) %}
+{% if paginacao and paginacao.pages > 1 %}
+<nav class="paginacao" aria-label="Paginação">
+    {% if paginacao.has_prev %}
+        <a href="{{ url_for(endpoint, page=paginacao.prev_num) }}"
+           class="paginacao-link" rel="prev">&laquo; Anterior</a>
+    {% else %}
+        <span class="paginacao-link paginacao-disabled" aria-disabled="true">&laquo; Anterior</span>
+    {% endif %}
+
+    <span class="paginacao-info">
+        Página <strong>{{ paginacao.page }}</strong> de {{ paginacao.pages }}
+        ({{ paginacao.total }} itens)
+    </span>
+
+    {% if paginacao.has_next %}
+        <a href="{{ url_for(endpoint, page=paginacao.next_num) }}"
+           class="paginacao-link" rel="next">Próxima &raquo;</a>
+    {% else %}
+        <span class="paginacao-link paginacao-disabled" aria-disabled="true">Próxima &raquo;</span>
+    {% endif %}
+</nav>
+{% endif %}
+{% endmacro %}
