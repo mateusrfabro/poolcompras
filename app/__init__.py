@@ -56,6 +56,19 @@ def create_app(config_name="default"):
         "form-action": "'self'",
         "frame-ancestors": "'none'",
     }
+    # Permissions-Policy: nega features de browser que o app nao usa.
+    # Defesa em profundidade — XSS futuro nao consegue acessar camera/mic/etc.
+    permissions_policy = {
+        "accelerometer":     "()",
+        "camera":            "()",
+        "geolocation":       "()",
+        "gyroscope":         "()",
+        "magnetometer":      "()",
+        "microphone":        "()",
+        "payment":           "()",
+        "usb":               "()",
+        "interest-cohort":   "()",  # Floc/Topics opt-out
+    }
     Talisman(
         app,
         content_security_policy=csp,
@@ -66,6 +79,7 @@ def create_app(config_name="default"):
         referrer_policy="strict-origin-when-cross-origin",
         frame_options="DENY",
         session_cookie_secure=(config_name == "production"),
+        permissions_policy=permissions_policy,
     )
 
     # Storage de uploads (comprovantes etc.). Implementacao local agora; trocar por S3 no futuro.

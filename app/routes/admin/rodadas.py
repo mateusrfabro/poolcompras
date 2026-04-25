@@ -27,7 +27,7 @@ def rodada_nova():
             nome=request.form["nome"].strip(),
             data_abertura=datetime.strptime(request.form["data_abertura"], "%Y-%m-%d"),
             data_fechamento=datetime.strptime(request.form["data_fechamento"], "%Y-%m-%d"),
-            status="preparando",
+            status=Rodada.STATUS_PREPARANDO,
         )
         db.session.add(rodada)
         db.session.commit()
@@ -72,7 +72,7 @@ def rodada_catalogo(rodada_id):
 
         acao = request.form.get("acao")
         if acao == "enviar":
-            rodada.status = "aguardando_cotacao"
+            rodada.status = Rodada.STATUS_AGUARDANDO_COTACAO
             flash(f"Catálogo enviado aos fornecedores! {len(ids_selecionados)} produtos.", "success")
             db.session.commit()
             return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
@@ -102,7 +102,7 @@ def rodada_catalogo(rodada_id):
 @admin_required
 def rodada_fechar(rodada_id):
     rodada = db.get_or_404(Rodada, rodada_id)
-    rodada.status = "fechada"
+    rodada.status = Rodada.STATUS_FECHADA
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo=EventoRodada.TIPO_RODADA_FECHADA,
@@ -120,10 +120,10 @@ def rodada_fechar(rodada_id):
 def rodada_encerrar_coleta(rodada_id):
     """Admin encerra coleta de pedidos das lanchonetes -> status em_negociacao."""
     rodada = db.get_or_404(Rodada, rodada_id)
-    if rodada.status != "aberta":
+    if rodada.status != Rodada.STATUS_ABERTA:
         flash("Só é possível encerrar coleta de rodadas abertas.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
-    rodada.status = "em_negociacao"
+    rodada.status = Rodada.STATUS_EM_NEGOCIACAO
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo="rodada_em_negociacao",
@@ -141,7 +141,7 @@ def rodada_encerrar_coleta(rodada_id):
 def rodada_finalizar(rodada_id):
     """Admin finaliza a negociação -> rodada 'finalizada' (lanchonetes aceitam)."""
     rodada = db.get_or_404(Rodada, rodada_id)
-    if rodada.status != "em_negociacao":
+    if rodada.status != Rodada.STATUS_EM_NEGOCIACAO:
         flash("Só é possível finalizar rodadas em negociação.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
@@ -163,7 +163,7 @@ def rodada_finalizar(rodada_id):
                     preco_unitario=rp.preco_partida,
                     selecionada=True,
                 ))
-    rodada.status = "finalizada"
+    rodada.status = Rodada.STATUS_FINALIZADA
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo="rodada_finalizada",
@@ -182,10 +182,10 @@ def rodada_finalizar(rodada_id):
 @admin_required
 def rodada_cancelar(rodada_id):
     rodada = db.get_or_404(Rodada, rodada_id)
-    if rodada.status == "cancelada":
+    if rodada.status == Rodada.STATUS_CANCELADA:
         flash("Esta rodada já foi cancelada.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
-    rodada.status = "cancelada"
+    rodada.status = Rodada.STATUS_CANCELADA
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
         tipo=EventoRodada.TIPO_RODADA_CANCELADA,
@@ -205,7 +205,7 @@ def rodada_cancelar(rodada_id):
 def rodada_liberar(rodada_id):
     """Admin libera a rodada para as lanchonetes (muda status -> aberta)."""
     rodada = db.get_or_404(Rodada, rodada_id)
-    if rodada.status not in ("aguardando_cotacao", "aguardando_aprovacao"):
+    if rodada.status not in (Rodada.STATUS_AGUARDANDO_COTACAO, "aguardando_aprovacao"):
         flash("Rodada não está pronta para ser liberada.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
@@ -216,7 +216,7 @@ def rodada_liberar(rodada_id):
         flash(f"Ainda há {pendentes} produto(s) aguardando aprovação.", "warning")
         return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
 
-    rodada.status = "aberta"
+    rodada.status = Rodada.STATUS_ABERTA
     db.session.commit()
     logger.info("ADMIN_RODADA_LIBERADA admin=%s rodada=%s",
                 current_user.id, rodada_id)

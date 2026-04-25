@@ -88,11 +88,30 @@ class Rodada(db.Model):
     """Rodada de compras — período onde pedidos são agregados."""
     __tablename__ = "rodadas"
 
+    # Constantes de status (usar em filtros/comparacoes em vez de strings cruas).
+    # Fluxo atual: PREPARANDO -> AGUARDANDO_COTACAO -> ABERTA -> EM_NEGOCIACAO -> FINALIZADA.
+    # FECHADA e COTANDO sao status legados de fluxo antigo (mantidos pra
+    # compat com rodadas historicas).
+    STATUS_PREPARANDO         = "preparando"
+    STATUS_AGUARDANDO_COTACAO = "aguardando_cotacao"
+    STATUS_ABERTA             = "aberta"
+    STATUS_EM_NEGOCIACAO      = "em_negociacao"
+    STATUS_FECHADA            = "fechada"   # legado
+    STATUS_COTANDO            = "cotando"   # legado
+    STATUS_FINALIZADA         = "finalizada"
+    STATUS_CANCELADA          = "cancelada"
+
+    STATUS_VALIDOS = (
+        STATUS_PREPARANDO, STATUS_AGUARDANDO_COTACAO, STATUS_ABERTA,
+        STATUS_EM_NEGOCIACAO, STATUS_FECHADA, STATUS_COTANDO,
+        STATUS_FINALIZADA, STATUS_CANCELADA,
+    )
+
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     data_abertura = db.Column(db.DateTime(timezone=True), nullable=False)
     data_fechamento = db.Column(db.DateTime(timezone=True), nullable=False)
-    status = db.Column(db.String(20), default="aberta", index=True)  # aberta, fechada, cotando, finalizada, cancelada
+    status = db.Column(db.String(20), default=STATUS_ABERTA, index=True)
     criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Deadlines por fase do fluxo (opcional — se null, usa data_fechamento como padrao)
