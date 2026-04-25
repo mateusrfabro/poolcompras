@@ -6,6 +6,48 @@ from sqlalchemy import func
 from sqlalchemy.orm import contains_eager
 
 from app import db, limiter
+
+
+def _calcular_linhas_cotacao(rodada_produtos, volumes, cotacoes_existentes):
+    """Monta linhas da tabela de cotacao final + totais.
+
+    Retorna (linhas, total_partida, total_final, economia_total_rs, economia_total_pct).
+    Cada linha eh dict pronto pro template (produto, volume, partida, final, economia).
+    """
+    linhas = []
+    total_partida = 0.0
+    total_final = 0.0
+    for rp in rodada_produtos:
+        pid = rp.produto_id
+        if pid not in volumes:
+            continue
+        vol = float(volumes[pid])
+        partida = float(rp.preco_partida) if rp.preco_partida else None
+        cot = cotacoes_existentes.get(pid)
+        final = float(cot.preco_unitario) if cot else None
+        economia_pct = None
+        economia_rs = None
+        if partida and final and partida > 0:
+            economia_pct = round((partida - final) / partida * 100, 1)
+            economia_rs = round((partida - final) * vol, 2)
+            total_partida += partida * vol
+            total_final += final * vol
+        linhas.append({
+            "rodada_produto": rp,
+            "produto": rp.produto,
+            "volume": vol,
+            "partida": partida,
+            "final": final,
+            "economia_pct": economia_pct,
+            "economia_rs": economia_rs,
+        })
+
+    economia_total_rs = round(total_partida - total_final, 2) if total_partida else 0
+    economia_total_pct = (
+        round((total_partida - total_final) / total_partida * 100, 1)
+        if total_partida else 0
+    )
+    return linhas, total_partida, total_final, economia_total_rs, economia_total_pct
 from app.models import (
     Rodada, ItemPedido, Cotacao, Produto,
     ParticipacaoRodada, RodadaProduto,
@@ -129,36 +171,10 @@ def cotar_final(rodada_id):
         flash(f"Cotacao salva (rascunho). {count} preco(s). Clique em 'Enviar pra aprovacao' quando finalizar.", "success")
         return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
-    linhas = []
-    total_partida = 0.0
-    total_final = 0.0
-    for rp in rodada_produtos:
-        pid = rp.produto_id
-        if pid not in volumes:
-            continue
-        vol = float(volumes[pid])
-        partida = float(rp.preco_partida) if rp.preco_partida else None
-        cot = cotacoes_existentes.get(pid)
-        final = float(cot.preco_unitario) if cot else None
-        economia_pct = None
-        economia_rs = None
-        if partida and final and partida > 0:
-            economia_pct = round((partida - final) / partida * 100, 1)
-            economia_rs = round((partida - final) * vol, 2)
-            total_partida += partida * vol
-            total_final += final * vol
-        linhas.append({
-            "rodada_produto": rp,
-            "produto": rp.produto,
-            "volume": vol,
-            "partida": partida,
-            "final": final,
-            "economia_pct": economia_pct,
-            "economia_rs": economia_rs,
-        })
-
-    economia_total_rs = round(total_partida - total_final, 2) if total_partida else 0
-    economia_total_pct = round((total_partida - total_final) / total_partida * 100, 1) if total_partida else 0
+    (linhas, total_partida, total_final,
+     economia_total_rs, economia_total_pct) = _calcular_linhas_cotacao(
+        rodada_produtos, volumes, cotacoes_existentes,
+    )
 
     notas = []
     if submissao:
