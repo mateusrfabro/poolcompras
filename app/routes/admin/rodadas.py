@@ -4,6 +4,8 @@ from datetime import datetime
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
+from sqlalchemy.orm import joinedload
+from werkzeug.utils import secure_filename
 
 from app import db
 from app.models import (
@@ -247,9 +249,11 @@ def rodada_detalhe_exportar(rodada_id):
     """Exporta demanda agregada + cotações da rodada em CSV pra admin."""
     rodada = db.get_or_404(Rodada, rodada_id)
 
-    # Demanda agregada — pool unificado: somente pedidos aprovados
+    # Demanda agregada — pool unificado: somente pedidos aprovados.
+    # Inclui Produto.id pra agrupar cotacoes depois (evita match por nome).
     demanda = (
         db.session.query(
+            Produto.id.label("produto_id"),
             Produto.nome,
             Produto.categoria,
             Produto.unidade,
@@ -266,18 +270,23 @@ def rodada_detalhe_exportar(rodada_id):
         .order_by(Produto.categoria, Produto.nome)
         .all()
     )
+    # joinedload pra evitar N+1 em c.produto e c.fornecedor no loop abaixo.
     cotacoes = (
         Cotacao.query
+        .options(joinedload(Cotacao.produto), joinedload(Cotacao.fornecedor))
         .filter_by(rodada_id=rodada_id)
         .order_by(Cotacao.produto_id, Cotacao.preco_unitario)
         .all()
     )
+    cotacoes_por_produto = {}
+    for c in cotacoes:
+        cotacoes_por_produto.setdefault(c.produto_id, []).append(c)
 
     headers = ["produto", "categoria", "unidade", "total_pedido", "lanchonetes",
                "fornecedor_cotacao", "preco_unitario", "selecionada"]
     rows = []
     for d in demanda:
-        cots = [c for c in cotacoes if c.produto.nome == d.nome]
+        cots = cotacoes_por_produto.get(d.produto_id, [])
         if cots:
             for c in cots:
                 rows.append([
@@ -291,5 +300,7 @@ def rodada_detalhe_exportar(rodada_id):
             rows.append([d.nome, d.categoria, d.unidade, str(d.total_pedido),
                          str(d.qtd_lanchonetes), "", "", ""])
 
-    nome_arquivo = f"rodada_{rodada_id}_{rodada.nome.replace(' ', '_')}.csv"
+    # secure_filename sanitiza acentos/separadores que poderiam quebrar
+    # Content-Disposition em download.
+    nome_arquivo = secure_filename(f"rodada_{rodada_id}_{rodada.nome}") + ".csv"
     return csv_response(filename=nome_arquivo, headers=headers, rows=rows)

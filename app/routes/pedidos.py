@@ -114,6 +114,12 @@ def catalogo():
         count_add = 0
         count_upd = 0
         count_del = 0
+        # Pre-carrega TODOS itens existentes em 1 query (evita N+1 no loop).
+        itens_existentes = {
+            i.produto_id: i for i in ItemPedido.query.filter_by(
+                rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+            ).all()
+        }
         for rp in catalogo:
             qtd_str = request.form.get(f"qtd_{rp.produto_id}", "").strip()
             try:
@@ -121,11 +127,7 @@ def catalogo():
             except ValueError:
                 qtd = 0
 
-            existente = ItemPedido.query.filter_by(
-                rodada_id=rodada.id,
-                lanchonete_id=lanchonete.id,
-                produto_id=rp.produto_id,
-            ).first()
+            existente = itens_existentes.get(rp.produto_id)
 
             if qtd > 0:
                 if existente:

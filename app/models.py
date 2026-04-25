@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from flask_login import UserMixin
-from sqlalchemy import Numeric, UniqueConstraint, Index
+from sqlalchemy import Numeric, UniqueConstraint, Index, CheckConstraint
 from app import db, login_manager
 
 
@@ -29,13 +29,15 @@ class Usuario(UserMixin, db.Model):
     # rapido. BigInteger suporta IDs negativos (grupos) e positivos (1:1).
     telegram_chat_id = db.Column(db.BigInteger, nullable=True, index=True, unique=True)
 
+    # lazy='joined' evita query extra a cada current_user.lanchonete/fornecedor
+    # (acontece em quase todo request logado pelo decorator + templates).
     lanchonete = db.relationship(
         "Lanchonete", backref="responsavel", uselist=False,
-        foreign_keys="Lanchonete.usuario_id",
+        foreign_keys="Lanchonete.usuario_id", lazy="joined",
     )
     fornecedor = db.relationship(
         "Fornecedor", backref="responsavel", uselist=False,
-        foreign_keys="Fornecedor.usuario_id",
+        foreign_keys="Fornecedor.usuario_id", lazy="joined",
     )
 
     @property
@@ -122,6 +124,7 @@ class ItemPedido(db.Model):
 
     __table_args__ = (
         Index("ix_itens_pedido_rodada_lanchonete", "rodada_id", "lanchonete_id"),
+        CheckConstraint("quantidade > 0", name="ck_item_pedido_qtd_positiva"),
     )
 
 
@@ -184,6 +187,7 @@ class Cotacao(db.Model):
         db.Index("ix_cotacao_rodada_fornecedor", "rodada_id", "fornecedor_id"),
         # Ranking de menor preco por produto na rodada.
         db.Index("ix_cotacao_rodada_produto", "rodada_id", "produto_id"),
+        CheckConstraint("preco_unitario > 0", name="ck_cotacao_preco_positivo"),
     )
 
 
@@ -268,6 +272,10 @@ class ParticipacaoRodada(db.Model):
                 "AND pedido_reprovado_em IS NULL"
             ),
         ),
+        CheckConstraint(
+            "avaliacao_geral IS NULL OR avaliacao_geral BETWEEN 1 AND 5",
+            name="ck_participacao_avaliacao_1a5",
+        ),
     )
 
 
@@ -296,6 +304,7 @@ class AvaliacaoRodada(db.Model):
     __table_args__ = (
         UniqueConstraint("rodada_id", "lanchonete_id", "fornecedor_id",
                          name="uq_avaliacao_rodada_lanchonete_fornecedor"),
+        CheckConstraint("estrelas BETWEEN 1 AND 5", name="ck_avaliacao_estrelas_1a5"),
     )
 
 

@@ -56,31 +56,44 @@ def dashboard_data(lanchonete_id):
         .all()
     )
 
-    ultimas_rodadas = []
-    for r in ultimas_raw:
-        total = (
+    rodada_ids = [r.id for r in ultimas_raw]
+    totais_por_rodada = {}
+    notas_por_rodada = {}
+    if rodada_ids:
+        # 1 query agrupada por rodada_id (substitui o loop de N queries)
+        totais = (
             db.session.query(
-                func.coalesce(func.sum(ItemPedido.quantidade * Cotacao.preco_unitario), 0)
+                ItemPedido.rodada_id,
+                func.coalesce(func.sum(ItemPedido.quantidade * Cotacao.preco_unitario), 0).label("total"),
             )
             .join(Cotacao,
                   (Cotacao.rodada_id == ItemPedido.rodada_id) &
                   (Cotacao.produto_id == ItemPedido.produto_id) &
                   (Cotacao.selecionada.is_(True)))
-            .filter(ItemPedido.rodada_id == r.id,
-                    ItemPedido.lanchonete_id == lanchonete_id)
-            .scalar()
-        ) or 0
-        part = (
-            ParticipacaoRodada.query
-            .filter_by(rodada_id=r.id, lanchonete_id=lanchonete_id)
-            .first()
+            .filter(ItemPedido.lanchonete_id == lanchonete_id,
+                    ItemPedido.rodada_id.in_(rodada_ids))
+            .group_by(ItemPedido.rodada_id)
+            .all()
         )
-        nota = part.avaliacao_geral if part else None
-        ultimas_rodadas.append({
+        totais_por_rodada = {rid: float(t or 0) for rid, t in totais}
+
+        # 1 query agrupada pra notas
+        partes = (
+            ParticipacaoRodada.query
+            .filter_by(lanchonete_id=lanchonete_id)
+            .filter(ParticipacaoRodada.rodada_id.in_(rodada_ids))
+            .all()
+        )
+        notas_por_rodada = {p.rodada_id: p.avaliacao_geral for p in partes}
+
+    ultimas_rodadas = [
+        {
             "rodada": r,
-            "total": float(total) if total else 0.0,
-            "nota": nota,
-        })
+            "total": totais_por_rodada.get(r.id, 0.0),
+            "nota": notas_por_rodada.get(r.id),
+        }
+        for r in ultimas_raw
+    ]
 
     return {
         "pendencias": pendencias,
