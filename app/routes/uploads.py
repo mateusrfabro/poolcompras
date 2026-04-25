@@ -12,6 +12,8 @@ Nao servir arquivos via static/: o storage guarda em instance/uploads/
 from flask import Blueprint, abort, send_file, current_app
 from flask_login import login_required, current_user
 from io import BytesIO
+from sqlalchemy import select
+from app import db
 from app.models import ParticipacaoRodada, Cotacao
 from app.services.storage import get_storage
 
@@ -23,7 +25,9 @@ uploads_bp = Blueprint("uploads", __name__, url_prefix="/uploads")
 def servir(key):
     """Serve o arquivo se o usuario tem permissao."""
     # 1. Localiza a participacao dona deste comprovante
-    participacao = ParticipacaoRodada.query.filter_by(comprovante_key=key).first()
+    participacao = db.session.execute(
+        select(ParticipacaoRodada).where(ParticipacaoRodada.comprovante_key == key)
+    ).scalar_one_or_none()
     if not participacao:
         # Pode ser arquivo de outro tipo no futuro. Por agora, so comprovantes.
         abort(404)
@@ -65,9 +69,11 @@ def _pode_ver(user, participacao) -> bool:
         if not user.fornecedor:
             return False
         # Fornecedor tem acesso se cotou nessa rodada
-        cotou = Cotacao.query.filter_by(
-            rodada_id=participacao.rodada_id,
-            fornecedor_id=user.fornecedor.id,
+        cotou = db.session.execute(
+            select(Cotacao).where(
+                Cotacao.rodada_id == participacao.rodada_id,
+                Cotacao.fornecedor_id == user.fornecedor.id,
+            )
         ).first()
         return cotou is not None
     return False

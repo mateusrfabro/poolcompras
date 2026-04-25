@@ -1,6 +1,7 @@
 """Rotas admin de Produtos (CRUD + historico de precos + export)."""
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required
+from sqlalchemy import select
 
 from app import db
 from app.models import Produto, Rodada, RodadaProduto, Cotacao, Fornecedor
@@ -28,7 +29,9 @@ def _subcategorias_por_categoria():
 @login_required
 @admin_required
 def produtos():
-    lista = Produto.query.order_by(Produto.categoria, Produto.nome).all()
+    lista = db.session.scalars(
+        select(Produto).order_by(Produto.categoria, Produto.nome)
+    ).all()
     return render_template("admin/produtos.html", produtos=lista)
 
 
@@ -103,7 +106,9 @@ def produto_editar(produto_id):
 @login_required
 @admin_required
 def produtos_exportar():
-    lista = Produto.query.order_by(Produto.categoria, Produto.subcategoria, Produto.nome).all()
+    lista = db.session.scalars(
+        select(Produto).order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
+    ).all()
     return csv_response(
         filename="produtos.csv",
         headers=["id", "nome", "categoria", "subcategoria", "unidade", "descricao", "ativo", "criado_em"],

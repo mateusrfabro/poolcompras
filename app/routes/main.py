@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
-from sqlalchemy import func, text
+from sqlalchemy import func, select, text
 from app import db
 from app.models import (
     Lanchonete, Rodada, ItemPedido, Produto,
@@ -37,18 +37,26 @@ def dashboard():
 
     # Admin
     if current_user.is_admin:
-        total_lanchonetes = Lanchonete.query.filter_by(ativa=True).count()
-        total_produtos = Produto.query.filter_by(ativo=True).count()
-        rodada_aberta = Rodada.query.filter_by(status="aberta").first()
+        total_lanchonetes = db.session.scalar(
+            select(func.count(Lanchonete.id)).where(Lanchonete.ativa.is_(True))
+        )
+        total_produtos = db.session.scalar(
+            select(func.count(Produto.id)).where(Produto.ativo.is_(True))
+        )
+        rodada_aberta = db.session.execute(
+            select(Rodada).where(Rodada.status == Rodada.STATUS_ABERTA)
+        ).scalar_one_or_none()
 
         pedidos_rodada = 0
         qtd_lanchonetes_rodada = 0
         if rodada_aberta:
-            pedidos_rodada = ItemPedido.query.filter_by(rodada_id=rodada_aberta.id).count()
-            qtd_lanchonetes_rodada = (
-                db.session.query(func.count(func.distinct(ItemPedido.lanchonete_id)))
-                .filter(ItemPedido.rodada_id == rodada_aberta.id)
-                .scalar()
+            pedidos_rodada = db.session.scalar(
+                select(func.count(ItemPedido.id))
+                .where(ItemPedido.rodada_id == rodada_aberta.id)
+            )
+            qtd_lanchonetes_rodada = db.session.scalar(
+                select(func.count(func.distinct(ItemPedido.lanchonete_id)))
+                .where(ItemPedido.rodada_id == rodada_aberta.id)
             )
 
         return render_template(
@@ -62,21 +70,27 @@ def dashboard():
 
     # Lanchonete
     lanchonete = current_user.lanchonete
-    rodada_aberta = Rodada.query.filter_by(status="aberta").first()
+    rodada_aberta = db.session.execute(
+        select(Rodada).where(Rodada.status == Rodada.STATUS_ABERTA)
+    ).scalar_one_or_none()
 
     participacao_atual = None
     if rodada_aberta and lanchonete:
-        participacao_atual = ParticipacaoRodada.query.filter_by(
-            rodada_id=rodada_aberta.id, lanchonete_id=lanchonete.id
-        ).first()
+        participacao_atual = db.session.execute(
+            select(ParticipacaoRodada).where(
+                ParticipacaoRodada.rodada_id == rodada_aberta.id,
+                ParticipacaoRodada.lanchonete_id == lanchonete.id,
+            )
+        ).scalar_one_or_none()
 
     meus_pedidos = []
     if rodada_aberta and lanchonete:
-        meus_pedidos = (
-            ItemPedido.query
-            .filter_by(rodada_id=rodada_aberta.id, lanchonete_id=lanchonete.id)
-            .all()
-        )
+        meus_pedidos = db.session.scalars(
+            select(ItemPedido).where(
+                ItemPedido.rodada_id == rodada_aberta.id,
+                ItemPedido.lanchonete_id == lanchonete.id,
+            )
+        ).all()
 
     # KPIs + pendencias + ultimas rodadas (logica em service)
     kpis = {}

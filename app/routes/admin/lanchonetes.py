@@ -2,6 +2,7 @@
 import logging
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy import select
 from werkzeug.security import generate_password_hash
 
 from app import db
@@ -16,7 +17,9 @@ logger = logging.getLogger(__name__)
 @login_required
 @admin_required
 def lanchonetes():
-    lista = Lanchonete.query.order_by(Lanchonete.nome_fantasia).all()
+    lista = db.session.scalars(
+        select(Lanchonete).order_by(Lanchonete.nome_fantasia)
+    ).all()
     return render_template("admin/lanchonetes.html", lanchonetes=lista)
 
 
@@ -42,7 +45,9 @@ def lanchonete_nova():
             flash("Senha deve ter pelo menos 8 caracteres.", "error")
             return render_template("admin/lanchonete_form.html", lanchonete=None,
                                    form_data=request.form)
-        if Usuario.query.filter_by(email=email).first():
+        if db.session.execute(
+            select(Usuario).where(Usuario.email == email)
+        ).scalar_one_or_none():
             flash("Ja existe um usuario com esse e-mail.", "error")
             return render_template("admin/lanchonete_form.html", lanchonete=None,
                                    form_data=request.form)
@@ -102,7 +107,9 @@ def lanchonete_editar(lanchonete_id):
 @login_required
 @admin_required
 def lanchonetes_exportar():
-    lista = Lanchonete.query.order_by(Lanchonete.nome_fantasia).all()
+    lista = db.session.scalars(
+        select(Lanchonete).order_by(Lanchonete.nome_fantasia)
+    ).all()
     return csv_response(
         filename="lanchonetes.csv",
         headers=["id", "nome_fantasia", "responsavel", "email_responsavel",

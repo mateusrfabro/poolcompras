@@ -2,6 +2,7 @@
 from datetime import datetime, date, timedelta
 from flask import request, redirect, url_for, flash, abort
 from flask_login import login_required, current_user
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from app import db, limiter
@@ -22,9 +23,12 @@ def confirmar_pagamento(rodada_id, lanchonete_id):
     # Ownership: fornecedor so confirma pagamento de lanchonete cujos itens ele venceu.
     if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):
         abort(403)
-    p = ParticipacaoRodada.query.filter_by(
-        rodada_id=rodada_id, lanchonete_id=lanchonete_id,
-    ).first_or_404()
+    p = db.first_or_404(
+        select(ParticipacaoRodada).where(
+            ParticipacaoRodada.rodada_id == rodada_id,
+            ParticipacaoRodada.lanchonete_id == lanchonete_id,
+        )
+    )
     if not p.comprovante_key:
         flash("Cliente ainda não enviou o comprovante.", "error")
         return redirect(url_for("fornecedor.dashboard"))
@@ -66,9 +70,12 @@ def informar_entrega(rodada_id, lanchonete_id):
     rodada, _fornecedor = _so_fornecedor_da_rodada(rodada_id)
     if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):
         abort(403)
-    p = ParticipacaoRodada.query.filter_by(
-        rodada_id=rodada_id, lanchonete_id=lanchonete_id,
-    ).first_or_404()
+    p = db.first_or_404(
+        select(ParticipacaoRodada).where(
+            ParticipacaoRodada.rodada_id == rodada_id,
+            ParticipacaoRodada.lanchonete_id == lanchonete_id,
+        )
+    )
     if not p.pagamento_confirmado_em:
         flash("Confirme o pagamento antes de informar a entrega.", "error")
         return redirect(url_for("fornecedor.dashboard"))

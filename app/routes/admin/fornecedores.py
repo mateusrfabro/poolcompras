@@ -2,6 +2,7 @@
 import logging
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy import select
 
 from app import db
 from app.models import Fornecedor
@@ -15,7 +16,7 @@ logger = logging.getLogger(__name__)
 @login_required
 @admin_required
 def fornecedores():
-    lista = Fornecedor.query.order_by(Fornecedor.razao_social).all()
+    lista = db.session.scalars(select(Fornecedor).order_by(Fornecedor.razao_social)).all()
     return render_template("admin/fornecedores.html", fornecedores=lista)
 
 
@@ -73,7 +74,7 @@ def fornecedor_editar(fornecedor_id):
 @login_required
 @admin_required
 def fornecedores_exportar():
-    fornecedores = Fornecedor.query.order_by(Fornecedor.razao_social).all()
+    fornecedores = db.session.scalars(select(Fornecedor).order_by(Fornecedor.razao_social)).all()
     return csv_response(
         filename="fornecedores.csv",
         headers=["id", "razao_social", "nome_contato", "telefone", "email", "cidade", "ativo", "criado_em"],
