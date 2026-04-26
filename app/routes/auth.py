@@ -45,6 +45,19 @@ def _client_ip() -> str:
         return xff.split(",")[0].strip()
     return request.remote_addr or "-"
 
+
+def _mask_email(email: str) -> str:
+    """Mask de email pra log (LGPD): 'mateus@gmail.com' -> 'm***@gmail.com'.
+
+    Mantem dominio (util pra correlacao com domain-based abuse) e 1a letra
+    do local (util pra correlacao com mesmo user). Tira o resto.
+    """
+    if not email or "@" not in email:
+        return "?"
+    local, dominio = email.split("@", 1)
+    inicial = local[0] if local else "?"
+    return f"{inicial}***@{dominio}"
+
 # Token de recuperacao de senha — sem tabela extra, assinado com SECRET_KEY
 _RECUPERACAO_SALT = "recuperar-senha"
 _RECUPERACAO_TTL_SEG = 3600  # 1 hora
@@ -87,7 +100,7 @@ def login():
         if usuario and senha_ok:
             if not getattr(usuario, "ativo", True):
                 logger.warning("LOGIN_BLOQUEADO email=%s ip=%s motivo=inativo",
-                               email, _client_ip())
+                               _mask_email(email), _client_ip())
                 flash("Conta desativada. Contate o administrador.", "error")
                 return render_template("auth/login.html")
             # Defesa contra session fixation: zera o cookie de sessao antes de
@@ -95,14 +108,14 @@ def login():
             session.clear()
             login_user(usuario)
             logger.info("LOGIN_OK usuario=%s email=%s tipo=%s ip=%s",
-                        usuario.id, email, usuario.tipo, _client_ip())
+                        usuario.id, _mask_email(email), usuario.tipo, _client_ip())
             # Validacao anti open-redirect: so aceita next apontando pro proprio host.
             proximo = _proximo_url_seguro(request.args.get("next"))
             return redirect(proximo or url_for("main.dashboard"))
 
         # Nao revela se o email existe ou nao (timing ja equalizado acima)
         logger.warning("LOGIN_FAIL email=%s ip=%s usuario_existe=%s",
-                       email, _client_ip(), bool(usuario))
+                       _mask_email(email), _client_ip(), bool(usuario))
         flash("E-mail ou senha incorretos.", "error")
 
     return render_template("auth/login.html")
@@ -134,7 +147,7 @@ def registro():
             # transacional, o ideal eh enviar mensagem "alguem tentou criar
             # conta com seu email" pro dono real do endereco.
             logger.info("REGISTRO_TENTATIVA_DUPLICADA email=%s ip=%s",
-                        email, _client_ip())
+                        _mask_email(email), _client_ip())
             flash("Não foi possível concluir o cadastro. Se você já tem conta, "
                   "faça login. Se esqueceu a senha, use 'Esqueci minha senha'.",
                   "warning")
@@ -190,7 +203,7 @@ def registro_fornecedor():
         if _usuario_por_email(email):
             # Anti-enumeration (mesmo padrao do registro lanchonete).
             logger.info("REGISTRO_FORN_TENTATIVA_DUPLICADA email=%s ip=%s",
-                        email, _client_ip())
+                        _mask_email(email), _client_ip())
             flash("Não foi possível concluir o cadastro. Se você já tem conta, "
                   "faça login. Se esqueceu a senha, use 'Esqueci minha senha'.",
                   "warning")
@@ -234,7 +247,7 @@ def logout():
     email = current_user.email
     logout_user()
     session.clear()
-    logger.info("LOGOUT usuario=%s email=%s ip=%s", uid, email, _client_ip())
+    logger.info("LOGOUT usuario=%s email=%s ip=%s", uid, _mask_email(email), _client_ip())
     return redirect(url_for("auth.login"))
 
 

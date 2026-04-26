@@ -38,12 +38,19 @@ def rodada_aprovar_produtos(rodada_id):
             return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
 
         if acao == "aprovar":
+            # Idempotencia: ja decidido (aprovado True ou False), nada a fazer.
+            if rp.aprovado is not None:
+                flash(f"Produto '{rp.produto.nome}' ja foi decidido nesta rodada.", "info")
+                return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
             rp.aprovado = True
             # Produto sugerido nasce inativo; aprovacao libera no catalogo global.
             if rp.produto and not rp.produto.ativo:
                 rp.produto.ativo = True
             flash(f"Produto '{rp.produto.nome}' aprovado.", "success")
         elif acao == "recusar":
+            if rp.aprovado is not None:
+                flash(f"Produto '{rp.produto.nome}' ja foi decidido nesta rodada.", "info")
+                return redirect(url_for("admin.rodada_aprovar_produtos", rodada_id=rodada_id))
             # Apenas marca a SUGESTAO como recusada nesta rodada.
             # Antes: tambem setava produto.ativo=False — side effect GLOBAL que
             # desativava o produto em todas as outras rodadas (bug latente).
@@ -86,6 +93,10 @@ def moderar_pedidos(rodada_id):
 
         notif_titulo = notif_detalhes = None
         if acao == "aprovar":
+            # Idempotencia: 2 cliques rapidos / 2 admins simultaneos nao geram 2 notifs.
+            if part.pedido_aprovado_em is not None:
+                flash(f"Pedido de {nome_lanchonete} ja estava aprovado.", "info")
+                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
             part.pedido_aprovado_em = datetime.now(timezone.utc)
             part.pedido_aprovado_por_id = current_user.id
             part.pedido_devolvido_em = None
@@ -187,6 +198,12 @@ def aprovar_cotacoes(rodada_id):
 
         notif_titulo = notif_detalhes = None
         if acao == "aprovar":
+            # Guarda idempotente: 2 admins clicando "Aprovar" simultaneo nao
+            # devem disparar 2 notificacoes nem 2 logs. Se ja foi aprovada,
+            # mensagem amigavel e retorna sem mutacao.
+            if sub.aprovada_em is not None:
+                flash(f"Cotacao de {nome_forn} ja estava aprovada.", "info")
+                return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
             sub.aprovada_em = datetime.now(timezone.utc)
             sub.aprovada_por_id = current_user.id
             sub.devolvida_em = None

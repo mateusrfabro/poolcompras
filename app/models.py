@@ -29,15 +29,18 @@ class Usuario(UserMixin, db.Model):
     # rapido. BigInteger suporta IDs negativos (grupos) e positivos (1:1).
     telegram_chat_id = db.Column(db.BigInteger, nullable=True, index=True, unique=True)
 
-    # lazy='joined' evita query extra a cada current_user.lanchonete/fornecedor
-    # (acontece em quase todo request logado pelo decorator + templates).
+    # lazy='selectin' carrega lanchonete/fornecedor em 1 query SEPARADA pos load
+    # do Usuario, em vez de LEFT JOIN duplo a cada SELECT em usuarios. Evita
+    # cartesian + carga desnecessaria em rotas que nao tocam o relationship.
+    # Trade-off: 2 queries por request logado em vez de 1 JOIN gordo — mais
+    # barato em Postgres real.
     lanchonete = db.relationship(
         "Lanchonete", backref="responsavel", uselist=False,
-        foreign_keys="Lanchonete.usuario_id", lazy="joined",
+        foreign_keys="Lanchonete.usuario_id", lazy="selectin",
     )
     fornecedor = db.relationship(
         "Fornecedor", backref="responsavel", uselist=False,
-        foreign_keys="Fornecedor.usuario_id", lazy="joined",
+        foreign_keys="Fornecedor.usuario_id", lazy="selectin",
     )
 
     @property

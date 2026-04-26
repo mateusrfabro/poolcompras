@@ -6,6 +6,12 @@ from sqlalchemy import func
 from sqlalchemy.orm import contains_eager
 
 from app import db, limiter
+from app.models import (
+    Rodada, ItemPedido, Cotacao, Produto,
+    ParticipacaoRodada, RodadaProduto,
+    SubmissaoCotacao, NotaNegociacao,
+)
+from . import fornecedor_bp, fornecedor_required
 
 
 def _calcular_linhas_cotacao(rodada_produtos, volumes, cotacoes_existentes):
@@ -48,12 +54,6 @@ def _calcular_linhas_cotacao(rodada_produtos, volumes, cotacoes_existentes):
         if total_partida else 0
     )
     return linhas, total_partida, total_final, economia_total_rs, economia_total_pct
-from app.models import (
-    Rodada, ItemPedido, Cotacao, Produto,
-    ParticipacaoRodada, RodadaProduto,
-    SubmissaoCotacao, NotaNegociacao,
-)
-from . import fornecedor_bp, fornecedor_required
 
 
 @fornecedor_bp.route("/rodada/<int:rodada_id>/cotacao-final", methods=["GET", "POST"])
