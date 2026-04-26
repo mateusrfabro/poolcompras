@@ -102,7 +102,11 @@ def create_app(config_name="default"):
     from app.cli_telegram import telegram_cli_bp
 
     # Error handlers amigaveis
-    from flask import render_template
+    import logging as _logging
+    from flask import render_template, request
+    from flask_login import current_user
+    _err_logger = _logging.getLogger("app.errors")
+
     @app.errorhandler(404)
     def erro_404(e):
         return render_template("errors/404.html"), 404
@@ -113,6 +117,13 @@ def create_app(config_name="default"):
 
     @app.errorhandler(500)
     def erro_500(e):
+        # logger.exception captura traceback completo — sem isso, falha
+        # silenciosa em prod (saber QUE deu 500 nao basta; precisa do stack).
+        uid = getattr(current_user, "id", None) if current_user else None
+        _err_logger.exception(
+            "UNHANDLED_500 path=%s method=%s usuario=%s",
+            request.path, request.method, uid,
+        )
         db.session.rollback()
         return render_template("errors/500.html"), 500
 

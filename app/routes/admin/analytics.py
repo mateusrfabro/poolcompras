@@ -1,7 +1,8 @@
 """Rotas admin de analytics, funil de conversao, historico de aprovacoes e relatorio consolidado."""
+import logging
 from datetime import datetime
 from flask import render_template, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 from sqlalchemy import func, case
 
 from app import db
@@ -11,6 +12,8 @@ from app.models import (
 )
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
+
+logger = logging.getLogger(__name__)
 
 
 @admin_bp.route("/analytics")
@@ -179,6 +182,10 @@ def historico_aprovacoes():
                 f"{float(rp.preco_partida):.2f}".replace(".", ",") if rp.preco_partida else "",
                 f.razao_social, status,
             ])
+        logger.info(
+            "ADMIN_EXPORT_CSV admin=%s endpoint=historico_aprovacoes registros=%s",
+            current_user.id, len(rows),
+        )
         return csv_response(
             filename="historico_aprovacoes.csv",
             headers=["Data", "Rodada", "Produto", "Categoria", "Subcategoria",
@@ -271,6 +278,10 @@ def relatorio():
             .all()
         ) if rod_ids else {}
 
+        logger.info(
+            "ADMIN_EXPORT_CSV admin=%s endpoint=relatorio de=%s ate=%s registros=%s",
+            current_user.id, de, ate, len(rodadas),
+        )
         return csv_response(
             filename=f"relatorio_{de}_a_{ate}.csv",
             headers=["rodada", "data_abertura", "status", "pedidos", "cotacoes"],

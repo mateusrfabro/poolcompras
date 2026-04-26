@@ -229,6 +229,8 @@ def rodada_liberar(rodada_id):
 @admin_required
 def rodadas_exportar():
     lista = Rodada.query.order_by(Rodada.data_abertura.desc()).all()
+    logger.info("ADMIN_EXPORT_CSV admin=%s endpoint=rodadas_exportar registros=%s",
+                current_user.id, len(lista))
     return csv_response(
         filename="rodadas.csv",
         headers=["id", "nome", "status", "data_abertura", "data_fechamento", "criado_em"],
@@ -300,6 +302,8 @@ def rodada_detalhe_exportar(rodada_id):
             rows.append([d.nome, d.categoria, d.unidade, str(d.total_pedido),
                          str(d.qtd_lanchonetes), "", "", ""])
 
+    logger.info("ADMIN_EXPORT_CSV admin=%s endpoint=rodada_detalhe_exportar rodada=%s registros=%s",
+                current_user.id, rodada_id, len(rows))
     # secure_filename sanitiza acentos/separadores que poderiam quebrar
     # Content-Disposition em download.
     nome_arquivo = secure_filename(f"rodada_{rodada_id}_{rodada.nome}") + ".csv"

@@ -1,12 +1,15 @@
 """Rotas admin de Produtos (CRUD + historico de precos + export)."""
+import logging
 from flask import render_template, redirect, url_for, flash, request
-from flask_login import login_required
+from flask_login import login_required, current_user
 from sqlalchemy import select
 
 from app import db
 from app.models import Produto, Rodada, RodadaProduto, Cotacao, Fornecedor
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
+
+logger = logging.getLogger(__name__)
 
 
 def _subcategorias_por_categoria():
@@ -109,6 +112,8 @@ def produtos_exportar():
     lista = db.session.scalars(
         select(Produto).order_by(Produto.categoria, Produto.subcategoria, Produto.nome)
     ).all()
+    logger.info("ADMIN_EXPORT_CSV admin=%s endpoint=produtos_exportar registros=%s",
+                current_user.id, len(lista))
     return csv_response(
         filename="produtos.csv",
         headers=["id", "nome", "categoria", "subcategoria", "unidade", "descricao", "ativo", "criado_em"],

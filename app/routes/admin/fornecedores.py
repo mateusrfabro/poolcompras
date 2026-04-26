@@ -75,6 +75,8 @@ def fornecedor_editar(fornecedor_id):
 @admin_required
 def fornecedores_exportar():
     fornecedores = db.session.scalars(select(Fornecedor).order_by(Fornecedor.razao_social)).all()
+    logger.info("ADMIN_EXPORT_CSV admin=%s endpoint=fornecedores_exportar registros=%s",
+                current_user.id, len(fornecedores))
     return csv_response(
         filename="fornecedores.csv",
         headers=["id", "razao_social", "nome_contato", "telefone", "email", "cidade", "ativo", "criado_em"],

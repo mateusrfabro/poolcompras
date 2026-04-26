@@ -110,6 +110,8 @@ def lanchonetes_exportar():
     lista = db.session.scalars(
         select(Lanchonete).order_by(Lanchonete.nome_fantasia)
     ).all()
+    logger.info("ADMIN_EXPORT_CSV admin=%s endpoint=lanchonetes_exportar registros=%s",
+                current_user.id, len(lista))
     return csv_response(
         filename="lanchonetes.csv",
         headers=["id", "nome_fantasia", "responsavel", "email_responsavel",
