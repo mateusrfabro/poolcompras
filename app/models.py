@@ -128,6 +128,16 @@ class Rodada(db.Model):
     itens = db.relationship("ItemPedido", backref="rodada")
     cotacoes = db.relationship("Cotacao", backref="rodada")
 
+    __table_args__ = (
+        # Bloqueia status com typo silencioso (ex: 'aberto' em vez de 'aberta').
+        # Lista bate com STATUS_VALIDOS acima. Atualizar JUNTO se adicionar status novo.
+        CheckConstraint(
+            "status IN ('preparando','aguardando_cotacao','aberta',"
+            "'em_negociacao','fechada','cotando','finalizada','cancelada')",
+            name="ck_rodada_status_valido",
+        ),
+    )
+
 
 class ItemPedido(db.Model):
     """Pedido de um produto por uma lanchonete numa rodada."""
@@ -187,7 +197,6 @@ class Cotacao(db.Model):
     # Numeric(12,2) suporta ate ~10 bilhoes; perfeito para precos em BRL
     preco_unitario = db.Column(Numeric(12, 2), nullable=False)
     quantidade_minima = db.Column(Numeric(10, 3))
-    validade = db.Column(db.DateTime(timezone=True))
     selecionada = db.Column(db.Boolean, default=False, index=True)
     criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
@@ -410,6 +419,18 @@ class RodadaProduto(db.Model):
     __table_args__ = (
         UniqueConstraint("rodada_id", "produto_id",
                          name="uq_rodada_produto"),
+        # Fila admin "aprovar produtos sugeridos por fornecedores" — query
+        # quente filtra aprovado IS NULL + adicionado_por_fornecedor_id IS NOT NULL.
+        db.Index(
+            "ix_rodada_produto_aprovacao_pendente",
+            "rodada_id",
+            postgresql_where=db.text(
+                "aprovado IS NULL AND adicionado_por_fornecedor_id IS NOT NULL"
+            ),
+            sqlite_where=db.text(
+                "aprovado IS NULL AND adicionado_por_fornecedor_id IS NOT NULL"
+            ),
+        ),
     )
 
 

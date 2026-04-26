@@ -46,6 +46,19 @@ class ProductionConfig(Config):
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
+    # Hardening preventivo pra remember-me caso Flask-Login ative no futuro.
+    REMEMBER_COOKIE_SECURE = True
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    # Pool de conexoes Postgres pra prod atras de pgbouncer/HAProxy.
+    # pool_pre_ping: testa conexao antes de usar (descarta a que pgbouncer
+    #   matou em idle). pool_recycle: 5min — alinha com pgbouncer default.
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_pre_ping": True,
+        "pool_recycle": 300,
+        "pool_size": 5,
+        "max_overflow": 10,
+    }
 
 
 config = {
