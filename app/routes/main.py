@@ -7,6 +7,7 @@ from app.models import (
     ParticipacaoRodada,
 )
 from app.services.dashboard_lanchonete import dashboard_data
+from app.services.rodada_corrente import rodada_corrente_aberta
 
 main_bp = Blueprint("main", __name__)
 
@@ -43,9 +44,7 @@ def dashboard():
         total_produtos = db.session.scalar(
             select(func.count(Produto.id)).where(Produto.ativo.is_(True))
         )
-        rodada_aberta = db.session.execute(
-            select(Rodada).where(Rodada.status == Rodada.STATUS_ABERTA)
-        ).scalar_one_or_none()
+        rodada_aberta = rodada_corrente_aberta()
 
         pedidos_rodada = 0
         qtd_lanchonetes_rodada = 0
@@ -70,9 +69,7 @@ def dashboard():
 
     # Lanchonete
     lanchonete = current_user.lanchonete
-    rodada_aberta = db.session.execute(
-        select(Rodada).where(Rodada.status == Rodada.STATUS_ABERTA)
-    ).scalar_one_or_none()
+    rodada_aberta = rodada_corrente_aberta()
 
     participacao_atual = None
     if rodada_aberta and lanchonete:

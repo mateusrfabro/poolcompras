@@ -3,9 +3,10 @@
 Centraliza as regras de 'o que esta pendente pra cada lanchonete/fornecedor'
 pra evitar duplicacao entre dashboard, historico e notificacoes.
 """
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import ParticipacaoRodada, Rodada, Cotacao
+from app.models import ParticipacaoRodada, Rodada, Cotacao, ItemPedido
 
 
 def pendencias_lanchonete(lanchonete_id):
@@ -72,8 +73,39 @@ def pendencias_fornecedor(fornecedor_id):
         .all()
     )
 
+    # Calcula valor que cada lanchonete deve PAGAR pro fornecedor atual
+    # (qtd pedida x preco vencedor da cotacao DELE). 1 query agrupada por
+    # (rodada, lanchonete) — evita N+1 no dashboard.
+    valor_por_part = {}
+    if participacoes:
+        rodada_lanch_pares = [(p.rodada_id, p.lanchonete_id) for p in participacoes]
+        rodada_ids = list({r for r, _ in rodada_lanch_pares})
+        lanch_ids = list({l for _, l in rodada_lanch_pares})
+        valores = (
+            db.session.query(
+                ItemPedido.rodada_id,
+                ItemPedido.lanchonete_id,
+                func.sum(ItemPedido.quantidade * Cotacao.preco_unitario).label("valor"),
+            )
+            .join(Cotacao,
+                  (Cotacao.rodada_id == ItemPedido.rodada_id)
+                  & (Cotacao.produto_id == ItemPedido.produto_id))
+            .filter(Cotacao.fornecedor_id == fornecedor_id)
+            .filter(Cotacao.selecionada.is_(True))
+            .filter(ItemPedido.rodada_id.in_(rodada_ids))
+            .filter(ItemPedido.lanchonete_id.in_(lanch_ids))
+            .group_by(ItemPedido.rodada_id, ItemPedido.lanchonete_id)
+            .all()
+        )
+        for rid, lid, valor in valores:
+            valor_por_part[(rid, lid)] = float(valor or 0)
+
     por_rodada = {}
     for p in participacoes:
+        # Anexa valor da lanchonete pra ESTE fornecedor (regra de privacidade
+        # do Ademar: detalhe por lanchonete so apos aceite, pra fornecedor
+        # bater conta interna).
+        p.valor_para_fornecedor = valor_por_part.get((p.rodada_id, p.lanchonete_id), 0.0)
         rid = p.rodada_id
         if rid not in por_rodada:
             por_rodada[rid] = {

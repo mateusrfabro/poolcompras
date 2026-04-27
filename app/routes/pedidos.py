@@ -5,6 +5,7 @@ from sqlalchemy.orm import joinedload, contains_eager
 from app import db
 from app.models import Produto, Rodada, ItemPedido, RodadaProduto, ParticipacaoRodada
 from app.services.csv_export import csv_response
+from app.services.rodada_corrente import rodada_corrente_aberta
 
 pedidos_bp = Blueprint("pedidos", __name__, url_prefix="/pedidos")
 
@@ -17,7 +18,7 @@ def listar():
         flash("Complete seu cadastro primeiro.", "error")
         return redirect(url_for("main.dashboard"))
 
-    rodada_aberta = Rodada.query.filter_by(status="aberta").first()
+    rodada_aberta = rodada_corrente_aberta()
     meus_pedidos = []
     if rodada_aberta:
         meus_pedidos = (
@@ -41,7 +42,7 @@ def exportar():
     if not lanchonete:
         flash("Complete seu cadastro primeiro.", "error")
         return redirect(url_for("pedidos.listar"))
-    rodada = Rodada.query.filter_by(status="aberta").first()
+    rodada = rodada_corrente_aberta()
     if not rodada:
         flash("Nenhuma rodada aberta.", "warning")
         return redirect(url_for("pedidos.listar"))
@@ -72,11 +73,7 @@ def catalogo():
         flash("Complete seu cadastro.", "error")
         return redirect(url_for("main.dashboard"))
 
-    rodada = (
-        Rodada.query.filter_by(status="aberta")
-        .order_by(Rodada.data_abertura.desc())
-        .first()
-    )
+    rodada = rodada_corrente_aberta()
     if not rodada:
         flash("Nenhuma rodada aberta no momento.", "warning")
         return redirect(url_for("pedidos.listar"))
@@ -236,11 +233,7 @@ def repetir_ultimo_pedido():
         flash("Complete seu cadastro.", "error")
         return redirect(url_for("main.dashboard"))
 
-    rodada = (
-        Rodada.query.filter_by(status="aberta")
-        .order_by(Rodada.data_abertura.desc())
-        .first()
-    )
+    rodada = rodada_corrente_aberta()
     if not rodada:
         flash("Nenhuma rodada aberta.", "warning")
         return redirect(url_for("pedidos.listar"))

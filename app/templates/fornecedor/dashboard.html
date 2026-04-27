@@ -68,7 +68,10 @@
                         <ul class="pendencia-lista">
                             {% for p in bloco.aguardando_pagamento %}
                                 <li>
-                                    {{ p.lanchonete.nome_fantasia }}
+                                    <strong>{{ p.lanchonete.nome_fantasia }}</strong>
+                                    {% if p.valor_para_fornecedor %}
+                                        — <span class="muted">{{ p.valor_para_fornecedor|brl }}</span>
+                                    {% endif %}
                                     — <a href="{{ url_for('uploads.servir', key=p.comprovante_key) }}" target="_blank" rel="noopener noreferrer">Ver comprovante</a>
                                     <form method="POST"
                                           action="{{ url_for('fluxo.confirmar_pagamento', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
@@ -89,7 +92,10 @@
                         <ul class="pendencia-lista">
                             {% for p in bloco.aguardando_entrega %}
                                 <li>
-                                    {{ p.lanchonete.nome_fantasia }}
+                                    <strong>{{ p.lanchonete.nome_fantasia }}</strong>
+                                    {% if p.valor_para_fornecedor %}
+                                        — <span class="muted">{{ p.valor_para_fornecedor|brl }}</span>
+                                    {% endif %}
                                     <form method="POST"
                                           action="{{ url_for('fluxo.informar_entrega', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
                                           class="pendencia-form" style="margin-top: 0.3rem;">
