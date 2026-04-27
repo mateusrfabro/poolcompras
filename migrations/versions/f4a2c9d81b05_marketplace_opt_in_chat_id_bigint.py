@@ -18,7 +18,8 @@ def upgrade():
     # Fornecedor.aparece_no_marketplace (opt-in LGPD)
     with op.batch_alter_table("fornecedores") as batch_op:
         batch_op.add_column(sa.Column("aparece_no_marketplace", sa.Boolean(), nullable=True))
-    op.execute("UPDATE fornecedores SET aparece_no_marketplace = 0 WHERE aparece_no_marketplace IS NULL")
+    # TRUE/FALSE em vez de 1/0: Postgres tem tipo BOOLEAN estrito.
+    op.execute("UPDATE fornecedores SET aparece_no_marketplace = FALSE WHERE aparece_no_marketplace IS NULL")
     with op.batch_alter_table("fornecedores") as batch_op:
         batch_op.alter_column("aparece_no_marketplace", nullable=False, server_default=sa.false())
 

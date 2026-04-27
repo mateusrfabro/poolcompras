@@ -28,7 +28,9 @@ def upgrade():
     # Usuario.ativo (default True pra nao travar usuarios existentes)
     with op.batch_alter_table("usuarios") as batch_op:
         batch_op.add_column(sa.Column("ativo", sa.Boolean(), nullable=True))
-    op.execute("UPDATE usuarios SET ativo = 1 WHERE ativo IS NULL")
+    # TRUE/FALSE em vez de 1/0: Postgres tem tipo BOOLEAN estrito.
+    # SQLite tambem aceita TRUE/FALSE (mapeado pra 1/0 internamente).
+    op.execute("UPDATE usuarios SET ativo = TRUE WHERE ativo IS NULL")
     with op.batch_alter_table("usuarios") as batch_op:
         batch_op.alter_column("ativo", nullable=False, server_default=sa.true())
         batch_op.create_index("ix_usuarios_ativo", ["ativo"])

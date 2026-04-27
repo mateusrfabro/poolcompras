@@ -17,10 +17,11 @@ depends_on = None
 
 
 def upgrade():
-    # Garante que nao ha usuario com is_admin=True sem tipo='admin' (defesa)
+    # Garante que nao ha usuario com is_admin=True sem tipo='admin' (defesa).
+    # TRUE em vez de 1: Postgres tem tipo BOOLEAN estrito.
     op.execute(
         "UPDATE usuarios SET tipo = 'admin' "
-        "WHERE is_admin = 1 AND tipo != 'admin'"
+        "WHERE is_admin = TRUE AND tipo != 'admin'"
     )
     with op.batch_alter_table("usuarios") as batch_op:
         batch_op.drop_column("is_admin")
@@ -30,7 +31,7 @@ def downgrade():
     with op.batch_alter_table("usuarios") as batch_op:
         batch_op.add_column(sa.Column("is_admin", sa.Boolean(), nullable=True,
                                        server_default=sa.false()))
-    # Restaura is_admin=True pra todos os admins atuais
+    # Restaura is_admin=True pra todos os admins atuais.
     op.execute(
-        "UPDATE usuarios SET is_admin = 1 WHERE tipo = 'admin'"
+        "UPDATE usuarios SET is_admin = TRUE WHERE tipo = 'admin'"
     )
