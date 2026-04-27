@@ -1,4 +1,14 @@
-version: "3.8"
+# PoolCompras — docker-compose canonico (setup de prod do Ademar/Yggdrasil).
+#
+# Notas pra replicar:
+# - Cloudflare Tunnel termina TLS — nao precisa nginx no compose. App fica
+#   exposto SO via rede `server_net` (onde o cloudflared roda).
+# - DB e app NAO publicam ports no host (mais seguro). Acesso externo apenas
+#   pelo cloudflared via server_net.
+# - Network `server_net` precisa existir antes do up:
+#       docker network create server_net
+# - Healthcheck do app usa Python socket (imagem nao tem curl).
+# - Workers default = 4 (ajustar via WEB_WORKERS no .env).
 
 services:
   db:
@@ -11,13 +21,13 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:?Defina DB_PASSWORD no .env}
     volumes:
       - pgdata:/var/lib/postgresql/data
-    ports:
-      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U poolcompras"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - internal_net
 
   app:
     build: .
@@ -30,34 +40,35 @@ services:
       FLASK_APP: run.py
       RUN_SEED: ${RUN_SEED:-false}
       PORT: ${PORT:-5050}
-      WEB_WORKERS: ${WEB_WORKERS:-0}
+      WEB_WORKERS: ${WEB_WORKERS:-4}
     volumes:
       - uploads:/app/instance/uploads
       - logs:/var/log
-    ports:
-      - "${PORT:-5050}:${PORT:-5050}"
+    expose:
+      - "${PORT:-5050}"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5050/health"]
+      test: ["CMD", "python", "-c", "import socket; s=socket.socket(); s.settimeout(5); exit(0 if s.connect_ex(('127.0.0.1',5050)) == 0 else 1)"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
+      start_period: 20s
     depends_on:
       db:
         condition: service_healthy
-
-  nginx:
-    image: nginx:alpine
-    container_name: poolcompras-nginx
-    restart: always
-    ports:
-      - "80:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    depends_on:
-      - app
+    networks:
+      - internal_net
+      - server_net
 
 volumes:
   pgdata:
   uploads:
   logs:
+
+networks:
+  # internal_net: liga app <-> db. Nao tem acesso externo.
+  internal_net:
+    driver: bridge
+  # server_net: rede compartilhada com o cloudflared/proxy externo.
+  # Criar uma vez antes do primeiro up: `docker network create server_net`.
+  server_net:
+    external: true
