@@ -64,8 +64,8 @@
 .tfoot-total { background: #EDF2F7; font-weight: 600; }
 
 /* Valores de economia (positiva/negativa/neutra) — classes ao inves de style inline. */
-.economia-pos     { color: #2e7d32; }
-.economia-neg     { color: #c62828; }
+.economia-pos     { color: var(--success); }
+.economia-neg     { color: var(--danger); }
 .economia-neutro  { color: var(--gray-700); }
 .text-emphasis    { font-size: 1.05em; }
 .text-xs          { font-size: 0.8em; }
@@ -214,6 +214,8 @@ h1, h2, h3, h4, h5, h6 {
 .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
 .btn-outline { background: transparent; border-color: var(--primary); color: var(--primary); }
 .btn-outline:hover { background: var(--primary); color: var(--white); }
+.btn-outline-danger { background: transparent; border-color: var(--danger); color: var(--danger); }
+.btn-outline-danger:hover { background: var(--danger); color: var(--white); }
 .btn-danger { background: var(--danger); color: var(--white); border-color: var(--danger); }
 .btn-danger:hover { opacity: 0.9; }
 .btn-lg { padding: 0.8rem 2rem; font-size: 1rem; }

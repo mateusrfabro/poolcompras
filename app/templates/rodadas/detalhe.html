@@ -167,7 +167,7 @@
                 {# Total geral #}
                 {% set total_geral = agregado|selectattr('subtotal')|sum(attribute='subtotal') %}
                 {% if total_geral > 0 %}
-                <tr style="background: #fff7ed; font-weight: 600;">
+                <tr class="tfoot-total">
                     <td colspan="7">Total da rodada</td>
                     <td><strong>{{ total_geral|brl }}</strong></td>
                     {% if meus_pedidos_map %}<td></td>{% endif %}
