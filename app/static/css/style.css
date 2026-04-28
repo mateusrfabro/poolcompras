@@ -92,15 +92,32 @@
     --danger: #d62828;
     --warning: #e09f3e;
     --radius: 8px;
+
+    /* Tipografia: Inter (texto) + Montserrat (titulos), via Google Fonts em base.html. */
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+    /* Spacing 8px grid — aplicar incrementalmente nos templates. */
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+    --space-5: 48px;
+    --space-6: 64px;
+    --space-7: 80px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: var(--font-body);
     background: var(--bg);
     color: var(--gray-900);
     line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
 }
 
 /* Navbar */

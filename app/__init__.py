@@ -47,10 +47,11 @@ def create_app(config_name="default"):
     # force_https=False em dev; ligado via config em producao.
     csp = {
         "default-src": "'self'",
-        "style-src": ["'self'", "'unsafe-inline'"],  # alguns templates usam style=""
+        # Google Fonts: CSS em fonts.googleapis.com, .woff2 em fonts.gstatic.com.
+        "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
         "script-src": "'self'",
         "img-src": ["'self'", "data:"],
-        "font-src": "'self'",
+        "font-src": ["'self'", "https://fonts.gstatic.com"],
         "object-src": "'none'",
         "base-uri": "'self'",
         "form-action": "'self'",
