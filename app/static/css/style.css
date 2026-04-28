@@ -151,18 +151,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 .nav-links a:hover { color: var(--white); }
 
-/* Container */
+/* Container — 1200px (padrao corporativo B2B) */
 .container {
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
-    padding: 2rem 1.5rem;
+    padding: var(--space-4) var(--space-3);
     min-height: calc(100vh - 120px);
 }
 
 /* Hero */
 .hero {
     text-align: center;
-    padding: 4rem 0 3rem;
+    padding: var(--space-7) 0 var(--space-6);
 }
 .hero h1 {
     font-size: 2.8rem;
@@ -1223,9 +1223,21 @@ h1, h2, h3, h4, h5, h6 {
 .breadcrumb a:hover { color: var(--primary); }
 
 .section-title {
-    margin: 2rem 0 1rem;
+    margin: var(--space-5) 0 var(--space-2);
     color: var(--secondary);
     font-size: 1.2rem;
+}
+
+/* Respiro entre secoes informais (h2/h3 soltos no painel). 48px top eh
+   o equivalente "dentro de secoes" do guia 8px grid. */
+.dashboard h3,
+.container > h3 {
+    margin-top: var(--space-5);
+    margin-bottom: var(--space-2);
+}
+.dashboard h3:first-of-type,
+.container > h3:first-of-type {
+    margin-top: var(--space-3);
 }
 
 /* Filter chips (abas de status) */
