@@ -135,11 +135,15 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .nav-brand a {
-    color: var(--primary);
+    color: var(--white);
     font-size: 1.4rem;
     font-weight: 700;
     text-decoration: none;
     letter-spacing: -0.5px;
+    font-family: var(--font-heading);
+}
+.nav-brand a:hover {
+    color: var(--gray-200);
 }
 
 .nav-links { display: flex; align-items: center; gap: 1.2rem; }
