@@ -410,7 +410,7 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--accent);  /* verde alimento — destaque visual sem competir com botoes/links em --primary */
     white-space: nowrap;  /* evita R$ quebrar em 2 linhas */
     line-height: 1.2;
     overflow-wrap: anywhere;  /* valores enormes podem quebrar se extrapolar */
