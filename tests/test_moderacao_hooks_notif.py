@@ -171,6 +171,62 @@ def test_reverter_aprovacao_nao_dispara_notif(app, client_admin):
         os.environ.pop("TELEGRAM_BOT_TOKEN", None)
 
 
+def test_devolver_idempotente_nao_duplica_notif(app, client_admin):
+    """2 cliques no Devolver sem reenvio do fornecedor: segundo retorna sem
+    mutar nem disparar notif. Guard 'sub.devolvida_em is not None and
+    sub.enviada_em is None'."""
+    rodada_id, sub_id, _, _ = _seed_em_negociacao_com_pedido()
+    _vincula_chat_ids()
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/aprovar-cotacoes")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/aprovar-cotacoes",
+                data={"csrf_token": token, "submissao_id": sub_id, "acao": "devolver"},
+                follow_redirects=False,
+            )
+            chamadas_apos_1 = mock_post.call_count
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/aprovar-cotacoes",
+                data={"csrf_token": token, "submissao_id": sub_id, "acao": "devolver"},
+                follow_redirects=False,
+            )
+            chamadas_apos_2 = mock_post.call_count
+        assert chamadas_apos_1 == 1
+        assert chamadas_apos_2 == 1  # NAO duplicou
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)
+
+
+def test_reverter_sem_aprovacao_nao_dispara_e_nao_muda(app, client_admin):
+    """Reverter quando aprovada_em is None: retorna sem mutar — guard nova."""
+    rodada_id, sub_id, _, _ = _seed_em_negociacao_com_pedido()
+    sub_antes = db.session.get(SubmissaoCotacao, sub_id)
+    enviada_em_antes = sub_antes.enviada_em
+
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/aprovar-cotacoes")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/aprovar-cotacoes",
+                data={"csrf_token": token, "submissao_id": sub_id, "acao": "reverter"},
+                follow_redirects=False,
+            )
+        assert mock_post.call_count == 0
+        # Estado nao mudou
+        sub_depois = db.session.get(SubmissaoCotacao, sub_id)
+        assert sub_depois.aprovada_em is None
+        assert sub_depois.enviada_em == enviada_em_antes
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)
+
+
 def test_submissao_de_outra_rodada_rejeitada(app, client_admin):
     """Rota /admin/rodadas/<rodada_id>/aprovar-cotacoes deve recusar submissao_id
     que pertence a OUTRA rodada — guard sub.rodada_id != rodada_id."""
@@ -203,3 +259,153 @@ def test_submissao_de_outra_rodada_rejeitada(app, client_admin):
     )
     # Submissao B continua nao aprovada
     assert db.session.get(SubmissaoCotacao, sub_b_id).aprovada_em is None
+
+
+# =============================================================================
+# moderar_pedidos: hooks + guards de idempotencia em devolver/reprovar/reverter
+# =============================================================================
+
+def _seed_pedido_pendente():
+    """Cria ParticipacaoRodada com pedido_enviado_em (pronto pra moderacao)."""
+    rodada = Rodada.query.first()
+    produto = Produto.query.first()
+    lanch = Lanchonete.query.filter_by(nome_fantasia="Lanch A").first()
+    db.session.add(ItemPedido(
+        rodada_id=rodada.id, lanchonete_id=lanch.id,
+        produto_id=produto.id, quantidade=10,
+    ))
+    part = ParticipacaoRodada(
+        rodada_id=rodada.id, lanchonete_id=lanch.id,
+        pedido_enviado_em=datetime.now(timezone.utc),
+    )
+    db.session.add(part)
+    db.session.commit()
+    return rodada.id, part.id
+
+
+def test_pedido_aprovar_dispara_notif_lanchonete(app, client_admin):
+    rodada_id, part_id = _seed_pedido_pendente()
+    _vincula_chat_ids()
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/moderar-pedidos")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id, "acao": "aprovar"},
+                follow_redirects=False,
+            )
+        assert mock_post.call_count == 1
+        assert "Pedido aprovado" in mock_post.call_args.kwargs["json"]["text"]
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)
+
+
+def test_pedido_aprovar_idempotente(app, client_admin):
+    """2 cliques no aprovar nao duplicam notif (guarda ja existia)."""
+    rodada_id, part_id = _seed_pedido_pendente()
+    _vincula_chat_ids()
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/moderar-pedidos")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id, "acao": "aprovar"},
+                follow_redirects=False,
+            )
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id, "acao": "aprovar"},
+                follow_redirects=False,
+            )
+        assert mock_post.call_count == 1
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)
+
+
+def test_pedido_devolver_idempotente_sem_reenvio(app, client_admin):
+    """Devolver 2x sem reenvio da lanchonete: segundo retorna sem disparar
+    notif. Guard nova: 'pedido_devolvido_em is not None and pedido_enviado_em
+    is None'."""
+    rodada_id, part_id = _seed_pedido_pendente()
+    _vincula_chat_ids()
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/moderar-pedidos")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id,
+                      "acao": "devolver", "motivo": "volume alto"},
+                follow_redirects=False,
+            )
+            chamadas_1 = mock_post.call_count
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id,
+                      "acao": "devolver", "motivo": "outra vez"},
+                follow_redirects=False,
+            )
+            chamadas_2 = mock_post.call_count
+        assert chamadas_1 == 1
+        assert chamadas_2 == 1  # NAO duplicou
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)
+
+
+def test_pedido_reprovar_idempotente(app, client_admin):
+    """Reprovar eh terminal — 2 cliques nao duplicam notif. Guard nova:
+    'pedido_reprovado_em is not None'."""
+    rodada_id, part_id = _seed_pedido_pendente()
+    _vincula_chat_ids()
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/moderar-pedidos")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id, "acao": "reprovar"},
+                follow_redirects=False,
+            )
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id, "acao": "reprovar"},
+                follow_redirects=False,
+            )
+        assert mock_post.call_count == 1  # so 1 vez
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)
+
+
+def test_pedido_reverter_sem_aprovacao_nao_muda_nada(app, client_admin):
+    """Reverter sem aprovacao em vigor: retorna sem mutar. Guard nova:
+    'pedido_aprovado_em is None'."""
+    rodada_id, part_id = _seed_pedido_pendente()
+    enviada_em_antes = db.session.get(ParticipacaoRodada, part_id).pedido_enviado_em
+    os.environ["TELEGRAM_BOT_TOKEN"] = "x"
+    try:
+        with patch("app.services.notificacoes.requests.post") as mock_post:
+            mock_post.return_value.status_code = 200
+            mock_post.return_value.json.return_value = {"ok": True}
+            token = _get_csrf(client_admin, f"/admin/rodadas/{rodada_id}/moderar-pedidos")
+            client_admin.post(
+                f"/admin/rodadas/{rodada_id}/moderar-pedidos",
+                data={"csrf_token": token, "participacao_id": part_id, "acao": "reverter"},
+                follow_redirects=False,
+            )
+        assert mock_post.call_count == 0
+        # pedido_enviado_em nao mexido
+        part = db.session.get(ParticipacaoRodada, part_id)
+        assert part.pedido_aprovado_em is None
+        assert part.pedido_enviado_em == enviada_em_antes
+    finally:
+        os.environ.pop("TELEGRAM_BOT_TOKEN", None)

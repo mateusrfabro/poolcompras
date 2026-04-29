@@ -76,7 +76,7 @@ Use via `Task` tool com `subagent_type`.
 1. Tipo de mudanca? feature/fix/refactor/docs/test/chore
 2. Afeta modelo? Precisa migration Alembic
 3. Afeta rotas? Pensar IDOR + CSRF + decorators de papel
-4. Afeta template? Respeitar identidade visual (paleta laranja, cards claros)
+4. Afeta template? Respeitar identidade visual (paleta azul corporativa #1D3557, verde alimento #2A9D8F como acento, cards claros — rebrand abr/2026)
 5. Escrever/atualizar teste correspondente
 6. Rodar `pytest tests/ -q` — deve passar 100%
 7. Smoke HTTP com requests contra localhost:5050
@@ -87,7 +87,7 @@ Use via `Task` tool com `subagent_type`.
 - **NUNCA** import `from app.models import X` dentro de funcao — UnboundLocalError
 - **NUNCA** Float pra dinheiro — sempre `Numeric(12, 2)`
 - **NUNCA** commitar `.env` ou credenciais
-- **NUNCA** alterar identidade visual sem autorizacao (paleta laranja do PoolCompras)
+- **NUNCA** alterar identidade visual sem autorizacao (paleta azul corporativa do PoolCompras pos-rebrand B2B)
 - **NUNCA** usar `onclick=` inline (CSP bloqueia) — JS externo em `app/static/js/`
 - **NUNCA** deploy/push force sem autorizacao explicita
 
@@ -103,7 +103,7 @@ app/
   __init__.py      # create_app(), filtros Jinja, config por env
   models.py        # 12 modelos (1 arquivo ate crescer)
   routes/          # controllers por dominio
-    admin.py       # ~900 linhas (dividir em submodulos e divida tecnica)
+    admin/         # pacote (rodadas, moderacao, fornecedores, lanchonetes, produtos, analytics, ...)
     fornecedor.py  # cotacao + negociacao
     pedidos.py     # catalogo lanchonete + Salvar/Enviar
     historico.py   # Minhas rodadas + detalhe + analytics
@@ -117,16 +117,20 @@ app/
     dashboard_lanchonete.py
     csv_export.py
     storage.py
+    notificacoes.py     # Telegram bot + helpers em massa por transicao de status
+    pnl_fornecedor.py
+    rodada_corrente.py
   templates/       # Jinja2 por dominio
   static/
-    css/style.css  # Variaveis e classes reutilizaveis
+    css/style.css  # Variaveis (--space-*, --font-*, paleta) e classes
     js/            # Externos, CSP-safe
-migrations/versions/  # 8 migrations aplicadas
-tests/             # ~43 testes (auth/fluxo/security/moderacao/filters)
+migrations/versions/  # 18 migrations aplicadas
+tests/             # ~270 testes (auth/fluxo/security/moderacao/filters/notif)
+tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 ```
 
 ## Features-chave implementadas
-- Fluxo de moderacao de pedidos (admin aprova/devolve/reprova/reverte)
+- Fluxo de moderacao de pedidos (admin aprova/devolve/reprova/reverte) com guards de idempotencia
 - Cotacao em 2 etapas (preco de partida + preco final com volumes reais)
 - Aprovacao de cotacao final + chat de negociacao admin<->fornecedor (append-only)
 - Economia calculada automaticamente (por produto e total da rodada)
@@ -135,32 +139,36 @@ tests/             # ~43 testes (auth/fluxo/security/moderacao/filters)
 - Sub-nav padronizada nos 3 perfis
 - Countdown humanizado + urgencia visual (< 24h)
 - Mascara R$ em todos campos de preco
+- Meu P&L (fornecedor) + Meu CMV (lanchonete)
+- Notificacoes Telegram em todas transicoes-chave de rodada (catalogo enviado, aberta, em_negociacao, cotacao aprovada, cancelada) + moderacao individual
+- Rebrand corporativo B2B (azul + Inter/Montserrat + container 1200px + sistema 8px)
+- Suite de carga Locust (3 cenarios em tests/load/)
 
 ## Backlog aberto
 ### Tecnico
-- Dividir `admin.py` em submodulos (900+ linhas)
-- Flask-Caching nos KPIs (quando tiver producao)
-- Cobertura de testes para fluxo novo de aprovacao de cotacao
-- Mais testes de IDOR nos endpoints novos
+- Flask-Caching nos KPIs (Locust capturou /dashboard ~2s em dev — candidato real)
+- Argon2 pra hash de senha (pbkdf2 atual eh ~4s no login segundo Locust)
+- Auto-save no catalogo da lanchonete (rascunho com debounce)
+- Field-errors com `is-invalid` em todos forms
 
 ### Produto
-- Alertas WhatsApp via Z-API
-- "Meu P&L" pro fornecedor + "Meu CMV" pra lanchonete
 - Marketplace publico com rating
+- Vinculacao de Telegram chat_id mais facil (hoje precisa codigo manual via /start)
 
-### Deploy (Bloco D — aguardando VM do Ademar)
-- nginx + Let's Encrypt
-- Gunicorn multi-worker
-- Redis pra Flask-Limiter
-- Postgres em prod
-- GitHub Actions CI/CD
+### Deploy
+- Postgres em prod: ✅ Yggdrasil (Ademar)
+- Cloudflare Tunnel: ✅ (substituiu nginx + Let's Encrypt)
+- Gunicorn multi-worker: verificar config no docker-compose
+- Redis pra Flask-Limiter (hoje in-memory, warning ja conhecido)
+- GitHub Actions CI/CD (rodar pytest + lint em PR)
 
 ## Gotchas conhecidos
 1. **Import dentro de funcao** — UnboundLocalError. Sempre topo do arquivo.
 2. **Session resume mata Flask** — subir de novo manualmente.
 3. **Python 314 falta pacotes** — sempre usar 3.12.
 4. **SQLite batch mode exige FK name** — nao deixar `None` em migrations.
-5. **Admin.py grande** — cuidado ao editar, usar Grep antes de Edit.
+5. **SQLite vs Postgres em migrations**: usar `TRUE`/`FALSE` em UPDATE de coluna boolean; SQLite aceita `1`/`0` mas Postgres eh tipo-estrito (incidente real R5).
+6. **Notif Telegram eh best-effort**: helper retorna False se canal nao configurado e nao bloqueia o fluxo. Sempre commitar DB antes de chamar `notificar_*`.
 
 ## Decisoes arquiteturais importantes
 1. **Fluxo novo substituiu o antigo** (nao ha fallback). Rodadas antigas rodam com dados legados.
@@ -172,3 +180,5 @@ tests/             # ~43 testes (auth/fluxo/security/moderacao/filters)
 7. **Dados bancarios do fornecedor** sao exibidos pra lanchonete na hora de pagar.
 8. **Aprovacao de cotacao individual** — cada fornecedor aprovado ja libera aceite parcial pra lanchonete.
 9. **Notas de negociacao append-only** — nao eh chat, eh campo de texto + historico com timestamp+autor.
+10. **Notificacoes em transicoes de status sao em massa**: `notificar_fornecedores_nova_rodada` e similares iteram `Fornecedor.ativo=True` / `Lanchonete.ativa=True`. Sao sincronas hoje (best-effort). Em alta carga (50+ users), considerar fila/queue.
+11. **Guards de idempotencia em moderacao**: aprovar/devolver/reprovar/reverter (tanto pedido quanto cotacao) tem guard explicito que retorna sem mutar nem disparar notif quando ja esta no estado terminal — protege contra 2 cliques rapidos / 2 admins simultaneos.

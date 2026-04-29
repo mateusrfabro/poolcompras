@@ -108,6 +108,12 @@ def moderar_pedidos(rodada_id):
             notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi aprovado "
                               f"e entrou no pool.")
         elif acao == "devolver":
+            # Idempotencia: ja devolvida e lanchonete nao reenviou ainda — nao
+            # duplica notif/log. Se lanchonete reenviou (pedido_enviado_em
+            # != None), eh OK devolver de novo.
+            if part.pedido_devolvido_em is not None and part.pedido_enviado_em is None:
+                flash(f"Pedido de {nome_lanchonete} ja estava devolvido e aguardando reenvio.", "info")
+                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
             part.pedido_devolvido_em = datetime.now(timezone.utc)
             part.pedido_motivo_devolucao = motivo
             part.pedido_enviado_em = None
@@ -118,6 +124,10 @@ def moderar_pedidos(rodada_id):
             notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi devolvido "
                               f"pelo admin.{motivo_txt} Ajuste e reenvie.")
         elif acao == "reprovar":
+            # Reprovar eh estado terminal — 2 cliques nao devem duplicar log/notif.
+            if part.pedido_reprovado_em is not None:
+                flash(f"Pedido de {nome_lanchonete} ja estava reprovado.", "info")
+                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
             part.pedido_reprovado_em = datetime.now(timezone.utc)
             part.pedido_aprovado_em = None
             flash(f"Pedido de {nome_lanchonete} reprovado.", "warning")
@@ -125,6 +135,10 @@ def moderar_pedidos(rodada_id):
             notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi reprovado "
                               f"pelo admin. Contate-nos se precisar.")
         elif acao == "reverter":
+            # Sem aprovacao em vigor, nao ha o que reverter.
+            if part.pedido_aprovado_em is None:
+                flash(f"Pedido de {nome_lanchonete} nao esta aprovado — nada a reverter.", "info")
+                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
             part.pedido_aprovado_em = None
             part.pedido_aprovado_por_id = None
             flash(f"Aprovacao de {nome_lanchonete} revertida. Pedido voltou a aguardar moderacao.", "info")
@@ -214,6 +228,10 @@ def aprovar_cotacoes(rodada_id):
             notif_detalhes = (f"Sua cotação final na rodada '{rodada.nome}' foi "
                               f"aprovada pelo admin e está disponível pras lanchonetes.")
         elif acao == "devolver":
+            # Idempotencia: ja devolvida e fornecedor ainda nao reenviou.
+            if sub.devolvida_em is not None and sub.enviada_em is None:
+                flash(f"Cotacao de {nome_forn} ja estava devolvida e aguardando reenvio.", "info")
+                return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
             sub.devolvida_em = datetime.now(timezone.utc)
             sub.enviada_em = None
             sub.aprovada_em = None
@@ -222,6 +240,10 @@ def aprovar_cotacoes(rodada_id):
             notif_detalhes = (f"Sua cotação na rodada '{rodada.nome}' foi devolvida "
                               f"pelo admin. Ajuste os preços e reenvie.")
         elif acao == "reverter":
+            # Sem aprovacao em vigor, nada a reverter.
+            if sub.aprovada_em is None:
+                flash(f"Cotacao de {nome_forn} nao esta aprovada — nada a reverter.", "info")
+                return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
             sub.aprovada_em = None
             sub.aprovada_por_id = None
             flash(f"Aprovacao de {nome_forn} revertida.", "info")
