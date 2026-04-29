@@ -19,6 +19,11 @@ class Config:
     # Username do bot Telegram (usado pra montar deep link t.me/<username>?start=...)
     TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "poolcomprasbot")
 
+    # Flask-Caching: SimpleCache eh in-memory por processo. Suficiente pra
+    # single-worker (gunicorn -w 1) ou pra dev. Em multi-worker usar Redis.
+    CACHE_TYPE = "SimpleCache"
+    CACHE_DEFAULT_TIMEOUT = 30  # 30s — KPIs do dashboard admin
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -36,6 +41,9 @@ class TestingConfig(Config):
     SQLALCHEMY_DATABASE_URI = os.getenv("TEST_DATABASE_URL") or "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
     SECRET_KEY = "test-secret-never-use-in-prod"
+    # NullCache em testes: cada teste lê dado fresco do DB sem interferência
+    # de cache de teste anterior. Importantissimo pra evitar flakiness.
+    CACHE_TYPE = "NullCache"
 
 
 class ProductionConfig(Config):

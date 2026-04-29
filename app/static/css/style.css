@@ -204,16 +204,27 @@ h1, h2, h3, h4, h5, h6 {
 /* === Prova social (numeros reais do DB na home publica) ===
    Padrao Ademar/B2B: prova de confianca eh "nao opcional, padrao de mercado". */
 .prova-social {
-    display: grid;
-    /* auto-fit: layout se adapta a 1/2/3 cards sem desbalancear quando
-       algum numero for zero. min 220px evita esmagamento em mobile. */
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: var(--space-2);
     margin-top: var(--space-7);  /* 80px entre secoes */
     padding: var(--space-5) var(--space-3);
     background: var(--bg-light, #F8F9FA);
     border-radius: var(--radius);
     text-align: center;
+}
+.prova-social-titulo {
+    color: var(--secondary);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.prova-social-grid {
+    display: grid;
+    /* auto-fit: layout se adapta a 1/2/3 cards sem desbalancear quando
+       algum numero for zero. min 220px evita esmagamento em mobile. */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-2);
 }
 .prova-social-card {
     display: flex;

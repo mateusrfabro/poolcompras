@@ -8,6 +8,10 @@ from app.models import (
 )
 from app.services.dashboard_lanchonete import dashboard_data
 from app.services.rodada_corrente import rodada_corrente_aberta
+from app.services.kpis_admin import (
+    total_lanchonetes_ativas, total_produtos_ativos,
+    pedidos_da_rodada, qtd_lanchonetes_da_rodada,
+)
 
 main_bp = Blueprint("main", __name__)
 
@@ -53,25 +57,16 @@ def dashboard():
 
     # Admin
     if current_user.is_admin:
-        total_lanchonetes = db.session.scalar(
-            select(func.count(Lanchonete.id)).where(Lanchonete.ativa.is_(True))
-        )
-        total_produtos = db.session.scalar(
-            select(func.count(Produto.id)).where(Produto.ativo.is_(True))
-        )
+        # KPIs cacheados (TTL 30s) — antes 4 queries síncronas a cada hit.
+        total_lanchonetes = total_lanchonetes_ativas()
+        total_produtos = total_produtos_ativos()
         rodada_aberta = rodada_corrente_aberta()
 
         pedidos_rodada = 0
         qtd_lanchonetes_rodada = 0
         if rodada_aberta:
-            pedidos_rodada = db.session.scalar(
-                select(func.count(ItemPedido.id))
-                .where(ItemPedido.rodada_id == rodada_aberta.id)
-            )
-            qtd_lanchonetes_rodada = db.session.scalar(
-                select(func.count(func.distinct(ItemPedido.lanchonete_id)))
-                .where(ItemPedido.rodada_id == rodada_aberta.id)
-            )
+            pedidos_rodada = pedidos_da_rodada(rodada_aberta.id)
+            qtd_lanchonetes_rodada = qtd_lanchonetes_da_rodada(rodada_aberta.id)
 
         return render_template(
             "dashboard_admin.html",

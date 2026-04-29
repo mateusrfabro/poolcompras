@@ -36,24 +36,27 @@
    inicial). Se TODOS forem zero, secao inteira fica oculta. #}
 {% if prova_social and (prova_social.lanchonetes or prova_social.fornecedores or prova_social.rodadas) %}
 <section class="prova-social">
-    {% if prova_social.lanchonetes %}
-    <div class="prova-social-card">
-        <span class="prova-social-num">{{ prova_social.lanchonetes }}</span>
-        <span class="prova-social-label">Lanchonetes ativas</span>
+    <h2 class="prova-social-titulo">Hamburguerias de Londrina já compram juntas no PoolCompras</h2>
+    <div class="prova-social-grid">
+        {% if prova_social.lanchonetes %}
+        <div class="prova-social-card">
+            <span class="prova-social-num">{{ prova_social.lanchonetes }}</span>
+            <span class="prova-social-label">Lanchonetes ativas</span>
+        </div>
+        {% endif %}
+        {% if prova_social.fornecedores %}
+        <div class="prova-social-card">
+            <span class="prova-social-num">{{ prova_social.fornecedores }}</span>
+            <span class="prova-social-label">Fornecedores ativos</span>
+        </div>
+        {% endif %}
+        {% if prova_social.rodadas %}
+        <div class="prova-social-card">
+            <span class="prova-social-num">{{ prova_social.rodadas }}</span>
+            <span class="prova-social-label">Rodadas finalizadas</span>
+        </div>
+        {% endif %}
     </div>
-    {% endif %}
-    {% if prova_social.fornecedores %}
-    <div class="prova-social-card">
-        <span class="prova-social-num">{{ prova_social.fornecedores }}</span>
-        <span class="prova-social-label">Fornecedores ativos</span>
-    </div>
-    {% endif %}
-    {% if prova_social.rodadas %}
-    <div class="prova-social-card">
-        <span class="prova-social-num">{{ prova_social.rodadas }}</span>
-        <span class="prova-social-label">Rodadas finalizadas</span>
-    </div>
-    {% endif %}
 </section>
 {% endif %}
 

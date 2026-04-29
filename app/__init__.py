@@ -6,6 +6,7 @@ from flask_migrate import Migrate
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
+from flask_caching import Cache
 from config import config
 
 db = SQLAlchemy()
@@ -21,6 +22,10 @@ migrate = Migrate()
 # Rate-limiter: chave = IP do cliente; backend padrao em memoria (suficiente para
 # single-process; para multiplos workers usar Redis no futuro).
 limiter = Limiter(key_func=get_remote_address, default_limits=["200 per hour"])
+# Cache de KPIs do dashboard admin (TTL 30s). SimpleCache em dev/single-worker;
+# NullCache em testing pra cada teste pegar dado fresco; Redis em prod multi-worker
+# (config futura).
+cache = Cache()
 
 
 def create_app(config_name="default"):
@@ -41,6 +46,7 @@ def create_app(config_name="default"):
     from app import models  # noqa: F401
     migrate.init_app(app, db, render_as_batch=True)  # batch=True para SQLite ALTER COLUMN
     limiter.init_app(app)
+    cache.init_app(app)
 
     # Headers de seguranca (Talisman).
     # CSP permissivo para inline styles (templates atuais tem style=""). Tighten no futuro.
