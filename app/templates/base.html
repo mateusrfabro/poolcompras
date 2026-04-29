@@ -89,7 +89,35 @@
     </main>
 
     <footer class="footer">
-        <p>PoolCompras &mdash; Central de Compras Cooperativa | Londrina-PR</p>
+        {% if not current_user.is_authenticated %}
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h4>PoolCompras</h4>
+                <ul>
+                    <li><a href="{{ url_for('main.index') }}">Início</a></li>
+                    <li><a href="{{ url_for('marketplace.listar') }}">Fornecedores</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Para você</h4>
+                <ul>
+                    <li><a href="{{ url_for('auth.registro') }}">Sou lanchonete</a></li>
+                    <li><a href="{{ url_for('auth.registro_fornecedor') }}">Sou fornecedor</a></li>
+                    <li><a href="{{ url_for('auth.login') }}">Entrar</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Contato</h4>
+                <ul>
+                    <li>Londrina, PR</li>
+                    <li>contato@poolcompras.com</li>
+                </ul>
+            </div>
+        </div>
+        {% endif %}
+        <div class="footer-bottom">
+            <p>&copy; 2026 PoolCompras &mdash; Central de Compras Cooperativa | Londrina-PR</p>
+        </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/confirm-submit.js') }}"></script>

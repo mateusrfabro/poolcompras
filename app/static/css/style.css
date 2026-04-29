@@ -203,6 +203,99 @@ h1, h2, h3, h4, h5, h6 {
 
 /* === Prova social (numeros reais do DB na home publica) ===
    Padrao Ademar/B2B: prova de confianca eh "nao opcional, padrao de mercado". */
+/* === Titulo padrao de secao da home (Diferenciais, Processo) === */
+.secao-titulo {
+    color: var(--secondary);
+    font-size: 1.6rem;
+    text-align: center;
+    margin-bottom: var(--space-4);
+    font-family: var(--font-heading);
+}
+
+/* === Diferenciais (4 cards com border-left verde) === */
+.diferenciais {
+    margin-top: var(--space-7);
+}
+.diferenciais-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-3);
+}
+.diferencial-card {
+    background: var(--white);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--accent);
+}
+.diferencial-card h3 {
+    color: var(--primary);
+    font-size: 1.05rem;
+    margin: var(--space-1) 0 var(--space-1);
+    font-family: var(--font-heading);
+}
+.diferencial-card p {
+    color: var(--gray-700);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+.diferencial-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--white);
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+/* === Processo horizontal (4 etapas numeradas) === */
+.processo-rodada {
+    margin-top: var(--space-7);
+}
+.processo-etapas {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-3);
+}
+.processo-etapa {
+    background: var(--white);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-200);
+}
+.processo-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--white);
+    font-family: var(--font-heading);
+    font-size: 1.2rem;
+    font-weight: 700;
+    margin-bottom: var(--space-2);
+}
+.processo-etapa h3 {
+    color: var(--secondary);
+    font-size: 1rem;
+    margin-bottom: var(--space-1);
+    font-family: var(--font-heading);
+}
+.processo-etapa p {
+    color: var(--gray-700);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
 .prova-social {
     margin-top: var(--space-7);  /* 80px entre secoes */
     padding: var(--space-5) var(--space-3);
@@ -738,11 +831,48 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Footer */
 .footer {
+    border-top: 1px solid var(--gray-200);
+    background: var(--bg);
+    padding: var(--space-5) 0 var(--space-3);
+    color: var(--gray-700);
+    font-size: 0.85rem;
+}
+.footer-grid {
+    max-width: 1200px;
+    margin: 0 auto var(--space-3);
+    padding: 0 var(--space-3);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: var(--space-3);
+}
+.footer-col h4 {
+    color: var(--secondary);
+    font-size: 0.95rem;
+    margin-bottom: var(--space-2);
+    font-family: var(--font-heading);
+}
+.footer-col ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.footer-col li {
+    margin-bottom: 0.4rem;
+}
+.footer-col a {
+    color: var(--gray-700);
+    text-decoration: none;
+    transition: color 0.15s;
+}
+.footer-col a:hover {
+    color: var(--primary);
+}
+.footer-bottom {
     text-align: center;
-    padding: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+    padding-top: var(--space-2);
     color: var(--gray-500);
     font-size: 0.8rem;
-    border-top: 1px solid var(--gray-200);
 }
 
 /* === Sub-nav (tabs dentro do painel) === */
