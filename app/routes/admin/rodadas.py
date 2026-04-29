@@ -13,6 +13,12 @@ from app.models import (
     ItemPedido, ParticipacaoRodada, EventoRodada,
 )
 from app.services.csv_export import csv_response
+from app.services.notificacoes import (
+    notificar_fornecedores_nova_rodada,
+    notificar_lanchonetes_rodada_aberta,
+    notificar_fornecedores_cotacao_final,
+    notificar_cancelamento,
+)
 from . import admin_bp, admin_required
 
 logger = logging.getLogger(__name__)
@@ -75,6 +81,7 @@ def rodada_catalogo(rodada_id):
             rodada.status = Rodada.STATUS_AGUARDANDO_COTACAO
             flash(f"Catálogo enviado aos fornecedores! {len(ids_selecionados)} produtos.", "success")
             db.session.commit()
+            notificar_fornecedores_nova_rodada(rodada)
             return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
         else:
             db.session.commit()
@@ -131,6 +138,7 @@ def rodada_encerrar_coleta(rodada_id):
         descricao="Admin encerrou a coleta de pedidos e iniciou a negociação",
     ))
     db.session.commit()
+    notificar_fornecedores_cotacao_final(rodada)
     flash("Coleta encerrada! A rodada está agora em negociação.", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
@@ -193,6 +201,7 @@ def rodada_cancelar(rodada_id):
         descricao="Rodada cancelada pelo admin",
     ))
     db.session.commit()
+    notificar_cancelamento(rodada)
     logger.warning("ADMIN_RODADA_CANCELADA admin=%s rodada=%s nome=%s",
                    current_user.id, rodada_id, rodada.nome)
     flash(f"Rodada '{rodada.nome}' cancelada.", "success")
@@ -218,6 +227,7 @@ def rodada_liberar(rodada_id):
 
     rodada.status = Rodada.STATUS_ABERTA
     db.session.commit()
+    notificar_lanchonetes_rodada_aberta(rodada)
     logger.info("ADMIN_RODADA_LIBERADA admin=%s rodada=%s",
                 current_user.id, rodada_id)
     flash("Rodada liberada para as lanchonetes!", "success")

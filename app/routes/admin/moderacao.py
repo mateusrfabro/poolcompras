@@ -10,7 +10,9 @@ from app.models import (
     Produto, Rodada, RodadaProduto, Cotacao,
     ItemPedido, ParticipacaoRodada, SubmissaoCotacao, NotaNegociacao,
 )
-from app.services.notificacoes import notificar_evento
+from app.services.notificacoes import (
+    notificar_evento, notificar_lanchonetes_cotacao_aprovada,
+)
 from . import admin_bp, admin_required
 
 logger = logging.getLogger(__name__)
@@ -232,6 +234,11 @@ def aprovar_cotacoes(rodada_id):
 
         if notif_titulo and sub.fornecedor and sub.fornecedor.responsavel:
             notificar_evento(sub.fornecedor.responsavel, notif_titulo, notif_detalhes)
+        # Aprovacao tambem deve avisar lanchonetes que tem proposta nova
+        # disponivel pra aceitar (notif separada — ja que a notif de
+        # "Cotacao aprovada" eh do ponto de vista do fornecedor).
+        if acao == "aprovar" and sub.fornecedor:
+            notificar_lanchonetes_cotacao_aprovada(rodada, sub.fornecedor)
         return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
 
     submissoes = (

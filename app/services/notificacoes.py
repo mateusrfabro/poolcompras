@@ -137,3 +137,139 @@ def _escape(txt: str) -> str:
     if not txt:
         return ""
     return str(txt).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+# =============================================================================
+# Notificacoes em massa por transicao de status de rodada.
+#
+# Convencao: cada helper retorna a quantidade de mensagens disparadas. Imports
+# de Models ficam locais pra evitar import circular (notificacoes <-> models).
+# =============================================================================
+
+def notificar_fornecedores_nova_rodada(rodada) -> int:
+    """Avisa fornecedores ATIVOS que tem rodada nova esperando preco de partida.
+
+    Disparado quando admin envia o catalogo (status -> aguardando_cotacao).
+    """
+    from app.models import Fornecedor
+    titulo = "Nova rodada para cotar"
+    detalhes = (
+        f"O catálogo da rodada '{rodada.nome}' foi liberado. "
+        f"Acesse o painel pra enviar seu preço de partida."
+    )
+    enviadas = 0
+    for f in Fornecedor.query.filter_by(ativo=True).all():
+        if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
+            enviadas += 1
+    logger.info("NOTIF_RODADA_NOVA rodada=%s enviadas=%s", rodada.id, enviadas)
+    return enviadas
+
+
+def notificar_lanchonetes_rodada_aberta(rodada) -> int:
+    """Avisa lanchonetes ATIVAS que a rodada ta aberta pra fazer pedidos.
+
+    Disparado quando admin libera (status -> aberta).
+    """
+    from app.models import Lanchonete
+    titulo = "Rodada aberta"
+    detalhes = (
+        f"A rodada '{rodada.nome}' está aberta para pedidos. "
+        f"Monte seu pedido antes do fechamento."
+    )
+    enviadas = 0
+    for l in Lanchonete.query.filter_by(ativa=True).all():
+        if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
+            enviadas += 1
+    logger.info("NOTIF_RODADA_ABERTA rodada=%s enviadas=%s", rodada.id, enviadas)
+    return enviadas
+
+
+def notificar_fornecedores_cotacao_final(rodada) -> int:
+    """Avisa fornecedores que ja cotaram preco de partida que e hora do preco
+    final (com volumes reais).
+
+    Disparado quando admin encerra coleta (status -> em_negociacao).
+    """
+    from app import db
+    from app.models import RodadaProduto, Fornecedor
+    forn_ids = {
+        fid for (fid,) in db.session.query(RodadaProduto.adicionado_por_fornecedor_id)
+            .filter(RodadaProduto.rodada_id == rodada.id)
+            .filter(RodadaProduto.adicionado_por_fornecedor_id.isnot(None))
+            .filter(RodadaProduto.preco_partida.isnot(None))
+            .distinct().all()
+    }
+    if not forn_ids:
+        return 0
+    titulo = "Cotação final disponível"
+    detalhes = (
+        f"A coleta de pedidos da rodada '{rodada.nome}' foi encerrada. "
+        f"Acesse o painel pra enviar seu preço final com os volumes reais."
+    )
+    enviadas = 0
+    for f in Fornecedor.query.filter(Fornecedor.id.in_(forn_ids)).all():
+        if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
+            enviadas += 1
+    logger.info("NOTIF_COTACAO_FINAL rodada=%s enviadas=%s", rodada.id, enviadas)
+    return enviadas
+
+
+def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
+    """Avisa lanchonetes que pediram nessa rodada que tem proposta nova
+    aprovada do fornecedor X — podem aceitar ou recusar no painel.
+
+    Disparado quando admin aprova uma SubmissaoCotacao (em moderacao.py).
+    """
+    from app import db
+    from app.models import ItemPedido, Lanchonete
+    lanch_ids = {
+        lid for (lid,) in db.session.query(ItemPedido.lanchonete_id)
+            .filter(ItemPedido.rodada_id == rodada.id)
+            .distinct().all()
+    }
+    if not lanch_ids:
+        return 0
+    titulo = "Proposta de fornecedor disponível"
+    detalhes = (
+        f"O fornecedor {fornecedor.razao_social} teve cotação aprovada na "
+        f"rodada '{rodada.nome}'. Acesse o painel pra aceitar ou recusar a proposta."
+    )
+    enviadas = 0
+    for l in Lanchonete.query.filter(Lanchonete.id.in_(lanch_ids)).all():
+        if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
+            enviadas += 1
+    logger.info("NOTIF_PROPOSTA_DISPONIVEL rodada=%s fornecedor=%s enviadas=%s",
+                rodada.id, fornecedor.id, enviadas)
+    return enviadas
+
+
+def notificar_cancelamento(rodada) -> int:
+    """Avisa lanchonetes que pediram + fornecedores que cotaram que a rodada
+    foi cancelada.
+
+    Disparado quando admin cancela (status -> cancelada).
+    """
+    from app import db
+    from app.models import ItemPedido, Cotacao, Lanchonete, Fornecedor
+    lanch_ids = {
+        lid for (lid,) in db.session.query(ItemPedido.lanchonete_id)
+            .filter(ItemPedido.rodada_id == rodada.id).distinct().all()
+    }
+    forn_ids = {
+        fid for (fid,) in db.session.query(Cotacao.fornecedor_id)
+            .filter(Cotacao.rodada_id == rodada.id).distinct().all()
+    }
+    titulo = "Rodada cancelada"
+    detalhes = f"A rodada '{rodada.nome}' foi cancelada pelo administrador."
+    enviadas = 0
+    if lanch_ids:
+        for l in Lanchonete.query.filter(Lanchonete.id.in_(lanch_ids)).all():
+            if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
+                enviadas += 1
+    if forn_ids:
+        for f in Fornecedor.query.filter(Fornecedor.id.in_(forn_ids)).all():
+            if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
+                enviadas += 1
+    logger.info("NOTIF_RODADA_CANCELADA rodada=%s enviadas=%s",
+                rodada.id, enviadas)
+    return enviadas
