@@ -4,7 +4,7 @@ from sqlalchemy import func, select, text
 from app import db
 from app.models import (
     Lanchonete, Rodada, ItemPedido, Produto,
-    ParticipacaoRodada,
+    ParticipacaoRodada, Fornecedor,
 )
 from app.services.dashboard_lanchonete import dashboard_data
 from app.services.rodada_corrente import rodada_corrente_aberta
@@ -26,7 +26,22 @@ def health():
 def index():
     if current_user.is_authenticated:
         return redirect(url_for("main.dashboard"))
-    return render_template("index.html")
+
+    # Prova social: numeros reais do DB pra criar credibilidade no visitante
+    # anonimo. 3 queries simples sem join — leves o suficiente pra rodar a
+    # cada hit na home publica.
+    prova_social = {
+        "lanchonetes": db.session.scalar(
+            select(func.count(Lanchonete.id)).where(Lanchonete.ativa.is_(True))
+        ) or 0,
+        "fornecedores": db.session.scalar(
+            select(func.count(Fornecedor.id)).where(Fornecedor.ativo.is_(True))
+        ) or 0,
+        "rodadas": db.session.scalar(
+            select(func.count(Rodada.id)).where(Rodada.status == "finalizada")
+        ) or 0,
+    }
+    return render_template("index.html", prova_social=prova_social)
 
 
 @main_bp.route("/dashboard")

@@ -186,19 +186,110 @@ h1, h2, h3, h4, h5, h6 {
 .features {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 1.5rem;
-    margin-top: 3rem;
+    gap: var(--space-2);  /* 16px — guia B2B */
+    margin-top: var(--space-7);  /* 80px — secao */
 }
 .feature-card {
     background: var(--white);
-    padding: 2rem;
+    padding: var(--space-3);  /* 24px — guia B2B */
     border-radius: var(--radius);
     border: 1px solid var(--gray-200);
     text-align: center;
 }
 .feature-card h3 {
     color: var(--primary);
-    margin-bottom: 0.5rem;
+    margin-bottom: var(--space-1);
+}
+
+/* === Prova social (numeros reais do DB na home publica) ===
+   Padrao Ademar/B2B: prova de confianca eh "nao opcional, padrao de mercado". */
+.prova-social {
+    display: grid;
+    /* auto-fit: layout se adapta a 1/2/3 cards sem desbalancear quando
+       algum numero for zero. min 220px evita esmagamento em mobile. */
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--space-2);
+    margin-top: var(--space-7);  /* 80px entre secoes */
+    padding: var(--space-5) var(--space-3);
+    background: var(--bg-light, #F8F9FA);
+    border-radius: var(--radius);
+    text-align: center;
+}
+.prova-social-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+.prova-social-num {
+    font-family: var(--font-heading);
+    font-size: 2.8rem;
+    font-weight: 700;
+    color: var(--accent);  /* verde alimento — destaque sem competir com botoes */
+    line-height: 1;
+}
+.prova-social-label {
+    font-size: 0.95rem;
+    color: var(--gray-700);
+    font-weight: 500;
+}
+@media (max-width: 700px) {
+    .prova-social { grid-template-columns: 1fr; }
+}
+
+/* === CTA final em fundo azul (padrao B2B pos-conteudo) === */
+.cta-final {
+    margin-top: var(--space-7);
+    margin-bottom: var(--space-5);
+    padding: var(--space-6) var(--space-4);
+    background: var(--primary);
+    color: var(--white);
+    border-radius: var(--radius);
+    text-align: center;
+}
+.cta-final h2 {
+    color: var(--white);
+    font-size: 1.8rem;
+    margin-bottom: var(--space-2);
+}
+.cta-final p {
+    max-width: 600px;
+    margin: 0 auto var(--space-3);
+    color: rgba(255, 255, 255, 0.9);
+}
+.cta-final-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+/* Botoes especificos pra fundo escuro — outline branco e solido invertido.
+   !important pra vencer o `.btn { border: 2px solid transparent }` global. */
+.btn.btn-cta-on-dark {
+    background: var(--white);
+    color: var(--primary);
+    border: 2px solid var(--white);
+    padding: 12px 20px;  /* exato do guia: padding 12px 20px */
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.btn.btn-cta-on-dark:hover {
+    background: var(--gray-200);
+    color: var(--primary);
+}
+.btn.btn-cta-outline-on-dark {
+    background: transparent;
+    color: var(--white);
+    border: 2px solid var(--white);
+    padding: 12px 20px;
+    border-radius: var(--radius);
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+.btn.btn-cta-outline-on-dark:hover {
+    background: rgba(255, 255, 255, 0.1);
 }
 
 /* Buttons */

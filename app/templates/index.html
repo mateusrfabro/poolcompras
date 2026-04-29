@@ -30,4 +30,40 @@
         <p>Nós juntamos todos os pedidos e cotamos com fornecedores. Você paga preço de volume.</p>
     </div>
 </section>
+
+{# Prova social — numeros reais que o visitante vê antes de decidir cadastrar.
+   Cada card so aparece se o numero for > 0 (evita "0 rodadas" feio na fase
+   inicial). Se TODOS forem zero, secao inteira fica oculta. #}
+{% if prova_social and (prova_social.lanchonetes or prova_social.fornecedores or prova_social.rodadas) %}
+<section class="prova-social">
+    {% if prova_social.lanchonetes %}
+    <div class="prova-social-card">
+        <span class="prova-social-num">{{ prova_social.lanchonetes }}</span>
+        <span class="prova-social-label">Lanchonetes ativas</span>
+    </div>
+    {% endif %}
+    {% if prova_social.fornecedores %}
+    <div class="prova-social-card">
+        <span class="prova-social-num">{{ prova_social.fornecedores }}</span>
+        <span class="prova-social-label">Fornecedores ativos</span>
+    </div>
+    {% endif %}
+    {% if prova_social.rodadas %}
+    <div class="prova-social-card">
+        <span class="prova-social-num">{{ prova_social.rodadas }}</span>
+        <span class="prova-social-label">Rodadas finalizadas</span>
+    </div>
+    {% endif %}
+</section>
+{% endif %}
+
+{# CTA final — fundo azul, conforme padrao B2B do guia (CTA forte pre-footer). #}
+<section class="cta-final">
+    <h2>Pronto pra economizar nas compras?</h2>
+    <p>Cadastre sua lanchonete e entre na próxima rodada de compras coletivas.</p>
+    <div class="cta-final-actions">
+        <a href="{{ url_for('auth.registro') }}" class="btn btn-cta-on-dark">Cadastrar lanchonete</a>
+        <a href="{{ url_for('auth.registro_fornecedor') }}" class="btn btn-cta-outline-on-dark">Sou fornecedor</a>
+    </div>
+</section>
 {% endblock %}
