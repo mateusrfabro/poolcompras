@@ -212,7 +212,25 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
 }
 
-/* === Diferenciais (4 cards com border-left verde) === */
+/* === BG alternado: secao com fundo cinza claro pra criar ritmo visual ===
+   FULL-BLEED: estoura o container 1200 e vai de borda a borda da viewport.
+   Trick classico: margin negativo de (50% - 50vw) compensa qualquer container
+   pai centralizado. Padding lateral mantem conteudo dentro do limite 1200. */
+.bg-alt {
+    background: #F1F4F7;
+    margin-left: calc(50% - 50vw);
+    margin-right: calc(50% - 50vw);
+    padding-left: max(var(--space-3), calc(50vw - 600px));
+    padding-right: max(var(--space-3), calc(50vw - 600px));
+    padding-top: var(--space-6);
+    padding-bottom: var(--space-6);
+}
+.container-secao {
+    max-width: 1152px;  /* 1200 - 2*24px de padding lateral */
+    margin: 0 auto;
+}
+
+/* === Diferenciais (4 cards com icone SVG redondo verde) === */
 .diferenciais {
     margin-top: var(--space-7);
 }
@@ -226,12 +244,16 @@ h1, h2, h3, h4, h5, h6 {
     padding: var(--space-3);
     border-radius: var(--radius);
     border: 1px solid var(--gray-200);
-    border-left: 4px solid var(--accent);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+.diferencial-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 .diferencial-card h3 {
     color: var(--primary);
     font-size: 1.05rem;
-    margin: var(--space-1) 0 var(--space-1);
+    margin: var(--space-2) 0 var(--space-1);
     font-family: var(--font-heading);
 }
 .diferencial-card p {
@@ -239,20 +261,23 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.9rem;
     line-height: 1.5;
 }
+/* Wrap arredondado verde, SVG branco dentro. */
 .diferencial-icon {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
     background: var(--accent);
     color: var(--white);
-    font-weight: 700;
-    font-size: 1rem;
+}
+.diferencial-icon svg {
+    width: 26px;
+    height: 26px;
 }
 
-/* === Processo horizontal (4 etapas numeradas) === */
+/* === Processo horizontal (4 etapas numeradas conectadas por seta) === */
 .processo-rodada {
     margin-top: var(--space-7);
 }
@@ -269,6 +294,28 @@ h1, h2, h3, h4, h5, h6 {
     padding: var(--space-3);
     border-radius: var(--radius);
     border: 1px solid var(--gray-200);
+    position: relative;
+}
+/* Seta entre etapas (escondida no ultimo + em mobile com 1 col). */
+@media (min-width: 900px) {
+    .processo-etapa:not(:last-child)::after {
+        content: "→";
+        position: absolute;
+        right: calc(-1 * var(--space-3) / 2 - 8px);
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1.4rem;
+        color: var(--gray-500);
+        font-weight: 700;
+        background: var(--bg);
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        z-index: 1;
+    }
 }
 .processo-num {
     display: inline-flex;
