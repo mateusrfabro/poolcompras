@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 
 from flask import render_template, redirect, url_for, flash, request, current_app
 from flask_login import login_required, current_user
-from werkzeug.security import check_password_hash, generate_password_hash
+from app.services.passwords import check_senha, hash_senha
 
 from app import db, limiter
 from . import perfil_bp
@@ -62,8 +62,14 @@ def editar():
                     mudou_sensivel = True
                     break
 
+        # Rehash legacy → Argon2 SO acontece se passar todas validacoes
+        # (evita rehash + rollback em fluxos de erro como senha_nova curta).
+        rehash_pendente = None
         if vai_trocar_senha or mudou_sensivel:
-            if not check_password_hash(usuario.senha_hash, senha_atual):
+            ok, novo_hash = check_senha(senha_atual, usuario.senha_hash)
+            if ok:
+                rehash_pendente = novo_hash  # None se ja era Argon2
+            if not ok:
                 if mudou_sensivel and not vai_trocar_senha:
                     flash("Informe sua senha atual para alterar dados bancários/CNPJ.", "error")
                 else:
@@ -106,10 +112,13 @@ def editar():
                 flash("As senhas não conferem.", "error")
                 db.session.rollback()
                 return redirect(url_for("perfil.editar"))
-            usuario.senha_hash = generate_password_hash(senha_nova)
+            usuario.senha_hash = hash_senha(senha_nova)
             usuario.senha_atualizada_em = datetime.now(timezone.utc)
             flash("Perfil atualizado e senha trocada com sucesso.", "success")
         else:
+            # Sem troca de senha: aplica rehash pendente (se hash original era legacy).
+            if rehash_pendente:
+                usuario.senha_hash = rehash_pendente
             flash("Perfil atualizado com sucesso.", "success")
 
         db.session.commit()

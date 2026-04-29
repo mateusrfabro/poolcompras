@@ -6,15 +6,19 @@
     <h2>Entrar</h2>
     <form method="POST" class="form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="form-group">
+        <div class="form-group {% if erro_login %}is-invalid{% endif %}">
             <label for="email">E-mail</label>
             <input type="email" id="email" name="email" required
+                   value="{{ email_anterior or '' }}"
                    autocomplete="email" placeholder="seu@email.com">
         </div>
-        <div class="form-group">
+        <div class="form-group {% if erro_login %}is-invalid{% endif %}">
             <label for="senha">Senha</label>
             <input type="password" id="senha" name="senha" required
                    autocomplete="current-password">
+            {% if erro_login %}
+            <small class="field-error">Verifique seu e-mail e senha.</small>
+            {% endif %}
         </div>
         <button type="submit" class="btn btn-primary btn-block">Entrar</button>
     </form>

@@ -1613,6 +1613,54 @@ h1, h2, h3, h4, h5, h6 {
 
 .muted { color: var(--gray-500); }
 
+/* === Status do auto-save de catalogo (lanchonete) === */
+.auto-save-status {
+    margin-left: var(--space-2);
+    font-size: 0.85rem;
+    transition: color 0.15s;
+}
+.auto-save-status.auto-save-ok { color: var(--success); }
+.auto-save-status.auto-save-erro { color: var(--danger); }
+
+/* === Field-errors visuais (forms) ===
+   Padrao pra qualquer form: <div class="form-group is-invalid"> destaca o
+   container, e <small class="field-error"> mostra mensagem especifica. */
+.form-group.is-invalid label {
+    color: var(--danger);
+}
+.form-group.is-invalid input,
+.form-group.is-invalid select,
+.form-group.is-invalid textarea {
+    border-color: var(--danger);
+    background: #fff5f5;
+}
+.form-group.is-invalid input:focus,
+.form-group.is-invalid select:focus,
+.form-group.is-invalid textarea:focus {
+    border-color: var(--danger);
+    outline: 2px solid rgba(214, 40, 40, 0.15);
+    outline-offset: 0;
+}
+.field-error {
+    display: block;
+    color: var(--danger);
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    font-weight: 500;
+}
+
+/* === OTP de Telegram (form de codigo) === */
+.form-otp { max-width: 360px; }
+.otp-input {
+    font-size: 1.5rem;
+    letter-spacing: 0.3rem;
+    text-align: center;
+}
+.otp-help {
+    margin-top: 1rem;
+    text-align: center;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .features { grid-template-columns: 1fr; }

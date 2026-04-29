@@ -116,6 +116,20 @@ def telegram_iniciar():
     return redirect(deep_link)
 
 
+@perfil_bp.route("/telegram/status")
+@login_required
+def telegram_status():
+    """Endpoint de polling pra detectar quando webhook salvou chat_id.
+
+    Front-end chama a cada 3s apos clicar 'Conectar Telegram'. Quando o user
+    der /start no bot, o webhook salva chat_id no DB e este endpoint passa
+    a retornar {conectado: true} — o JS redireciona automaticamente.
+    """
+    from flask import jsonify
+    db.session.refresh(current_user)
+    return jsonify({"conectado": bool(current_user.telegram_chat_id)})
+
+
 @perfil_bp.route("/telegram/confirmar", methods=["POST"])
 @login_required
 @limiter.limit("20 per hour", error_message="Muitas tentativas. Aguarde.")

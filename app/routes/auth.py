@@ -5,7 +5,9 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_user, logout_user, login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from sqlalchemy import select
-from werkzeug.security import generate_password_hash, check_password_hash
+from app.services.passwords import (
+    hash_senha, check_senha, check_dummy,
+)
 from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
 from app.services.notificacoes import enviar_link_recuperacao
@@ -65,7 +67,7 @@ _RECUPERACAO_TTL_SEG = 3600  # 1 hora
 # Hash bcrypt dummy usado pra equalizar tempo de resposta em login com
 # email inexistente (timing attack). Gerado com generate_password_hash
 # — qualquer hash bcrypt serve; conteudo nao eh usado.
-_DUMMY_HASH = generate_password_hash("dummy-password-never-matches")
+_DUMMY_HASH = None  # placeholder retrocompat — Argon2 dummy mora em passwords.check_dummy
 
 
 def _token_serializer():
@@ -88,21 +90,27 @@ def login():
         senha = request.form.get("senha", "")
 
         usuario = _usuario_por_email(email)
-        # Equalizar tempo de resposta: mesmo quando o email nao existe,
-        # faz check_password_hash contra hash dummy pra nao vazar existencia
-        # via timing (bcrypt eh o grosso do custo).
+        # Equalizar timing: gasta o mesmo custo argon2 mesmo se email nao existe.
+        # check_senha tambem retorna novo_hash quando o user tem hash legacy
+        # (pbkdf2/scrypt) — fazemos rehash pra Argon2 no proximo login.
+        novo_hash = None
         if usuario:
-            senha_ok = check_password_hash(usuario.senha_hash, senha)
+            senha_ok, novo_hash = check_senha(senha, usuario.senha_hash)
         else:
-            check_password_hash(_DUMMY_HASH, senha)
+            check_dummy(senha)
             senha_ok = False
 
         if usuario and senha_ok:
+            # Rehash legacy -> Argon2 (transparente pro user).
+            if novo_hash:
+                usuario.senha_hash = novo_hash
+                db.session.commit()
+                logger.info("PWD_REHASH_ARGON2 usuario=%s", usuario.id)
             if not getattr(usuario, "ativo", True):
                 logger.warning("LOGIN_BLOQUEADO email=%s ip=%s motivo=inativo",
                                _mask_email(email), _client_ip())
                 flash("Conta desativada. Contate o administrador.", "error")
-                return render_template("auth/login.html")
+                return render_template("auth/login.html", email_anterior=email)
             # Defesa contra session fixation: zera o cookie de sessao antes de
             # autenticar. Cookie que o atacante possa ter plantado eh descartado.
             session.clear()
@@ -117,6 +125,10 @@ def login():
         logger.warning("LOGIN_FAIL email=%s ip=%s usuario_existe=%s",
                        _mask_email(email), _client_ip(), bool(usuario))
         flash("E-mail ou senha incorretos.", "error")
+        # erro_login=True faz o template marcar campos com is-invalid +
+        # mostrar field-error embaixo. email_anterior preserva o que digitou.
+        return render_template("auth/login.html",
+                                erro_login=True, email_anterior=email)
 
     return render_template("auth/login.html")
 
@@ -155,7 +167,7 @@ def registro():
 
         usuario = Usuario(
             email=email,
-            senha_hash=generate_password_hash(senha),
+            senha_hash=hash_senha(senha),
             nome_responsavel=nome,
             telefone=telefone,
             tipo="lanchonete",
@@ -211,7 +223,7 @@ def registro_fornecedor():
 
         usuario = Usuario(
             email=email,
-            senha_hash=generate_password_hash(senha),
+            senha_hash=hash_senha(senha),
             nome_responsavel=nome,
             telefone=telefone,
             tipo="fornecedor",
@@ -320,7 +332,7 @@ def redefinir_senha(token):
             flash("As senhas não conferem.", "error")
             return render_template("auth/redefinir_senha.html", token=token)
 
-        usuario.senha_hash = generate_password_hash(senha)
+        usuario.senha_hash = hash_senha(senha)
         usuario.senha_atualizada_em = _agora_naive()
         db.session.commit()
         flash("Senha redefinida com sucesso. Faça login com a nova senha.", "success")

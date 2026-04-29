@@ -1,6 +1,12 @@
 """Testes da rota admin /admin/lanchonetes/nova."""
 import re
-from werkzeug.security import check_password_hash
+from app.services.passwords import check_senha
+
+
+def check_password_hash(hash_armazenado, senha):
+    """Wrapper de compatibilidade — aceita Argon2 e Werkzeug legacy."""
+    ok, _ = check_senha(senha, hash_armazenado)
+    return ok
 
 from app import db
 from app.models import Lanchonete, Usuario

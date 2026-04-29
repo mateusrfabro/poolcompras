@@ -1,7 +1,13 @@
 """Testes de recuperacao de senha: token valido, expirado, invalido + troca."""
 import re
 from itsdangerous import URLSafeTimedSerializer
-from werkzeug.security import check_password_hash
+from app.services.passwords import check_senha
+
+
+def check_password_hash(hash_armazenado, senha):
+    """Wrapper de compatibilidade — aceita Argon2 e Werkzeug legacy."""
+    ok, _ = check_senha(senha, hash_armazenado)
+    return ok
 
 from app.models import Usuario
 

@@ -41,6 +41,7 @@
         <span class="muted catalogo-contador">
             <span id="counter-itens">{{ total_itens }}</span> item(s) no seu pedido
         </span>
+        <span id="auto-save-status" class="auto-save-status muted text-sm" aria-live="polite"></span>
     </div>
 
     {% if ultima_rodada_pedido and not pedido_bloqueado %}

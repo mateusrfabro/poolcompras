@@ -3,10 +3,9 @@ import logging
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import select
-from werkzeug.security import generate_password_hash
-
 from app import db
 from app.models import Lanchonete, Usuario
+from app.services.passwords import hash_senha
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
 
@@ -55,7 +54,7 @@ def lanchonete_nova():
         ativa = "ativa" in request.form
         usuario = Usuario(
             email=email,
-            senha_hash=generate_password_hash(senha),
+            senha_hash=hash_senha(senha),
             nome_responsavel=nome_responsavel,
             telefone=request.form.get("telefone", "").strip(),
             tipo="lanchonete",

@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload, contains_eager
-from app import db
+from app import db, limiter
 from app.models import Produto, Rodada, ItemPedido, RodadaProduto, ParticipacaoRodada
 from app.services.csv_export import csv_response
 from app.services.rodada_corrente import rodada_corrente_aberta
@@ -221,6 +221,79 @@ def catalogo():
         pedido_bloqueado=pedido_bloqueado,
         ultima_rodada_pedido=ultima_rodada_pedido,
     )
+
+
+@pedidos_bp.route("/catalogo/auto-save", methods=["POST"])
+@login_required
+@limiter.limit("120 per minute", error_message="Muitas requisicoes de auto-save.")
+def catalogo_auto_save():
+    """Auto-save de UM item do catalogo (debounced no front).
+
+    Atualiza/cria/remove apenas o ItemPedido(produto_id) sem afetar os outros.
+    Retorna JSON {ok, salvo_em}. Idempotente — pode ser chamado N vezes com
+    a mesma quantidade sem criar duplicatas (constraint unique no model).
+
+    Bloqueado quando pedido ja foi moderado (aprovado/reprovado).
+    """
+    lanchonete = current_user.lanchonete
+    if not lanchonete:
+        return jsonify({"ok": False, "erro": "Complete seu cadastro."}), 400
+
+    rodada = rodada_corrente_aberta()
+    if not rodada:
+        return jsonify({"ok": False, "erro": "Nenhuma rodada aberta."}), 400
+
+    # Bloqueia edicao se pedido ja foi moderado.
+    participacao = ParticipacaoRodada.query.filter_by(
+        rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+    ).first()
+    if participacao and (participacao.pedido_aprovado_em is not None
+                         or participacao.pedido_reprovado_em is not None):
+        return jsonify({"ok": False, "erro": "Pedido ja moderado."}), 403
+
+    # Valida produto_id e que esta no catalogo desta rodada.
+    try:
+        produto_id = int(request.form.get("produto_id", "0"))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "erro": "produto_id invalido."}), 400
+
+    rp = RodadaProduto.query.filter_by(
+        rodada_id=rodada.id, produto_id=produto_id,
+    ).first()
+    if not rp:
+        return jsonify({"ok": False, "erro": "Produto fora do catalogo."}), 404
+
+    # Valida quantidade.
+    try:
+        qtd = float((request.form.get("quantidade", "0") or "0").replace(",", "."))
+    except ValueError:
+        qtd = 0.0
+    if qtd < 0:
+        qtd = 0.0
+
+    existente = ItemPedido.query.filter_by(
+        rodada_id=rodada.id, lanchonete_id=lanchonete.id, produto_id=produto_id,
+    ).first()
+
+    if qtd > 0:
+        if existente:
+            existente.quantidade = qtd
+        else:
+            db.session.add(ItemPedido(
+                rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+                produto_id=produto_id, quantidade=qtd,
+            ))
+            # Garante ParticipacaoRodada (cria no primeiro item salvo)
+            if not participacao:
+                db.session.add(ParticipacaoRodada(
+                    rodada_id=rodada.id, lanchonete_id=lanchonete.id,
+                ))
+    elif existente:
+        db.session.delete(existente)
+
+    db.session.commit()
+    agora = datetime.now(timezone.utc)
+    return jsonify({"ok": True, "salvo_em": agora.strftime("%H:%M")})
 
 
 @pedidos_bp.route("/repetir-ultimo-pedido", methods=["POST"])
