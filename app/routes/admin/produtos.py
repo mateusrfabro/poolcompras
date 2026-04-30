@@ -54,6 +54,7 @@ def produto_novo():
                 "admin/produto_form.html", produto=None,
                 subcategorias_por_cat=_subcategorias_por_categoria(),
                 form_data=request.form,
+                erros={"subcategoria": True},
             )
 
         produto = Produto(
@@ -87,6 +88,7 @@ def produto_editar(produto_id):
             return render_template(
                 "admin/produto_form.html", produto=produto,
                 subcategorias_por_cat=_subcategorias_por_categoria(),
+                erros={"subcategoria": True},
             )
 
         produto.nome = request.form["nome"].strip()

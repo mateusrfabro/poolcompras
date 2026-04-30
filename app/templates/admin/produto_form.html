@@ -25,12 +25,12 @@
                     {% endfor %}
                 </select>
             </div>
-            <div class="form-group">
+            <div class="form-group {% if erros and erros.subcategoria %}is-invalid{% endif %}">
                 <label for="subcategoria">Subcategoria</label>
                 <input type="text" id="subcategoria" name="subcategoria" required
                        list="subcategorias-sugestoes"
                        placeholder="Ex: Acém, Patinho, Brioche, Fatiado"
-                       value="{{ produto.subcategoria if produto else '' }}">
+                       value="{{ (form_data.get('subcategoria') if form_data else '') or (produto.subcategoria if produto else '') }}">
                 <datalist id="subcategorias-sugestoes">
                     {% for cat, subs in (subcategorias_por_cat or {}).items() %}
                         {% for sub in subs %}
@@ -38,7 +38,11 @@
                         {% endfor %}
                     {% endfor %}
                 </datalist>
+                {% if erros and erros.subcategoria %}
+                <small class="field-error">Subcategoria e obrigatoria. Ex: Acem, Brioche, Fatiado.</small>
+                {% else %}
                 <small class="muted">Ex. de cortes de carne: Acém, Patinho, Contra-filé, Costela, Fraldinha.</small>
+                {% endif %}
             </div>
             <div class="form-group">
                 <label for="unidade">Unidade</label>

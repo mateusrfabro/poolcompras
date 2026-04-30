@@ -3,6 +3,7 @@
 
 {% set criando = not lanchonete %}
 {% set dados = form_data if criando else lanchonete %}
+{% set e = erros or {} %}
 
 {% block content %}
 <div class="form-page">
@@ -22,11 +23,14 @@
         {% if criando %}
             <h3>Dados do responsável (login)</h3>
             <div class="form-row">
-                <div class="form-group">
+                <div class="form-group {% if e.nome_responsavel %}is-invalid{% endif %}">
                     <label for="nome_responsavel">Nome completo</label>
                     <input type="text" id="nome_responsavel" name="nome_responsavel" required
                            autocomplete="name"
                            value="{{ form_data.get('nome_responsavel', '') }}">
+                    {% if e.nome_responsavel %}
+                    <small class="field-error">Nome do responsavel e obrigatorio.</small>
+                    {% endif %}
                 </div>
                 <div class="form-group">
                     <label for="telefone">WhatsApp</label>
@@ -37,22 +41,33 @@
                 </div>
             </div>
             <div class="form-row">
-                <div class="form-group">
+                <div class="form-group {% if e.email %}is-invalid{% endif %}">
                     <label for="email">E-mail de acesso</label>
                     <input type="email" id="email" name="email" required
                            autocomplete="email"
                            spellcheck="false" autocapitalize="off"
                            value="{{ form_data.get('email', '') }}">
+                    {% if e.email == 'duplicado' %}
+                    <small class="field-error">Ja existe um usuario com esse e-mail.</small>
+                    {% elif e.email %}
+                    <small class="field-error">E-mail e obrigatorio.</small>
+                    {% endif %}
                 </div>
-                <div class="form-group">
+                <div class="form-group {% if e.senha %}is-invalid{% endif %}">
                     <label for="senha">Senha inicial (mín. 8 caracteres)</label>
                     <input type="password" id="senha" name="senha" required minlength="8"
                            autocomplete="new-password">
+                    {% if e.senha == 'curta' %}
+                    <small class="field-error">Senha deve ter pelo menos 8 caracteres.</small>
+                    {% elif e.senha %}
+                    <small class="field-error">Senha e obrigatoria.</small>
+                    {% else %}
                     <small class="muted">Essa senha será exibida apenas uma vez após o cadastro — anote para repassar.</small>
+                    {% endif %}
                 </div>
             </div>
 
-            <h3 style="margin-top: 1.5rem;">Dados da lanchonete</h3>
+            <h3 class="section-title-mt">Dados da lanchonete</h3>
         {% endif %}
 
         <div class="form-group">

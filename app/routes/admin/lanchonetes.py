@@ -35,21 +35,32 @@ def lanchonete_nova():
         senha = request.form.get("senha", "")
         nome_responsavel = request.form.get("nome_responsavel", "").strip()
 
-        # Validacoes minimas — as demais podem ser completadas depois pela propria lanchonete
+        # Validacoes minimas — as demais podem ser completadas depois pela propria lanchonete.
+        # Passa dict de erros por campo pra template marcar com is-invalid.
         if not email or not senha or not nome_responsavel:
             flash("E-mail, senha e nome do responsavel sao obrigatorios.", "error")
-            return render_template("admin/lanchonete_form.html", lanchonete=None,
-                                   form_data=request.form)
+            return render_template(
+                "admin/lanchonete_form.html", lanchonete=None,
+                form_data=request.form,
+                erros={"email": not email, "senha": not senha,
+                       "nome_responsavel": not nome_responsavel},
+            )
         if len(senha) < 8:
             flash("Senha deve ter pelo menos 8 caracteres.", "error")
-            return render_template("admin/lanchonete_form.html", lanchonete=None,
-                                   form_data=request.form)
+            return render_template(
+                "admin/lanchonete_form.html", lanchonete=None,
+                form_data=request.form,
+                erros={"senha": "curta"},
+            )
         if db.session.execute(
             select(Usuario).where(Usuario.email == email)
         ).scalar_one_or_none():
             flash("Ja existe um usuario com esse e-mail.", "error")
-            return render_template("admin/lanchonete_form.html", lanchonete=None,
-                                   form_data=request.form)
+            return render_template(
+                "admin/lanchonete_form.html", lanchonete=None,
+                form_data=request.form,
+                erros={"email": "duplicado"},
+            )
 
         ativa = "ativa" in request.form
         usuario = Usuario(
