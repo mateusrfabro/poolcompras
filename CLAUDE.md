@@ -125,7 +125,7 @@ app/
     css/style.css  # Variaveis (--space-*, --font-*, paleta) e classes
     js/            # Externos, CSP-safe
 migrations/versions/  # 18 migrations aplicadas
-tests/             # ~270 testes (auth/fluxo/security/moderacao/filters/notif)
+tests/             # ~280 testes (auth/fluxo/security/moderacao/filters/notif/auto-save)
 tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 ```
 
@@ -146,21 +146,20 @@ tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 
 ## Backlog aberto
 ### Tecnico
-- Flask-Caching nos KPIs (Locust capturou /dashboard ~2s em dev — candidato real)
-- Argon2 pra hash de senha (pbkdf2 atual eh ~4s no login segundo Locust)
-- Auto-save no catalogo da lanchonete (rascunho com debounce)
-- Field-errors com `is-invalid` em todos forms
+- Locust contra Yggdrasil (revalidar perf real apos Argon2 + cache + Redis)
+- Field-errors em mais forms admin (produto, fornecedor, lanchonete) — padrao ja criado, aplicado em login + 3 fluxos auth
+- Cache nos KPIs do dashboard fornecedor/lanchonete (hoje so admin)
 
 ### Produto
-- Marketplace publico com rating
-- Vinculacao de Telegram chat_id mais facil (hoje precisa codigo manual via /start)
+- Aguardar feedback Ademar pos-deploy
+- Templates/visual logado pode receber mesmo polishment SVG da home publica
 
 ### Deploy
 - Postgres em prod: ✅ Yggdrasil (Ademar)
 - Cloudflare Tunnel: ✅ (substituiu nginx + Let's Encrypt)
-- Gunicorn multi-worker: verificar config no docker-compose
-- Redis pra Flask-Limiter (hoje in-memory, warning ja conhecido)
-- GitHub Actions CI/CD (rodar pytest + lint em PR)
+- Gunicorn multi-worker: ✅ (2*CPU+1, max-requests 1000+jitter)
+- Redis pra Flask-Limiter: ✅ (compose com servico redis, RATELIMIT_STORAGE_URI no env)
+- GitHub Actions CI/CD: ✅ (pytest a cada push/PR)
 
 ## Gotchas conhecidos
 1. **Import dentro de funcao** — UnboundLocalError. Sempre topo do arquivo.
