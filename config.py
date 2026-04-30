@@ -24,6 +24,11 @@ class Config:
     CACHE_TYPE = "SimpleCache"
     CACHE_DEFAULT_TIMEOUT = 30  # 30s — KPIs do dashboard admin
 
+    # Flask-Limiter storage. Em dev/test cai pra memory:// (cada processo
+    # tem seu contador). Em prod com Gunicorn multi-worker, redis://redis:6379/0
+    # garante limite GLOBAL — sem isso cada worker tem N pedidos isolados.
+    RATELIMIT_STORAGE_URI = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
+
 
 class DevelopmentConfig(Config):
     DEBUG = True
@@ -44,6 +49,9 @@ class TestingConfig(Config):
     # NullCache em testes: cada teste lê dado fresco do DB sem interferência
     # de cache de teste anterior. Importantissimo pra evitar flakiness.
     CACHE_TYPE = "NullCache"
+    # Limiter ja eh desabilitado no conftest.py via limiter.enabled = False;
+    # storage memoria evita qualquer dependencia em rede durante testes.
+    RATELIMIT_STORAGE_URI = "memory://"
 
 
 class ProductionConfig(Config):

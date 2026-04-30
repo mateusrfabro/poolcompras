@@ -21,10 +21,15 @@ fi
 WORKERS=${WEB_WORKERS:-$(python -c "import os; print(2 * os.cpu_count() + 1)" 2>/dev/null || echo 3)}
 
 echo "[poolcompras] Iniciando gunicorn com $WORKERS workers..."
+# --max-requests + jitter: recicla worker apos N requests (libera memoria
+# de eventual leak gradual e pega config nova ao reiniciar). Jitter
+# evita todos os workers reciclarem ao mesmo tempo.
 exec gunicorn \
     --bind 0.0.0.0:${PORT:-5050} \
     --workers "$WORKERS" \
     --timeout 120 \
+    --max-requests 1000 \
+    --max-requests-jitter 100 \
     --access-logfile /var/log/poolcompras-access.log \
     --error-logfile /var/log/poolcompras-error.log \
     --capture-output \

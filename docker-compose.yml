@@ -29,6 +29,21 @@ services:
     networks:
       - internal_net
 
+  redis:
+    image: redis:7-alpine
+    container_name: poolcompras-redis
+    restart: always
+    # Sem persistencia — rate-limit eh transitorio. Se Redis cair, perde
+    # contadores de janela atual mas nao afeta dados do app (Postgres).
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - internal_net
+
   app:
     build: .
     container_name: poolcompras-app
@@ -41,6 +56,11 @@ services:
       RUN_SEED: ${RUN_SEED:-false}
       PORT: ${PORT:-5050}
       WEB_WORKERS: ${WEB_WORKERS:-4}
+      # Rate-limit GLOBAL entre todos workers Gunicorn via Redis.
+      # Sem isso, cada worker tinha contador isolado (4× o limite real).
+      RATELIMIT_STORAGE_URI: ${RATELIMIT_STORAGE_URI:-redis://redis:6379/0}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_BOT_USERNAME: ${TELEGRAM_BOT_USERNAME:-poolcomprasbot}
     volumes:
       - uploads:/app/instance/uploads
       - logs:/var/log
@@ -54,6 +74,8 @@ services:
       start_period: 20s
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - internal_net
