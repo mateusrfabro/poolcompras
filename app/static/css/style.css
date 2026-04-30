@@ -1613,6 +1613,34 @@ h1, h2, h3, h4, h5, h6 {
 
 .muted { color: var(--gray-500); }
 
+/* === Marketplace publico === */
+.marketplace-card .marketplace-cidade {
+    margin-top: -0.3rem;
+}
+.marketplace-card .marketplace-rodadas {
+    margin-top: var(--space-2);
+}
+.marketplace-cta {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+    margin-top: var(--space-5);
+    text-align: center;
+}
+.marketplace-cta h3 {
+    color: var(--secondary);
+    margin-bottom: var(--space-2);
+    font-family: var(--font-heading);
+}
+.marketplace-cta-actions {
+    margin-top: var(--space-3);
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
 /* === Status do auto-save de catalogo (lanchonete) === */
 .auto-save-status {
     margin-left: var(--space-2);

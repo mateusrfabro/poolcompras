@@ -152,7 +152,15 @@ def registro():
 
         if len(senha) < 8:
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
-            return render_template("auth/registro.html")
+            return render_template(
+                "auth/registro.html",
+                erro_senha=True,
+                form={
+                    "email": email, "nome_responsavel": nome, "telefone": telefone,
+                    "nome_fantasia": nome_fantasia, "cnpj": cnpj,
+                    "endereco": endereco, "bairro": bairro,
+                },
+            )
 
         if _usuario_por_email(email):
             # Nao revela se e-mail existe (anti-enumeration). Em prod com email
@@ -210,7 +218,14 @@ def registro_fornecedor():
 
         if len(senha) < 8:
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
-            return render_template("auth/registro_fornecedor.html")
+            return render_template(
+                "auth/registro_fornecedor.html",
+                erro_senha=True,
+                form={
+                    "email": email, "nome_responsavel": nome, "telefone": telefone,
+                    "razao_social": razao_social, "cidade": cidade,
+                },
+            )
 
         if _usuario_por_email(email):
             # Anti-enumeration (mesmo padrao do registro lanchonete).
@@ -327,10 +342,12 @@ def redefinir_senha(token):
         confirmacao = request.form.get("confirmacao", "")
         if len(senha) < 8:
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
-            return render_template("auth/redefinir_senha.html", token=token)
+            return render_template("auth/redefinir_senha.html",
+                                    token=token, erro_senha_curta=True)
         if senha != confirmacao:
             flash("As senhas não conferem.", "error")
-            return render_template("auth/redefinir_senha.html", token=token)
+            return render_template("auth/redefinir_senha.html",
+                                    token=token, erro_match=True)
 
         usuario.senha_hash = hash_senha(senha)
         usuario.senha_atualizada_em = _agora_naive()

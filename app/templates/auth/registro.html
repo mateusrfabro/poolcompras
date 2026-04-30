@@ -2,6 +2,7 @@
 {% block title %}Cadastro - PoolCompras{% endblock %}
 
 {% block content %}
+{% set f = form or {} %}
 <div class="form-page">
     <h2>Cadastrar Lanchonete</h2>
     <form method="POST" class="form-card">
@@ -11,11 +12,13 @@
             <div class="form-group">
                 <label for="nome_responsavel">Nome completo</label>
                 <input type="text" id="nome_responsavel" name="nome_responsavel" required
+                       value="{{ f.nome_responsavel or '' }}"
                        autocomplete="name">
             </div>
             <div class="form-group">
                 <label for="telefone">WhatsApp</label>
                 <input type="tel" id="telefone" name="telefone"
+                       value="{{ f.telefone or '' }}"
                        autocomplete="tel" inputmode="tel"
                        placeholder="(43) 99999-9999">
             </div>
@@ -23,12 +26,17 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="email">E-mail</label>
-                <input type="email" id="email" name="email" required autocomplete="email">
+                <input type="email" id="email" name="email" required
+                       value="{{ f.email or '' }}"
+                       autocomplete="email">
             </div>
-            <div class="form-group">
+            <div class="form-group {% if erro_senha %}is-invalid{% endif %}">
                 <label for="senha">Senha</label>
                 <input type="password" id="senha" name="senha" required
                        minlength="8" autocomplete="new-password">
+                {% if erro_senha %}
+                <small class="field-error">A senha deve ter pelo menos 8 caracteres.</small>
+                {% endif %}
             </div>
         </div>
 
@@ -36,11 +44,14 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="nome_fantasia">Nome fantasia</label>
-                <input type="text" id="nome_fantasia" name="nome_fantasia" required placeholder="Ex: Burguer do João">
+                <input type="text" id="nome_fantasia" name="nome_fantasia" required
+                       value="{{ f.nome_fantasia or '' }}"
+                       placeholder="Ex: Burguer do João">
             </div>
             <div class="form-group">
                 <label for="cnpj">CNPJ (opcional)</label>
                 <input type="text" id="cnpj" name="cnpj"
+                       value="{{ f.cnpj or '' }}"
                        inputmode="numeric"
                        pattern="[0-9./-]*"
                        maxlength="18"
@@ -51,11 +62,13 @@
         <div class="form-row">
             <div class="form-group">
                 <label for="endereco">Endereço</label>
-                <input type="text" id="endereco" name="endereco">
+                <input type="text" id="endereco" name="endereco"
+                       value="{{ f.endereco or '' }}">
             </div>
             <div class="form-group">
                 <label for="bairro">Bairro</label>
-                <input type="text" id="bairro" name="bairro">
+                <input type="text" id="bairro" name="bairro"
+                       value="{{ f.bairro or '' }}">
             </div>
         </div>
 
