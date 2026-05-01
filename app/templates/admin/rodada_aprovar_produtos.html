@@ -19,7 +19,7 @@
     {% if not pendentes %}
         <div class="empty-state">
             <p>Nenhum produto pendente de aprovação.</p>
-            <form method="POST" action="{{ url_for('admin.rodada_liberar', rodada_id=rodada.id) }}" style="margin-top: 1rem;">
+            <form method="POST" action="{{ url_for('admin.rodada_liberar', rodada_id=rodada.id) }}" class="mt-4">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="btn btn-primary">Liberar rodada para lanchonetes</button>
             </form>
@@ -38,31 +38,20 @@
                         <strong>Preço de partida:</strong> {{ rp.preco_partida|brl if rp.preco_partida else '—' }}<br>
                         <strong>Sugerido por:</strong> {{ rp.fornecedor_sugeriu.razao_social if rp.fornecedor_sugeriu else '—' }}
                     </p>
-                    <div class="action-card-buttons">
-                        <form method="POST" style="display:inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="rp_id" value="{{ rp.id }}">
-                            <button type="submit" name="acao" value="aprovar" class="btn btn-primary btn-sm">Aprovar</button>
-                        </form>
-                        <form method="POST" style="display:inline">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <input type="hidden" name="rp_id" value="{{ rp.id }}">
-                            <button type="submit" name="acao" value="recusar" class="btn btn-danger btn-sm">Recusar</button>
-                        </form>
-                    </div>
+                    <form method="POST" class="action-card-buttons">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <input type="hidden" name="rp_id" value="{{ rp.id }}">
+                        <button type="submit" name="acao" value="aprovar" class="btn btn-primary btn-sm">Aprovar</button>
+                        <button type="submit" name="acao" value="recusar" class="btn btn-outline-danger btn-sm">Recusar</button>
+                    </form>
                 </div>
             {% endfor %}
         </div>
 
-        <div style="margin-top: 1.5rem;">
-            <p class="muted">Depois de decidir sobre todos, a rodada pode ser liberada.</p>
-            <form method="POST" action="{{ url_for('admin.rodada_liberar', rodada_id=rodada.id) }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-primary" disabled>
-                    Liberar rodada ({{ pendentes|length }} pendente(s))
-                </button>
-            </form>
-        </div>
+        <p class="muted section-title-mt">
+            Liberar rodada para lanchonetes só fica disponível depois que
+            todos os {{ pendentes|length }} produto(s) acima forem decididos.
+        </p>
     {% endif %}
 </div>
 {% endblock %}

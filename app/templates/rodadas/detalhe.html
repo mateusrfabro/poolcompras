@@ -177,32 +177,9 @@
         </table></div>
     {% endif %}
 
-    {% if current_user.is_admin and rodada.status in ('fechada', 'cotada') %}
-        <h3>Cotações</h3>
-        {% if cotacoes %}
-            <div class="table-wrapper"><table class="table">
-                <thead>
-                    <tr>
-                        <th>Fornecedor</th>
-                        <th>Produto</th>
-                        <th>Preço unitário</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for c in cotacoes %}
-                    <tr>
-                        <td>{{ c.fornecedor.razao_social }}</td>
-                        <td>{{ c.produto.nome }}</td>
-                        <td>{{ c.preco_unitario|brl }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table></div>
-        {% else %}
-            <p>Nenhuma cotação registrada ainda.</p>
-        {% endif %}
-        <a href="{{ url_for('rodadas.cotar', rodada_id=rodada.id) }}" class="btn btn-primary">Inserir cotação</a>
-    {% endif %}
+    {# Bloco antigo de "Cotacoes" removido: status 'fechada'/'cotada' nao
+       existem mais no fluxo atual (substituidos por aguardando_cotacao /
+       em_negociacao). Cotacoes hoje sao gerenciadas via /admin/.../aprovar-cotacoes. #}
 
     {# Timeline de eventos (auditoria — cada perfil ve o que lhe diz respeito) #}
     {% include "_components/timeline_eventos.html" %}

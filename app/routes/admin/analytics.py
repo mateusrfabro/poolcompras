@@ -120,14 +120,24 @@ def rodada_funil(rodada_id):
     }
     iniciaram = len(iniciaram_ids)
 
-    parts = ParticipacaoRodada.query.filter_by(rodada_id=rodada_id).all()
+    # 1 query agregada via CASE em vez de carregar todas ParticipacaoRodada
+    # e contar em Python. Com 50+ lanchonetes a versao antiga era O(N)
+    # round-trip; agora eh O(1).
+    contagens = db.session.query(
+        func.count(case((ParticipacaoRodada.pedido_enviado_em.isnot(None), 1))).label("enviaram"),
+        func.count(case((ParticipacaoRodada.pedido_aprovado_em.isnot(None), 1))).label("aprovadas"),
+        func.count(case((ParticipacaoRodada.aceite_proposta.is_(True), 1))).label("aceitaram"),
+        func.count(case((ParticipacaoRodada.comprovante_em.isnot(None), 1))).label("pagaram"),
+        func.count(case((ParticipacaoRodada.entrega_informada_em.isnot(None), 1))).label("receberam"),
+        func.count(case((ParticipacaoRodada.avaliacao_em.isnot(None), 1))).label("avaliaram"),
+    ).filter(ParticipacaoRodada.rodada_id == rodada_id).one()
 
-    enviaram = sum(1 for p in parts if p.pedido_enviado_em)
-    aprovadas = sum(1 for p in parts if p.pedido_aprovado_em)
-    aceitaram = sum(1 for p in parts if p.aceite_proposta is True)
-    pagaram = sum(1 for p in parts if p.comprovante_em)
-    receberam = sum(1 for p in parts if p.entrega_informada_em)
-    avaliaram = sum(1 for p in parts if p.avaliacao_em)
+    enviaram = contagens.enviaram or 0
+    aprovadas = contagens.aprovadas or 0
+    aceitaram = contagens.aceitaram or 0
+    pagaram = contagens.pagaram or 0
+    receberam = contagens.receberam or 0
+    avaliaram = contagens.avaliaram or 0
 
     etapas = [
         {"nome": "Lanchonetes ativas", "n": convidadas, "dica": "Universo total disponivel"},
@@ -216,8 +226,11 @@ def relatorio():
         return render_template("admin/relatorio.html", dados=None, de=de, ate=ate)
 
     try:
-        dt_de = datetime.strptime(de, "%Y-%m-%d")
-        dt_ate = datetime.strptime(ate, "%Y-%m-%d").replace(hour=23, minute=59, second=59)
+        # tzinfo=UTC: colunas Rodada.data_* sao tz-aware no Postgres prod.
+        dt_de = datetime.strptime(de, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        dt_ate = datetime.strptime(ate, "%Y-%m-%d").replace(
+            hour=23, minute=59, second=59, tzinfo=timezone.utc,
+        )
     except ValueError:
         flash("Datas inválidas.", "error")
         return render_template("admin/relatorio.html", dados=None, de=de, ate=ate)

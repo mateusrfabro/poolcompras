@@ -64,6 +64,7 @@ def _iniciar_otp(chat_id) -> bool:
         f"Seu codigo de vinculacao: <code>{codigo}</code>\n\n"
         f"Digite-o no site pra concluir. Expira em 10 minutos.\n"
         f"Se nao solicitou, ignore esta mensagem.",
+        sensitive=True,  # OTP nao pode cair em log nem em DEBUG
     )
     if not ok:
         return False
@@ -118,12 +119,16 @@ def telegram_iniciar():
 
 @perfil_bp.route("/telegram/status")
 @login_required
+@limiter.limit("300/minute", error_message="Polling muito frequente.")
 def telegram_status():
     """Endpoint de polling pra detectar quando webhook salvou chat_id.
 
     Front-end chama a cada 3s apos clicar 'Conectar Telegram'. Quando o user
     der /start no bot, o webhook salva chat_id no DB e este endpoint passa
     a retornar {conectado: true} — o JS redireciona automaticamente.
+
+    Rate-limit dedicado 300/min: polling 3s = 20 req/min por usuario, com
+    margem pra abas duplicadas. O default 200/h estouraria em 10 minutos.
     """
     from flask import jsonify
     db.session.refresh(current_user)

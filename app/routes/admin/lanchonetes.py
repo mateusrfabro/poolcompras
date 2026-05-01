@@ -85,9 +85,10 @@ def lanchonete_nova():
         )
         db.session.add(lanchonete)
         db.session.commit()
+        from app.routes.auth import _mask_email
         logger.info(
             "ADMIN_USUARIO_CRIADO admin=%s tipo=lanchonete usuario=%s email=%s",
-            current_user.id, lanchonete.usuario_id, email,
+            current_user.id, lanchonete.usuario_id, _mask_email(email),
         )
         flash(f"Lanchonete '{lanchonete.nome_fantasia}' cadastrada. Login: {email}", "success")
         return redirect(url_for("admin.lanchonetes"))
@@ -107,6 +108,10 @@ def lanchonete_editar(lanchonete_id):
         lanchonete.bairro = request.form.get("bairro", "").strip()
         lanchonete.cidade = request.form.get("cidade", "").strip() or "Londrina"
         lanchonete.ativa = "ativa" in request.form
+        # Invariante: Usuario.ativo segue Lanchonete.ativa. Sem isso, lanchonete
+        # "desativada" no admin continua conseguindo logar e criar pedidos.
+        if lanchonete.responsavel:
+            lanchonete.responsavel.ativo = lanchonete.ativa
         db.session.commit()
         flash("Lanchonete atualizada!", "success")
         return redirect(url_for("admin.lanchonetes"))

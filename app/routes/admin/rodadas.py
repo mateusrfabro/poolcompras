@@ -1,6 +1,6 @@
 """Rotas admin do ciclo de vida de Rodadas + exports."""
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func
@@ -29,10 +29,12 @@ logger = logging.getLogger(__name__)
 @admin_required
 def rodada_nova():
     if request.method == "POST":
+        # tzinfo=UTC explicito: colunas Rodada.data_* sao DateTime(timezone=True).
+        # Sem tz, SQLite passa mas Postgres prod levanta TypeError.
         rodada = Rodada(
             nome=request.form["nome"].strip(),
-            data_abertura=datetime.strptime(request.form["data_abertura"], "%Y-%m-%d"),
-            data_fechamento=datetime.strptime(request.form["data_fechamento"], "%Y-%m-%d"),
+            data_abertura=datetime.strptime(request.form["data_abertura"], "%Y-%m-%d").replace(tzinfo=timezone.utc),
+            data_fechamento=datetime.strptime(request.form["data_fechamento"], "%Y-%m-%d").replace(tzinfo=timezone.utc),
             status=Rodada.STATUS_PREPARANDO,
         )
         db.session.add(rodada)

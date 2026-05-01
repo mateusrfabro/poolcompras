@@ -18,12 +18,19 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/health")
 def health():
-    """Healthcheck: retorna 200 se app + DB estao ok. Sem auth."""
+    """Healthcheck: retorna 200 se app + DB estao ok. Sem auth.
+
+    NUNCA inclui detalhes do erro na resposta — endpoint publico, atacante
+    nao precisa saber se DB caiu por timeout, auth ou driver. Loga
+    internamente pra debug.
+    """
+    import logging
     try:
         db.session.execute(text("SELECT 1"))
         return jsonify({"status": "ok", "db": "ok"}), 200
-    except Exception as e:
-        return jsonify({"status": "error", "db": str(e)}), 500
+    except Exception:
+        logging.getLogger(__name__).exception("HEALTH_DB_FAIL")
+        return jsonify({"status": "error", "db": "error"}), 500
 
 
 @main_bp.route("/")

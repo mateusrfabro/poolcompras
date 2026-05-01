@@ -38,9 +38,11 @@ def fornecedor_novo():
         )
         db.session.add(fornecedor)
         db.session.commit()
+        # razao_social eh dado de negocio (CNPJ aberto) — log sem mask. Mas
+        # email do responsavel (se houver) deve ser mascarado em logs futuros.
         logger.info(
-            "ADMIN_FORNECEDOR_CRIADO admin=%s fornecedor=%s razao=%s",
-            current_user.id, fornecedor.id, fornecedor.razao_social,
+            "ADMIN_FORNECEDOR_CRIADO admin=%s fornecedor=%s",
+            current_user.id, fornecedor.id,
         )
         flash("Fornecedor cadastrado!", "success")
         return redirect(url_for("admin.fornecedores"))
@@ -64,6 +66,10 @@ def fornecedor_editar(fornecedor_id):
         fornecedor.agencia = request.form.get("agencia", "").strip() or None
         fornecedor.conta = request.form.get("conta", "").strip() or None
         fornecedor.ativo = "ativo" in request.form
+        # Invariante: Usuario.ativo segue Fornecedor.ativo (mesma logica da
+        # rota lanchonete_editar). Fornecedor "desativado" nao deve logar.
+        if fornecedor.responsavel:
+            fornecedor.responsavel.ativo = fornecedor.ativo
         db.session.commit()
         flash("Fornecedor atualizado!", "success")
         return redirect(url_for("admin.fornecedores"))

@@ -19,7 +19,6 @@
                     <th>Produto</th>
                     <th>Categoria</th>
                     <th>Quantidade total</th>
-                    <th>Unidade</th>
                 </tr>
             </thead>
             <tbody>
@@ -27,8 +26,7 @@
                 <tr>
                     <td>{{ item.nome }}</td>
                     <td>{{ item.categoria }}</td>
-                    <td><strong>{{ item.total_quantidade }}</strong></td>
-                    <td>{{ item.unidade }}</td>
+                    <td><strong>{{ item.total_quantidade|fmt_un(item.unidade) }}</strong></td>
                 </tr>
                 {% endfor %}
             </tbody>

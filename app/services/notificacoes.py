@@ -1,14 +1,14 @@
 """Camada de notificacoes via Telegram bot (canal default do projeto).
 
-- `enviar_telegram(usuario, texto)`: helper generico. Se o usuario tiver
-  `telegram_chat_id` preenchido e a env `TELEGRAM_BOT_TOKEN` existir, faz POST
-  pra API do Telegram. Senao, cai no fallback de log.
+- `enviar_telegram(usuario, texto, sensitive=False)`: helper generico. Se
+  o usuario tiver `telegram_chat_id` e env `TELEGRAM_BOT_TOKEN`, faz POST
+  pra API do Telegram. Senao, fallback de log. Quando `sensitive=True`
+  (ex: OTP), nunca loga o conteudo nem em DEBUG — so registra a tentativa.
 
 - `enviar_link_recuperacao(usuario, link)`: chama `enviar_telegram` com texto
-  pre-formatado pra reset de senha.
+  pre-formatado pra reset de senha. Marcado sensitive (link tem token).
 
-- `notificar_evento(usuario, titulo, detalhes)`: helper pros eventos do fluxo
-  (proposta aprovada, pagamento confirmado, cotacao devolvida, etc).
+- `notificar_evento(usuario, titulo, detalhes)`: helper pros eventos do fluxo.
 
 Docs da API: https://core.telegram.org/bots/api#sendmessage
 """
@@ -17,6 +17,12 @@ import os
 
 import requests
 from flask import current_app
+from sqlalchemy.orm import joinedload
+
+from app import db
+from app.models import (
+    Lanchonete, Fornecedor, RodadaProduto, ItemPedido, Cotacao,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -64,33 +70,46 @@ def post_telegram_raw(chat_id, texto: str, contexto: str = "") -> bool:
     return False
 
 
-def enviar_telegram(usuario, texto: str) -> bool:
+def enviar_telegram(usuario, texto: str, sensitive: bool = False) -> bool:
     """Envia uma mensagem de texto pro chat_id do usuario via bot.
+
+    Args:
+        sensitive: quando True (OTP, link de reset), nunca loga o conteudo
+            no fallback — nem em DEBUG. So registra tentativa anonima.
 
     Returns:
         True se a API Telegram retornou 200. False se fallou ou se canal
-        nao esta configurado (cai no fallback de log).
+        nao esta configurado.
 
     Nao levanta excecao — notificacao eh best-effort e nao pode bloquear
     o fluxo de negocio.
     """
     if not _tem_canal_ativo(usuario):
-        _logar_fallback(usuario, texto)
+        _logar_fallback(usuario, texto, sensitive=sensitive)
         return False
 
     ok = post_telegram_raw(usuario.telegram_chat_id, texto,
                            contexto=f"usuario={usuario.id}")
     if not ok:
-        _logar_fallback(usuario, texto)
+        _logar_fallback(usuario, texto, sensitive=sensitive)
     return ok
 
 
-def _logar_fallback(usuario, texto: str):
+def _logar_fallback(usuario, texto: str, sensitive: bool = False):
     """Fallback: registra no log quando canal Telegram nao ta pronto.
 
-    Em DEBUG/TESTING: loga texto completo (admin/test pegam do log).
-    Em prod: loga apenas que houve tentativa (nao vaza tokens de reset).
+    Em DEBUG/TESTING + sensitive=False: loga texto completo (admin/test pegam do log).
+    Em prod ou sensitive=True: loga apenas que houve tentativa (nao vaza
+    OTP, link de reset, ou outros segredos).
     """
+    if sensitive:
+        # NUNCA loga o conteudo — mesmo em DEBUG/TESTING.
+        logger.info(
+            "NOTIF_FALLBACK_SENSITIVE usuario=%s (conteudo omitido)",
+            usuario.id,
+        )
+        return
+
     app = current_app._get_current_object() if current_app else None
     dev_like = bool(app and (app.debug or app.config.get("TESTING")))
     if dev_like:
@@ -106,7 +125,8 @@ def _logar_fallback(usuario, texto: str):
 
 
 def enviar_link_recuperacao(usuario, link: str) -> bool:
-    """Envia link de recuperacao de senha. Canal preferencial: Telegram."""
+    """Envia link de recuperacao de senha. Canal preferencial: Telegram.
+    Marcado sensitive: o link contem token assinado — nunca cair em log."""
     texto = (
         f"Olá, {_escape(usuario.nome_responsavel)}!\n\n"
         f"Recebemos um pedido pra redefinir sua senha no PoolCompras.\n"
@@ -114,7 +134,7 @@ def enviar_link_recuperacao(usuario, link: str) -> bool:
         f"{link}\n\n"
         f"Se você não solicitou, ignore esta mensagem."
     )
-    return enviar_telegram(usuario, texto)
+    return enviar_telegram(usuario, texto, sensitive=True)
 
 
 def notificar_evento(usuario, titulo: str, detalhes: str = "") -> bool:
@@ -151,14 +171,21 @@ def notificar_fornecedores_nova_rodada(rodada) -> int:
 
     Disparado quando admin envia o catalogo (status -> aguardando_cotacao).
     """
-    from app.models import Fornecedor
     titulo = "Nova rodada para cotar"
     detalhes = (
         f"O catálogo da rodada '{rodada.nome}' foi liberado. "
         f"Acesse o painel pra enviar seu preço de partida."
     )
     enviadas = 0
-    for f in Fornecedor.query.filter_by(ativo=True).all():
+    # joinedload(responsavel) evita N+1: 1 query traz todos fornecedores +
+    # responsaveis. Sem isso, 50 fornecedores = 50 SELECTs em usuarios.
+    fornecedores = (
+        Fornecedor.query
+        .options(joinedload(Fornecedor.responsavel))
+        .filter_by(ativo=True)
+        .all()
+    )
+    for f in fornecedores:
         if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
             enviadas += 1
     logger.info("NOTIF_RODADA_NOVA rodada=%s enviadas=%s", rodada.id, enviadas)
@@ -166,18 +193,20 @@ def notificar_fornecedores_nova_rodada(rodada) -> int:
 
 
 def notificar_lanchonetes_rodada_aberta(rodada) -> int:
-    """Avisa lanchonetes ATIVAS que a rodada ta aberta pra fazer pedidos.
-
-    Disparado quando admin libera (status -> aberta).
-    """
-    from app.models import Lanchonete
+    """Avisa lanchonetes ATIVAS que a rodada ta aberta pra fazer pedidos."""
     titulo = "Rodada aberta"
     detalhes = (
         f"A rodada '{rodada.nome}' está aberta para pedidos. "
         f"Monte seu pedido antes do fechamento."
     )
     enviadas = 0
-    for l in Lanchonete.query.filter_by(ativa=True).all():
+    lanchonetes = (
+        Lanchonete.query
+        .options(joinedload(Lanchonete.responsavel))
+        .filter_by(ativa=True)
+        .all()
+    )
+    for l in lanchonetes:
         if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
             enviadas += 1
     logger.info("NOTIF_RODADA_ABERTA rodada=%s enviadas=%s", rodada.id, enviadas)
@@ -186,12 +215,7 @@ def notificar_lanchonetes_rodada_aberta(rodada) -> int:
 
 def notificar_fornecedores_cotacao_final(rodada) -> int:
     """Avisa fornecedores que ja cotaram preco de partida que e hora do preco
-    final (com volumes reais).
-
-    Disparado quando admin encerra coleta (status -> em_negociacao).
-    """
-    from app import db
-    from app.models import RodadaProduto, Fornecedor
+    final (com volumes reais)."""
     forn_ids = {
         fid for (fid,) in db.session.query(RodadaProduto.adicionado_por_fornecedor_id)
             .filter(RodadaProduto.rodada_id == rodada.id)
@@ -207,7 +231,13 @@ def notificar_fornecedores_cotacao_final(rodada) -> int:
         f"Acesse o painel pra enviar seu preço final com os volumes reais."
     )
     enviadas = 0
-    for f in Fornecedor.query.filter(Fornecedor.id.in_(forn_ids)).all():
+    fornecedores = (
+        Fornecedor.query
+        .options(joinedload(Fornecedor.responsavel))
+        .filter(Fornecedor.id.in_(forn_ids))
+        .all()
+    )
+    for f in fornecedores:
         if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
             enviadas += 1
     logger.info("NOTIF_COTACAO_FINAL rodada=%s enviadas=%s", rodada.id, enviadas)
@@ -216,12 +246,7 @@ def notificar_fornecedores_cotacao_final(rodada) -> int:
 
 def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
     """Avisa lanchonetes que pediram nessa rodada que tem proposta nova
-    aprovada do fornecedor X — podem aceitar ou recusar no painel.
-
-    Disparado quando admin aprova uma SubmissaoCotacao (em moderacao.py).
-    """
-    from app import db
-    from app.models import ItemPedido, Lanchonete
+    aprovada do fornecedor X."""
     lanch_ids = {
         lid for (lid,) in db.session.query(ItemPedido.lanchonete_id)
             .filter(ItemPedido.rodada_id == rodada.id)
@@ -235,7 +260,13 @@ def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
         f"rodada '{rodada.nome}'. Acesse o painel pra aceitar ou recusar a proposta."
     )
     enviadas = 0
-    for l in Lanchonete.query.filter(Lanchonete.id.in_(lanch_ids)).all():
+    lanchonetes = (
+        Lanchonete.query
+        .options(joinedload(Lanchonete.responsavel))
+        .filter(Lanchonete.id.in_(lanch_ids))
+        .all()
+    )
+    for l in lanchonetes:
         if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
             enviadas += 1
     logger.info("NOTIF_PROPOSTA_DISPONIVEL rodada=%s fornecedor=%s enviadas=%s",
@@ -245,12 +276,7 @@ def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
 
 def notificar_cancelamento(rodada) -> int:
     """Avisa lanchonetes que pediram + fornecedores que cotaram que a rodada
-    foi cancelada.
-
-    Disparado quando admin cancela (status -> cancelada).
-    """
-    from app import db
-    from app.models import ItemPedido, Cotacao, Lanchonete, Fornecedor
+    foi cancelada."""
     lanch_ids = {
         lid for (lid,) in db.session.query(ItemPedido.lanchonete_id)
             .filter(ItemPedido.rodada_id == rodada.id).distinct().all()
@@ -263,11 +289,23 @@ def notificar_cancelamento(rodada) -> int:
     detalhes = f"A rodada '{rodada.nome}' foi cancelada pelo administrador."
     enviadas = 0
     if lanch_ids:
-        for l in Lanchonete.query.filter(Lanchonete.id.in_(lanch_ids)).all():
+        lanchonetes = (
+            Lanchonete.query
+            .options(joinedload(Lanchonete.responsavel))
+            .filter(Lanchonete.id.in_(lanch_ids))
+            .all()
+        )
+        for l in lanchonetes:
             if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
                 enviadas += 1
     if forn_ids:
-        for f in Fornecedor.query.filter(Fornecedor.id.in_(forn_ids)).all():
+        fornecedores = (
+            Fornecedor.query
+            .options(joinedload(Fornecedor.responsavel))
+            .filter(Fornecedor.id.in_(forn_ids))
+            .all()
+        )
+        for f in fornecedores:
             if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
                 enviadas += 1
     logger.info("NOTIF_RODADA_CANCELADA rodada=%s enviadas=%s",

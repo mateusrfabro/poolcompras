@@ -7,7 +7,7 @@ prospect). Rate-limit pra evitar crawler pesado.
 from flask import Blueprint, render_template
 from sqlalchemy import func
 
-from app import db, limiter
+from app import db, limiter, cache
 from app.models import Fornecedor, AvaliacaoRodada, Cotacao
 
 marketplace_bp = Blueprint("marketplace", __name__)
@@ -15,8 +15,14 @@ marketplace_bp = Blueprint("marketplace", __name__)
 
 @marketplace_bp.route("/marketplace")
 @limiter.limit("30 per minute", error_message="Muitos acessos. Tente novamente em instantes.")
+@cache.cached(timeout=300)
 def listar():
-    """Lista publica de fornecedores ativos com rating medio."""
+    """Lista publica de fornecedores ativos com rating medio.
+
+    Cache 5min: pagina publica sem auth, queries com agregacoes pesadas
+    (avg + count + 2 grupos). Trade-off: nova avaliacao demora ate 5min
+    pra refletir no rating publico — aceitavel.
+    """
     # Query: fornecedores ativos + agregados de avaliacao + contagem de
     # rodadas com cotacao vencedora (indicador de atividade).
     rows = (

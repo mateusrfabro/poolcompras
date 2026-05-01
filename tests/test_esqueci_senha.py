@@ -40,7 +40,8 @@ def test_esqueci_senha_email_inexistente_nao_vaza(app, client):
 
 
 def test_esqueci_senha_email_valido_gera_token_via_notificacao(app, client, caplog):
-    """Service de notificacao loga o link quando e-mail existe."""
+    """Quando e-mail existe, a service registra NOTIF_FALLBACK_SENSITIVE
+    (link contem token assinado — nunca cair em log com conteudo, nem em DEBUG)."""
     import logging
     caplog.set_level(logging.INFO, logger="app.services.notificacoes")
 
@@ -49,10 +50,12 @@ def test_esqueci_senha_email_valido_gera_token_via_notificacao(app, client, capl
                 data={"csrf_token": token, "email": "lancha@test.com"},
                 follow_redirects=False)
 
-    # Log deve conter NOTIF_FALLBACK com link redefinir-senha
-    rec = [r for r in caplog.records if "NOTIF_FALLBACK" in r.getMessage()]
+    # Log deve conter exatamente 1 NOTIF_FALLBACK_SENSITIVE (sem conteudo).
+    rec = [r for r in caplog.records if "NOTIF_FALLBACK_SENSITIVE" in r.getMessage()]
     assert len(rec) == 1
-    assert "/redefinir-senha/" in rec[0].getMessage()
+    # E NAO deve aparecer o link no log (seguranca).
+    todos_logs = " ".join(r.getMessage() for r in caplog.records)
+    assert "/redefinir-senha/" not in todos_logs
 
 
 def test_redefinir_senha_token_valido_troca_senha(app, client):
