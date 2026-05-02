@@ -6,20 +6,23 @@
     <h1>Compre junto, pague menos.</h1>
     <p class="hero-sub">Central de compras cooperativa para hamburguerias de Londrina.
        Junte seu pedido com outras lanchonetes e pague preço de atacado por insumos de qualidade.</p>
+    <p class="hero-roi">
+        Em uma única rodada bem aproveitada, a economia em insumos já cobre a mensalidade.
+    </p>
 
     <div class="hero-actions">
         <a href="{{ url_for('auth.registro') }}" class="btn btn-primary btn-lg">Sou lanchonete</a>
         <a href="{{ url_for('auth.registro_fornecedor') }}" class="btn btn-outline btn-lg">Sou fornecedor</a>
     </div>
-    <p style="margin-top: 1rem; color: var(--gray-500); font-size: 0.9rem;">
-        <a href="{{ url_for('auth.login') }}" style="color: var(--gray-700);">Já tenho conta &rarr;</a>
+    <p class="hero-secundario">
+        <a href="{{ url_for('auth.login') }}">Já tenho conta &rarr;</a>
     </p>
 </div>
 
 <section class="features">
     <div class="feature-card">
         <h3>1. Cadastre-se</h3>
-        <p>Registre sua lanchonete em menos de 2 minutos. Mensalidade fixa, sem comissão sobre as compras.</p>
+        <p>Registre sua lanchonete em menos de 2 minutos. <strong>R$ 500/mês</strong>, sem comissão sobre as compras.</p>
     </div>
     <div class="feature-card">
         <h3>2. Faça seu pedido</h3>
@@ -48,7 +51,7 @@
                 </svg>
             </span>
             <h3>Mensalidade fixa, sem comissão</h3>
-            <p>Custo previsível por mês. Não tiramos % das suas compras — toda economia fica com você.</p>
+            <p><strong>R$ 500/mês fixo.</strong> Não tiramos % das suas compras — toda economia fica com você.</p>
         </div>
         <div class="diferencial-card">
             <span class="diferencial-icon" aria-hidden="true">
@@ -152,6 +155,34 @@
     </div>
 </section>
 {% endif %}
+
+{# Quanto custa — secao dedicada de transparencia de preco. #}
+<section class="precos-secao" id="precos">
+    <h2 class="secao-titulo">Quanto custa?</h2>
+    <div class="preco-card">
+        <div class="preco-header">
+            <span class="preco-moeda">R$</span>
+            <span class="preco-valor">500</span>
+            <span class="preco-periodo">/ mês</span>
+        </div>
+        <p class="preco-sub">Mensalidade fixa por lanchonete. Sem comissão sobre compras.</p>
+        <ul class="preco-itens">
+            <li>Acesso completo à plataforma</li>
+            <li>Volume agregado com outras lanchonetes</li>
+            <li>Histórico completo de preços e fornecedores</li>
+            <li>Notificações por Telegram em cada etapa</li>
+            <li>Suporte direto pelo WhatsApp</li>
+            <li>Cancelamento a qualquer momento</li>
+        </ul>
+        <p class="preco-roi-card">
+            <strong>Em uma rodada bem cotada, a economia em insumos já cobre a mensalidade.</strong>
+            O que vier depois é margem direta no seu bolso.
+        </p>
+        <div class="preco-acoes">
+            <a href="{{ url_for('auth.registro') }}" class="btn btn-primary">Quero participar</a>
+        </div>
+    </div>
+</section>
 
 {# CTA final — fundo azul, conforme padrao B2B do guia (CTA forte pre-footer). #}
 <section class="cta-final">

@@ -230,6 +230,102 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 auto;
 }
 
+/* === Hero ROI tagline (linha de valor logo abaixo do subtitle) === */
+.hero-roi {
+    max-width: 600px;
+    margin: var(--space-3) auto 0;
+    padding: var(--space-2) var(--space-3);
+    background: rgba(42, 157, 143, 0.08);
+    border-left: 3px solid var(--accent);
+    color: var(--secondary);
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: var(--radius);
+    text-align: left;
+}
+.hero-secundario {
+    margin-top: var(--space-2);
+    color: var(--gray-500);
+    font-size: 0.9rem;
+}
+.hero-secundario a { color: var(--gray-700); }
+
+/* === Secao "Quanto custa?" — transparencia de preco === */
+.precos-secao {
+    margin-top: var(--space-7);
+}
+.preco-card {
+    max-width: 560px;
+    margin: 0 auto;
+    background: var(--white);
+    border: 2px solid var(--accent);
+    border-radius: var(--radius);
+    padding: var(--space-5) var(--space-4);
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(29, 53, 87, 0.06);
+}
+.preco-header {
+    display: flex;
+    justify-content: center;
+    align-items: baseline;
+    gap: 0.25rem;
+    margin-bottom: var(--space-1);
+}
+.preco-moeda {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    color: var(--secondary);
+    font-weight: 600;
+}
+.preco-valor {
+    font-family: var(--font-heading);
+    font-size: 4rem;
+    color: var(--primary);
+    font-weight: 700;
+    line-height: 1;
+}
+.preco-periodo {
+    color: var(--gray-700);
+    font-size: 1.1rem;
+    margin-left: 0.25rem;
+}
+.preco-sub {
+    color: var(--gray-700);
+    margin-bottom: var(--space-3);
+    font-size: 0.95rem;
+}
+.preco-itens {
+    list-style: none;
+    padding: 0;
+    margin: var(--space-3) 0;
+    text-align: left;
+    display: inline-block;
+}
+.preco-itens li {
+    padding: 0.4rem 0 0.4rem 1.6rem;
+    position: relative;
+    color: var(--gray-900);
+}
+.preco-itens li::before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: var(--accent);
+    font-weight: 700;
+}
+.preco-roi-card {
+    margin-top: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    background: rgba(42, 157, 143, 0.08);
+    border-radius: var(--radius);
+    color: var(--secondary);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+.preco-acoes {
+    margin-top: var(--space-3);
+}
+
 /* === Diferenciais (4 cards com icone SVG redondo verde) === */
 .diferenciais {
     margin-top: var(--space-7);
