@@ -67,7 +67,7 @@ def index():
             select(func.count(Fornecedor.id)).where(Fornecedor.ativo.is_(True))
         ) or 0,
         "rodadas": db.session.scalar(
-            select(func.count(Rodada.id)).where(Rodada.status == "finalizada")
+            select(func.count(Rodada.id)).where(Rodada.status == Rodada.STATUS_FINALIZADA)
         ) or 0,
     }
     return render_template("index.html", prova_social=prova_social)

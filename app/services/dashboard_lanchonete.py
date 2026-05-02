@@ -49,7 +49,9 @@ def dashboard_data(lanchonete_id):
         db.session.query(Rodada)
         .join(ItemPedido, ItemPedido.rodada_id == Rodada.id)
         .filter(ItemPedido.lanchonete_id == lanchonete_id,
-                Rodada.status.in_(["finalizada", "cancelada", "fechada"]))
+                Rodada.status.in_([Rodada.STATUS_FINALIZADA,
+                                   Rodada.STATUS_CANCELADA,
+                                   Rodada.STATUS_FECHADA]))
         .group_by(Rodada.id)
         .order_by(Rodada.data_abertura.desc())
         .limit(3)

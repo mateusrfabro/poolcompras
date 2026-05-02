@@ -172,8 +172,8 @@ def detalhe(rodada_id):
     fases = _montar_fases_timeline(participacao, rodada)
 
     # Proposta disponivel pra aceite: finalizada OU em_negociacao com submissao aprovada
-    proposta_disponivel = rodada.status == "finalizada" or (
-        rodada.status == "em_negociacao" and
+    proposta_disponivel = rodada.status == Rodada.STATUS_FINALIZADA or (
+        rodada.status == Rodada.STATUS_EM_NEGOCIACAO and
         db.session.query(SubmissaoCotacao.id).filter_by(rodada_id=rodada_id)
         .filter(SubmissaoCotacao.aprovada_em.isnot(None)).first() is not None
     )

@@ -41,8 +41,8 @@ def listar():
         pass
     elif filtro_status in STATUS_HISTORICO:
         rodadas_q = rodadas_q.filter(Rodada.status == filtro_status)
-    elif filtro_status == "aberta":
-        rodadas_q = rodadas_q.filter(Rodada.status == "aberta")
+    elif filtro_status == Rodada.STATUS_ABERTA:
+        rodadas_q = rodadas_q.filter(Rodada.status == Rodada.STATUS_ABERTA)
 
     rodadas = rodadas_q.all()
 

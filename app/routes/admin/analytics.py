@@ -272,8 +272,8 @@ def relatorio():
     dados = {
         "rodadas": rodadas,
         "total_rodadas": len(rodadas),
-        "finalizadas": sum(1 for r in rodadas if r.status == "finalizada"),
-        "canceladas": sum(1 for r in rodadas if r.status == "cancelada"),
+        "finalizadas": sum(1 for r in rodadas if r.status == Rodada.STATUS_FINALIZADA),
+        "canceladas": sum(1 for r in rodadas if r.status == Rodada.STATUS_CANCELADA),
         "total_pedidos": total_pedidos,
         "total_cotacoes": total_cotacoes,
         "total_participacoes": total_participacoes,

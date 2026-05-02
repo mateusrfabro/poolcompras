@@ -27,7 +27,7 @@ def fechar_vencidas():
     agora = datetime.now(timezone.utc)
 
     rodadas = Rodada.query.filter(
-        Rodada.status == "aberta",
+        Rodada.status == Rodada.STATUS_ABERTA,
         Rodada.data_fechamento <= agora,
     ).all()
 
@@ -36,7 +36,7 @@ def fechar_vencidas():
         return
 
     for r in rodadas:
-        r.status = "fechada"
+        r.status = Rodada.STATUS_FECHADA
         db.session.add(EventoRodada(
             rodada_id=r.id,
             tipo=EventoRodada.TIPO_RODADA_FECHADA,
@@ -105,7 +105,7 @@ def deadline_vencido():
 def status():
     """Mostra rodadas abertas e suas datas de fechamento (util pra debug de cron)."""
     agora = datetime.now(timezone.utc)
-    rodadas = Rodada.query.filter_by(status="aberta").order_by(Rodada.data_fechamento.asc()).all()
+    rodadas = Rodada.query.filter_by(status=Rodada.STATUS_ABERTA).order_by(Rodada.data_fechamento.asc()).all()
     if not rodadas:
         click.echo("Nenhuma rodada aberta.")
         return

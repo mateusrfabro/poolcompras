@@ -64,7 +64,7 @@
 .tfoot-total { background: #EDF2F7; font-weight: 600; }
 
 /* Valores de economia (positiva/negativa/neutra) — classes ao inves de style inline. */
-.economia-pos     { color: var(--success); }
+.economia-pos     { color: var(--success-text); }
 .economia-neg     { color: var(--danger); }
 .economia-neutro  { color: var(--gray-700); }
 .text-emphasis    { font-size: 1.05em; }
@@ -92,7 +92,8 @@
     --gray-500: #adb5bd;
     --gray-700: #495057;
     --gray-900: #212529;
-    --success: #2A9D8F;          /* alinhado ao accent */
+    --success: #2A9D8F;          /* alinhado ao accent — borders, backgrounds */
+    --success-text: #1e7268;     /* mesma familia, escurecido pra contraste WCAG AA (4.5:1) em texto sobre fundo claro */
     --danger: #d62828;           /* mantem - vermelho universal */
     --warning: #e09f3e;          /* mantem - amarelo universal */
     --radius: 8px;
@@ -984,7 +985,7 @@ h1, h2, h3, h4, h5, h6 {
     50% { opacity: 0.7; }
 }
 .badge-fechada { background: #fff3cd; color: #856404; }
-.badge-finalizada { background: #d4edda; color: var(--success); font-weight: 600; }
+.badge-finalizada { background: #d4edda; color: var(--success-text); font-weight: 600; }
 
 /* Forms */
 .form-page {
@@ -1061,7 +1062,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 1rem;
     font-size: 0.9rem;
 }
-.alert-success { background: #d4edda; color: var(--success); }
+.alert-success { background: #d4edda; color: var(--success-text); }
 .alert-error { background: #f8d7da; color: var(--danger); }
 .alert-warning { background: #fff3cd; color: #856404; }
 .alert-info { background: #e0f2fe; color: #075985; }
@@ -1840,9 +1841,9 @@ h1, h2, h3, h4, h5, h6 {
 .badge-lg { font-size: 0.85rem; padding: 0.35rem 0.9rem; }
 
 /* Badges especificos por dominio (evita acoplamento com status de rodada) */
-.badge-ativo        { background: #d4edda; color: var(--success); }
+.badge-ativo        { background: #d4edda; color: var(--success-text); }
 .badge-inativo      { background: var(--gray-200); color: var(--gray-700); }
-.badge-selecionada  { background: #d4edda; color: var(--success); }
+.badge-selecionada  { background: #d4edda; color: var(--success-text); }
 
 /* Estrelas readonly (exibicao de nota ja dada) */
 .stars-readonly {
@@ -1858,7 +1859,7 @@ h1, h2, h3, h4, h5, h6 {
 /* Stat cards (variantes) */
 .stat-card-primary { border-left: 4px solid var(--primary); }
 .stat-card-success { border-left: 4px solid var(--success); }
-.stat-card-success .stat-number { color: var(--success); }
+.stat-card-success .stat-number { color: var(--success-text); }
 .stat-hint {
     margin-top: 0.4rem;
     font-size: 0.75rem;

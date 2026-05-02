@@ -19,7 +19,10 @@ def dashboard():
     fornecedor = current_user.fornecedor
 
     rodadas_para_cotar = Rodada.query.filter(
-        Rodada.status.in_(["aguardando_cotacao", "em_negociacao", "fechada", "cotando"])
+        Rodada.status.in_([Rodada.STATUS_AGUARDANDO_COTACAO,
+                           Rodada.STATUS_EM_NEGOCIACAO,
+                           Rodada.STATUS_FECHADA,
+                           Rodada.STATUS_COTANDO])
     ).order_by(Rodada.data_fechamento.desc()).all()
 
     minhas_cotacoes = (

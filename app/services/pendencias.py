@@ -18,7 +18,7 @@ def pendencias_lanchonete(lanchonete_id):
         ParticipacaoRodada.query
         .filter_by(lanchonete_id=lanchonete_id)
         .join(Rodada, ParticipacaoRodada.rodada_id == Rodada.id)
-        .filter(Rodada.status == "finalizada")
+        .filter(Rodada.status == Rodada.STATUS_FINALIZADA)
         .options(joinedload(ParticipacaoRodada.rodada))
         .all()
     )
