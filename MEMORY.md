@@ -1,4 +1,4 @@
-# Memoria do projeto PoolCompras
+# Memoria do projeto Aggron
 
 Sistema de memoria persistente pra aprendizados consolidados do projeto.
 Claude Code deve ler este arquivo no inicio de cada sessao.
@@ -14,7 +14,7 @@ Claude Code deve ler este arquivo no inicio de cada sessao.
 
 ### Preferencias tecnicas
 - Flask + Jinja + CSS vanilla — **nao introduzir framework** JS (React, Vue, etc)
-- Manter paleta laranja do PoolCompras — **NAO alterar identidade visual** sem autorizacao
+- Manter paleta laranja do Aggron — **NAO alterar identidade visual** sem autorizacao
 - Prefere **commits granulares** com mensagem descritiva
 - Pytest sempre que possivel — NAO aceita merge sem teste novo pra feature nova
 

@@ -1,6 +1,6 @@
 # Squad Pool Compras
 
-8 agentes especializados pro projeto PoolCompras.
+8 agentes especializados pro projeto Aggron.
 
 ## Quem e quem
 

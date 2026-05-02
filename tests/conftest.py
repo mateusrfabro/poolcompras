@@ -1,5 +1,5 @@
 """
-Fixtures pytest para PoolCompras.
+Fixtures pytest para Aggron.
 
 Usa SQLite in-memory por teste (isolado), cria schema via db.create_all()
 e popula com usuarios fixos para cenarios de IDOR e fluxo.

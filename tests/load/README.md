@@ -1,6 +1,6 @@
 # Carga (Locust)
 
-Suite de teste de carga rodando o caminho critico do PoolCompras.
+Suite de teste de carga rodando o caminho critico do Aggron.
 
 ## Quando rodar
 
@@ -21,7 +21,7 @@ pip install -r requirements-dev.txt   # instala locust 2.32.4
 ```
 
 App alvo precisa ter os seeds de dev:
-- `admin@poolcompras.com` / `admin123`
+- `admin@aggron.com.br` / `admin123`
 - `smash@demo.com` / `demo123`
 - `vendas@dsulcarnes.demo` / `demo123`
 

@@ -94,7 +94,7 @@ def _processar_update(update: dict):
 
     if not token:
         _enviar(chat_id,
-                "Oi! Pra vincular seu Telegram ao PoolCompras, volte pro "
+                "Oi! Pra vincular seu Telegram ao Aggron, volte pro "
                 "site, entre em Meu Perfil e clique em \"Conectar Telegram\". "
                 "A vinculacao eh automatica.")
         return
@@ -127,7 +127,7 @@ def _processar_update(update: dict):
     ).scalar_one_or_none()
     if ja_usado:
         _enviar(chat_id,
-                "Este Telegram ja esta vinculado a outra conta do PoolCompras. "
+                "Este Telegram ja esta vinculado a outra conta do Aggron. "
                 "Desvincule a conta antiga antes de vincular esta.")
         return
 
@@ -136,7 +136,7 @@ def _processar_update(update: dict):
     logger.info("TELEGRAM_WEBHOOK_VINCULADO usuario=%s chat_id=%s", usuario.id, chat_id)
     _enviar(chat_id,
             "<b>Telegram conectado!</b>\n\nVoce recebe notificacoes do "
-            "PoolCompras aqui. Volte ao site e atualize a pagina pra ver "
+            "Aggron aqui. Volte ao site e atualize a pagina pra ver "
             "o status atualizado.")
 
 

@@ -53,25 +53,29 @@ def pendencias_fornecedor(fornecedor_id):
 
     Cada bloco: {'rodada': Rodada, 'aguardando_pagamento': [...], 'aguardando_entrega': [...]}
     """
-    rodadas_cotadas_ids = [
-        r for (r,) in db.session.query(Cotacao.rodada_id)
-            .filter_by(fornecedor_id=fornecedor_id)
-            .distinct().all()
-    ]
-    if not rodadas_cotadas_ids:
-        return []
+    # EXISTS subquery substitui 2 queries (distinct rodada_ids + IN (...))
+    # por 1 join semantico. Postgres otimiza melhor que array IN com
+    # cardinalidade alta — ranking das pendencias do fornecedor.
+    cotou_nesta_rodada = (
+        db.session.query(Cotacao.id)
+        .filter(Cotacao.rodada_id == ParticipacaoRodada.rodada_id)
+        .filter(Cotacao.fornecedor_id == fornecedor_id)
+        .exists()
+    )
 
     participacoes = (
         ParticipacaoRodada.query
         .options(joinedload(ParticipacaoRodada.lanchonete),
                  joinedload(ParticipacaoRodada.rodada))
-        .filter(ParticipacaoRodada.rodada_id.in_(rodadas_cotadas_ids))
+        .filter(cotou_nesta_rodada)
         .filter(ParticipacaoRodada.aceite_proposta.is_(True))
         .filter(ParticipacaoRodada.comprovante_key.isnot(None))
         .filter(ParticipacaoRodada.entrega_informada_em.is_(None))
         .order_by(ParticipacaoRodada.comprovante_em.asc())
         .all()
     )
+    if not participacoes:
+        return []
 
     # Calcula valor que cada lanchonete deve PAGAR pro fornecedor atual
     # (qtd pedida x preco vencedor da cotacao DELE). 1 query agrupada por

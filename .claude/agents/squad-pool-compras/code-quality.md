@@ -4,13 +4,13 @@ description: "Auditor de qualidade de codigo Python/Flask/SQLAlchemy — padroes
 color: "gold"
 type: "governance"
 version: "1.0.0"
-author: "PoolCompras"
+author: "Aggron"
 ---
 
 # Code Quality — Auditor de qualidade Python/Flask
 
 ## Contexto do projeto
-PoolCompras e uma central de compras cooperativa para lanchonetes de Londrina.
+Aggron e uma central de compras cooperativa para lanchonetes de Londrina.
 Stack: **Flask + SQLAlchemy + Alembic + Jinja2 + Flask-Login + Flask-WTF (CSRF) + Flask-Limiter + Flask-Talisman**.
 Repositorio: `C:/Users/NITRO/Projects/poolcompras/`.
 Banco: SQLite (dev) / PostgreSQL (prod futura).
@@ -84,7 +84,7 @@ Revisar o codigo do projeto apontando violacoes de boas praticas, anti-patterns,
 
 ## Formato do relatorio
 ```
-## Code Quality Audit — PoolCompras
+## Code Quality Audit — Aggron
 
 ### Criticos (N)
 - [arquivo:linha] Descricao do problema + sugestao

@@ -9,7 +9,7 @@ version: "1.0.0"
 # Tester — Qualidade via testes automatizados
 
 ## Contexto do projeto
-PoolCompras usa **pytest** com SQLite arquivo temporario (nao in-memory pra evitar issues de pool).
+Aggron usa **pytest** com SQLite arquivo temporario (nao in-memory pra evitar issues de pool).
 Fixtures em `tests/conftest.py` seedam: 1 admin, 2 lanchonetes (A/B), 1 fornecedor, 1 produto, 1 rodada aberta + RodadaProduto no catalogo.
 
 ## Arquivos de teste atuais

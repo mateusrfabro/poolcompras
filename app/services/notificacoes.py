@@ -129,7 +129,7 @@ def enviar_link_recuperacao(usuario, link: str) -> bool:
     Marcado sensitive: o link contem token assinado — nunca cair em log."""
     texto = (
         f"Olá, {_escape(usuario.nome_responsavel)}!\n\n"
-        f"Recebemos um pedido pra redefinir sua senha no PoolCompras.\n"
+        f"Recebemos um pedido pra redefinir sua senha no Aggron.\n"
         f"Clique no link abaixo (válido por 1 hora):\n\n"
         f"{link}\n\n"
         f"Se você não solicitou, ignore esta mensagem."
@@ -148,7 +148,7 @@ def notificar_evento(usuario, titulo: str, detalhes: str = "") -> bool:
     texto = f"<b>{_escape(titulo)}</b>"
     if detalhes:
         texto += f"\n\n{_escape(detalhes)}"
-    texto += "\n\n— PoolCompras"
+    texto += "\n\n— Aggron"
     return enviar_telegram(usuario, texto)
 
 

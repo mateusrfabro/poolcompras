@@ -75,17 +75,11 @@ def _mask_email(email: str) -> str:
 _RECUPERACAO_SALT = "recuperar-senha"
 _RECUPERACAO_TTL_SEG = 3600  # 1 hora
 
-# Hash bcrypt dummy usado pra equalizar tempo de resposta em login com
-# email inexistente (timing attack). Gerado com generate_password_hash
-# — qualquer hash bcrypt serve; conteudo nao eh usado.
-_DUMMY_HASH = None  # placeholder retrocompat — Argon2 dummy mora em passwords.check_dummy
-
-
 def _token_serializer():
     return URLSafeTimedSerializer(current_app.config["SECRET_KEY"])
 
 
-def _agora_naive():
+def _agora_utc():
     return datetime.now(timezone.utc)
 
 
@@ -220,7 +214,7 @@ def registro():
 
         session.clear()
         login_user(usuario)
-        flash("Cadastro realizado! Bem-vindo ao PoolCompras.", "success")
+        flash("Cadastro realizado! Bem-vindo ao Aggron.", "success")
         return redirect(url_for("main.dashboard"))
 
     return render_template("auth/registro.html")
@@ -297,7 +291,7 @@ def registro_fornecedor():
 
         session.clear()
         login_user(usuario)
-        flash("Cadastro realizado! Bem-vindo ao PoolCompras.", "success")
+        flash("Cadastro realizado! Bem-vindo ao Aggron.", "success")
         return redirect(url_for("fornecedor.dashboard"))
 
     return render_template("auth/registro_fornecedor.html")
@@ -388,7 +382,7 @@ def redefinir_senha(token):
                                     token=token, erro_match=True)
 
         usuario.senha_hash = hash_senha(senha)
-        usuario.senha_atualizada_em = _agora_naive()
+        usuario.senha_atualizada_em = _agora_utc()
         db.session.commit()
         flash("Senha redefinida com sucesso. Faça login com a nova senha.", "success")
         return redirect(url_for("auth.login"))

@@ -4,13 +4,13 @@ description: "Auditor de seguranca web — CSRF, IDOR, SQLi, auth/authz, secrets
 color: "red"
 type: "security"
 version: "1.0.0"
-author: "PoolCompras"
+author: "Aggron"
 ---
 
 # Security — Auditor de Seguranca Web (Flask)
 
 ## Contexto do projeto
-PoolCompras e uma aplicacao Flask multi-tenant (admin, lanchonete, fornecedor) com dados financeiros (pedidos, cotacoes, comprovantes de pagamento).
+Aggron e uma aplicacao Flask multi-tenant (admin, lanchonete, fornecedor) com dados financeiros (pedidos, cotacoes, comprovantes de pagamento).
 Ja usa: **Flask-WTF (CSRF), Flask-Login (sessao), Flask-Limiter (rate limit), Flask-Talisman (CSP + security headers)**.
 Storage abstraction em `app/services/storage.py` pra uploads (local -> S3 futuro).
 
@@ -74,7 +74,7 @@ Auditar a aplicacao procurando vulnerabilidades comuns OWASP Top 10 adaptadas a 
 ### A10 — SSRF
 - Se houver fetch de URL de entrada do user, validar allowlist
 
-## Checklist especifico PoolCompras
+## Checklist especifico Aggron
 
 ### Uploads (comprovante de pagamento)
 - [ ] Validacao de extensao + magic bytes
@@ -110,7 +110,7 @@ Auditar a aplicacao procurando vulnerabilidades comuns OWASP Top 10 adaptadas a 
 
 ## Formato do relatorio
 ```
-## Security Audit — PoolCompras
+## Security Audit — Aggron
 
 ### Criticos (severidade alta — exploit facil + impacto alto)
 - [arquivo:linha] Descricao do vetor + impacto + correcao

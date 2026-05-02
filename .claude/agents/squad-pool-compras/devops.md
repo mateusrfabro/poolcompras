@@ -9,7 +9,7 @@ version: "1.0.0"
 # DevOps — Deploy e infra
 
 ## Contexto
-PoolCompras hoje roda em dev (Flask builtin + ngrok). Para producao:
+Aggron hoje roda em dev (Flask builtin + ngrok). Para producao:
 - **Socio Ademar** vai entregar VM Ubuntu no Yggdrasil (servidor casa dele: Windows 11 + Docker Desktop + WSL2 + Tailscale)
 - Previsao original: 15/04/2026 (ja passou, aguardando)
 - Deploy pode ser via **Docker** (docker compose) OU **bare-metal** (systemd)
@@ -73,7 +73,7 @@ FLASK_ENV=          # development | production
 ### systemd (se bare-metal)
 ```ini
 [Unit]
-Description=PoolCompras Flask App
+Description=Aggron Flask App
 After=network.target
 
 [Service]

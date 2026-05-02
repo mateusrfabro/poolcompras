@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}PoolCompras - Central de Compras para Hamburguerias{% endblock %}
+{% block title %}Aggron - Central de Compras para Hamburguerias{% endblock %}
 
 {% block content %}
 <div class="hero">
@@ -31,12 +31,12 @@
     </div>
 </section>
 
-{# Diferenciais — atributos que justificam escolher PoolCompras (B2B padrao).
+{# Diferenciais — atributos que justificam escolher Aggron (B2B padrao).
    Icones Lucide-style (line-art 24x24, stroke 2px, currentColor) inline pra
    evitar request extra e CSP issues. #}
 <section class="diferenciais bg-alt">
     <div class="container-secao">
-    <h2 class="secao-titulo">Por que PoolCompras?</h2>
+    <h2 class="secao-titulo">Por que Aggron?</h2>
     <div class="diferenciais-grid">
         <div class="diferencial-card">
             <span class="diferencial-icon" aria-hidden="true">
@@ -61,7 +61,7 @@
                 </svg>
             </span>
             <h3>Pagamento direto ao fornecedor</h3>
-            <p>Você paga o fornecedor escolhido. PoolCompras não intermedia o financeiro.</p>
+            <p>Você paga o fornecedor escolhido. Aggron não intermedia o financeiro.</p>
         </div>
         <div class="diferencial-card">
             <span class="diferencial-icon" aria-hidden="true">
@@ -129,7 +129,7 @@
    inicial). Se TODOS forem zero, secao inteira fica oculta. #}
 {% if prova_social and (prova_social.lanchonetes or prova_social.fornecedores or prova_social.rodadas) %}
 <section class="prova-social">
-    <h2 class="prova-social-titulo">Hamburguerias de Londrina já compram juntas no PoolCompras</h2>
+    <h2 class="prova-social-titulo">Hamburguerias de Londrina já compram juntas no Aggron</h2>
     <div class="prova-social-grid">
         {% if prova_social.lanchonetes %}
         <div class="prova-social-card">

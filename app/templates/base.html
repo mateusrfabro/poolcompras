@@ -3,7 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}PoolCompras{% endblock %}</title>
+    <title>{% block title %}Aggron{% endblock %}</title>
+    {# Meta description default — paginas internas podem sobrescrever via {% block meta_description %} #}
+    <meta name="description" content="{% block meta_description %}Aggron — central de compras cooperativa pra hamburguerias de Londrina. Volume agregado, preço menor, sem comissão pra lanchonete.{% endblock %}">
+    <meta name="theme-color" content="#1D3557">
+    {# Open Graph (preview ao colar link no WhatsApp/Slack/etc) #}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Aggron">
+    <meta property="og:locale" content="pt_BR">
+    <meta property="og:title" content="{% block og_title %}{{ self.title()|striptags }}{% endblock %}">
+    <meta property="og:description" content="{{ self.meta_description() }}">
+    <meta property="og:url" content="{{ request.url }}">
+    <meta name="twitter:card" content="summary">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap">
@@ -15,12 +26,12 @@
         <div class="nav-brand">
             {% if current_user.is_authenticated %}
                 {% if current_user.is_fornecedor %}
-                    <a href="{{ url_for('fornecedor.dashboard') }}">PoolCompras</a>
+                    <a href="{{ url_for('fornecedor.dashboard') }}">Aggron</a>
                 {% else %}
-                    <a href="{{ url_for('main.dashboard') }}">PoolCompras</a>
+                    <a href="{{ url_for('main.dashboard') }}">Aggron</a>
                 {% endif %}
             {% else %}
-                <a href="{{ url_for('main.index') }}">PoolCompras</a>
+                <a href="{{ url_for('main.index') }}">Aggron</a>
             {% endif %}
         </div>
 
@@ -92,7 +103,7 @@
     <footer class="footer">
         <div class="footer-grid">
             <div class="footer-col">
-                <h4>PoolCompras</h4>
+                <h4>Aggron</h4>
                 <ul>
                     <li><a href="{{ url_for('main.index') }}">Início</a></li>
                     <li><a href="{{ url_for('main.faq') }}">Perguntas frequentes</a></li>
@@ -116,7 +127,7 @@
                 <h4>Contato</h4>
                 <ul>
                     <li>Londrina, PR</li>
-                    <li><a href="mailto:contato@poolcompras.com">contato@poolcompras.com</a></li>
+                    <li><a href="mailto:contato@aggron.com.br">contato@aggron.com.br</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -128,7 +139,7 @@
             </div>
         </div>
         <div class="footer-bottom">
-            <p>&copy; 2026 PoolCompras &mdash; Central de Compras Cooperativa | Londrina-PR</p>
+            <p>&copy; 2026 Aggron &mdash; Central de Compras Cooperativa | Londrina-PR</p>
         </div>
     </footer>
 

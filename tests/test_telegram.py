@@ -126,7 +126,7 @@ def test_notificar_evento_inclui_titulo_e_detalhes(app):
         txt = capturado["json"]["text"]
         assert "<b>Proposta aprovada</b>" in txt
         assert "Rodada A" in txt
-        assert "PoolCompras" in txt
+        assert "Aggron" in txt
     finally:
         os.environ.pop("TELEGRAM_BOT_TOKEN", None)
 
@@ -142,7 +142,7 @@ def test_link_recuperacao_usa_telegram_quando_disponivel(app):
 
     try:
         with patch("app.services.notificacoes.requests.post", return_value=resp) as mock_post:
-            ret = enviar_link_recuperacao(u, "https://poolcompras.com/redefinir-senha/tok123")
+            ret = enviar_link_recuperacao(u, "https://aggron.com.br/redefinir-senha/tok123")
         assert ret is True
         # Mensagem tem o link completo
         assert "redefinir-senha/tok123" in mock_post.call_args.kwargs["json"]["text"]

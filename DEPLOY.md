@@ -1,4 +1,4 @@
-# Deploy PoolCompras
+# Deploy Aggron
 
 ## Opcao 1: Docker (recomendado)
 
@@ -30,7 +30,7 @@ docker compose logs -f app   # ver logs da app
 
 # 6. Acessar
 # http://IP_DA_VM:80 (via nginx)
-# Login admin: admin@poolcompras.com / admin123
+# Login admin: admin@aggron.com.br / admin123
 
 # 7. IMPORTANTE: depois do primeiro deploy, voltar RUN_SEED=false
 #    no .env para nao rodar seed de novo no proximo restart.
@@ -124,7 +124,7 @@ gunicorn --bind 0.0.0.0:5050 --workers 3 --timeout 120 run:app
 ```ini
 # /etc/systemd/system/poolcompras.service
 [Unit]
-Description=PoolCompras Central de Compras
+Description=Aggron Central de Compras
 After=network.target postgresql.service
 
 [Service]

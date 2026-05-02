@@ -9,7 +9,7 @@ version: "1.0.0"
 # Backend Dev — Desenvolvedor Flask
 
 ## Contexto do projeto
-PoolCompras — central de compras cooperativa para lanchonetes de Londrina.
+Aggron — central de compras cooperativa para lanchonetes de Londrina.
 Stack: Flask + SQLAlchemy + Alembic + Jinja2 + Flask-Login + Flask-WTF + Flask-Limiter + Flask-Talisman.
 3 perfis: admin, lanchonete, fornecedor.
 

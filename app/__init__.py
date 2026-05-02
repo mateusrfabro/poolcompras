@@ -132,9 +132,35 @@ def create_app(config_name="default"):
 
     # Error handlers amigaveis
     import logging as _logging
-    from flask import render_template, request
+    import re as _re
+    from flask import render_template, request, jsonify, redirect, url_for, flash
     from flask_login import current_user
     _err_logger = _logging.getLogger("app.errors")
+
+    # Mascara tokens em access logs (Werkzeug + Gunicorn). Sem isso, paths
+    # como /redefinir-senha/<token>, /webhook/telegram/<secret> e
+    # /uploads/<key> caem em texto-claro nos logs — qualquer um que ler o
+    # log file recupera a sessao/segredo.
+    _TOKEN_PATH_RE = _re.compile(
+        r'(/(?:redefinir-senha|webhook/telegram|uploads)/)([^/?\s"\']+)'
+    )
+
+    class _SanitizeTokenFilter(_logging.Filter):
+        def filter(self, record):
+            try:
+                msg = record.getMessage()
+            except Exception:
+                return True
+            if isinstance(msg, str) and "/" in msg:
+                novo = _TOKEN_PATH_RE.sub(r"\1<redacted>", msg)
+                if novo != msg:
+                    record.msg = novo
+                    record.args = ()
+            return True
+
+    _sanitize_filter = _SanitizeTokenFilter()
+    for _name in ("werkzeug", "gunicorn.access", "gunicorn.error"):
+        _logging.getLogger(_name).addFilter(_sanitize_filter)
 
     @app.errorhandler(404)
     def erro_404(e):
@@ -143,6 +169,23 @@ def create_app(config_name="default"):
     @app.errorhandler(403)
     def erro_403(e):
         return render_template("errors/403.html"), 403
+
+    @app.errorhandler(413)
+    def erro_413(e):
+        # Upload maior que MAX_CONTENT_LENGTH (5MB hoje). Pra AJAX retorna
+        # JSON pra fetch tratar; pra request comum cai num template generico.
+        wants_json = (
+            request.is_json
+            or "application/json" in (request.headers.get("Accept") or "")
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        )
+        if wants_json:
+            return jsonify({"erro": "arquivo_muito_grande",
+                            "limite_mb": 5}), 413
+        flash("Arquivo muito grande. Tamanho maximo: 5 MB.", "error")
+        # Volta pra referer ou home; sem template dedicado pra evitar churn.
+        # 303 forca GET no destino (POST -> GET seguro apos erro).
+        return redirect(request.referrer or url_for("main.index"), code=303)
 
     @app.errorhandler(500)
     def erro_500(e):

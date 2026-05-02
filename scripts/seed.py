@@ -70,16 +70,16 @@ def seed():
         db.create_all()
 
         # Admin (vocês)
-        if not Usuario.query.filter_by(email="admin@poolcompras.com").first():
+        if not Usuario.query.filter_by(email="admin@aggron.com.br").first():
             admin = Usuario(
-                email="admin@poolcompras.com",
+                email="admin@aggron.com.br",
                 senha_hash=generate_password_hash("admin123"),
-                nome_responsavel="Admin PoolCompras",
+                nome_responsavel="Admin Aggron",
                 telefone="(43) 99999-0000",
                 tipo="admin",
             )
             db.session.add(admin)
-            print("Admin criado: admin@poolcompras.com / admin123")
+            print("Admin criado: admin@aggron.com.br / admin123")
 
         # Produtos
         existentes = Produto.query.count()

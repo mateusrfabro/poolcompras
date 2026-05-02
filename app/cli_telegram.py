@@ -51,7 +51,7 @@ def set_webhook():
     secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
     if not url_base:
         raise click.ClickException(
-            "TELEGRAM_WEBHOOK_URL nao definido (ex: https://poolcompras.xyz)"
+            "TELEGRAM_WEBHOOK_URL nao definido (ex: https://aggron.com.br)"
         )
     if not secret:
         raise click.ClickException(

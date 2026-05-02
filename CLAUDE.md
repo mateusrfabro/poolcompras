@@ -1,11 +1,20 @@
-# PoolCompras — guia do Claude Code
+# Aggron — guia do Claude Code
 
 ## O que é o projeto
 Central de compras cooperativa para hamburguerias de Londrina. Lanchonetes fazem pedidos, sistema agrega, socios (Mateus + Ademar) cotam com fornecedores. Volume agregado = preco menor.
 
-**Repo:** https://github.com/mateusrfabro/poolcompras
-**Pasta local:** `C:/Users/NITRO/Projects/poolcompras`
+**Marca atual:** Aggron (rebrand de PoolCompras em 2026-05). Domínio: aggron.com.br
+**Repo:** https://github.com/mateusrfabro/poolcompras (nome do repo NAO foi renomeado — manter)
+**Pasta local:** `C:/Users/NITRO/Projects/poolcompras` (pasta NAO foi renomeada — manter)
 **Stack:** Flask + SQLAlchemy + Alembic + Jinja2 + CSS vanilla + JS vanilla CSP-safe
+
+### Bindings ainda como `poolcompras` (intencional — NAO mexer)
+- `instance/poolcompras.db` — filename SQLite dev
+- `config.py`: `poolcompras.db` default + `poolcomprasbot` Telegram username default
+- `docker-compose.yml`: container_name + POSTGRES_DB + POSTGRES_USER (volumes ja existem na Yggdrasil — renomear perderia dados)
+- `entrypoint.sh`: log paths (`/var/log/poolcompras-*.log`)
+- Bot Telegram `@poolcomprasbot` — ativo. Trocar pra `@aggronbot` so depois de criar no BotFather.
+- `.claude/agents/squad-pool-compras/` — folder local de agentes
 
 ## Socios e papeis
 - **Mateus** (voce esta interagindo com ele): tech lead, desenvolve as features
@@ -27,7 +36,7 @@ Central de compras cooperativa para hamburguerias de Londrina. Lanchonetes fazem
 ## Logins de teste
 | Perfil | Email | Senha |
 |---|---|---|
-| Admin | admin@poolcompras.com | admin123 |
+| Admin | admin@aggron.com.br | admin123 |
 | Lanchonete principal | smash@demo.com | demo123 |
 | Fornecedor principal | vendas@dsulcarnes.demo | demo123 |
 
@@ -87,7 +96,7 @@ Use via `Task` tool com `subagent_type`.
 - **NUNCA** import `from app.models import X` dentro de funcao — UnboundLocalError
 - **NUNCA** Float pra dinheiro — sempre `Numeric(12, 2)`
 - **NUNCA** commitar `.env` ou credenciais
-- **NUNCA** alterar identidade visual sem autorizacao (paleta azul corporativa do PoolCompras pos-rebrand B2B)
+- **NUNCA** alterar identidade visual sem autorizacao (paleta azul corporativa do Aggron pos-rebrand B2B)
 - **NUNCA** usar `onclick=` inline (CSP bloqueia) — JS externo em `app/static/js/`
 - **NUNCA** deploy/push force sem autorizacao explicita
 
@@ -175,7 +184,7 @@ tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 3. **Admin pode selecionar do catalogo existente.** Fornecedor sugere novo; admin aprova.
 4. **Somente admin cancela rodada.**
 5. **Fornecedor ve rodada COMO UM TODO, nao por lanchonete individual.** Pendencias agrupadas por rodada.
-6. **Pagamento e FORA do sistema.** PoolCompras so guarda o comprovante.
+6. **Pagamento e FORA do sistema.** Aggron so guarda o comprovante.
 7. **Dados bancarios do fornecedor** sao exibidos pra lanchonete na hora de pagar.
 8. **Aprovacao de cotacao individual** — cada fornecedor aprovado ja libera aceite parcial pra lanchonete.
 9. **Notas de negociacao append-only** — nao eh chat, eh campo de texto + historico com timestamp+autor.

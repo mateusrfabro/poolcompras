@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 @login_required
 @admin_required
 def analytics():
-    """Dashboard de KPIs do PoolCompras para o admin."""
+    """Dashboard de KPIs do Aggron para o admin."""
     total_lanchonetes = Lanchonete.query.filter_by(ativa=True).count()
     total_fornecedores = Fornecedor.query.filter_by(ativo=True).count()
     total_produtos = Produto.query.filter_by(ativo=True).count()
@@ -70,12 +70,17 @@ def analytics():
         .all()
     )
 
+    # Top lanchonetes = participacoes em rodadas FINALIZADAS. Sem o filtro,
+    # rodada cancelada/preparando entrava no count e distorcia o ranking
+    # (lanchonete que abriu rascunho aparecia como "ativa").
     top_lanchonetes = (
         db.session.query(
             Lanchonete.nome_fantasia,
             func.count(ParticipacaoRodada.id).label("participacoes"),
         )
         .join(ParticipacaoRodada, ParticipacaoRodada.lanchonete_id == Lanchonete.id)
+        .join(Rodada, Rodada.id == ParticipacaoRodada.rodada_id)
+        .filter(Rodada.status == Rodada.STATUS_FINALIZADA)
         .group_by(Lanchonete.id)
         .order_by(func.count(ParticipacaoRodada.id).desc())
         .limit(5)

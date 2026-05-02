@@ -44,16 +44,22 @@ def detalhe(rodada_id):
         .all()
     )
 
-    # Fix N+1: 1 query por categoria de dados
+    # Fix N+1: 1 query por categoria de dados.
+    # Perf: filtra cotacoes pelos produtos QUE A LANCHONETE PEDIU — sem
+    # esse filtro, rodadas grandes (50+ produtos) trazem 80%+ rows que
+    # nem entram no loop abaixo.
+    meus_produto_ids = [i.produto_id for i in meus_itens]
     cotacoes_por_produto = defaultdict(list)
-    cotacoes_rodada = (
-        Cotacao.query
-        .options(joinedload(Cotacao.fornecedor))
-        .filter_by(rodada_id=rodada_id)
-        .all()
-    )
-    for c in cotacoes_rodada:
-        cotacoes_por_produto[c.produto_id].append(c)
+    if meus_produto_ids:
+        cotacoes_rodada = (
+            Cotacao.query
+            .options(joinedload(Cotacao.fornecedor))
+            .filter_by(rodada_id=rodada_id)
+            .filter(Cotacao.produto_id.in_(meus_produto_ids))
+            .all()
+        )
+        for c in cotacoes_rodada:
+            cotacoes_por_produto[c.produto_id].append(c)
 
     partidas_por_produto = {
         rp.produto_id: float(rp.preco_partida) if rp.preco_partida else None

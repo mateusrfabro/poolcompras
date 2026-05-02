@@ -9,7 +9,7 @@ version: "1.0.0"
 # Database — Modelagem e performance
 
 ## Contexto
-PoolCompras usa SQLAlchemy + Alembic. Hoje SQLite (dev), futuro PostgreSQL (prod). 11 tabelas em `app/models.py`.
+Aggron usa SQLAlchemy + Alembic. Hoje SQLite (dev), futuro PostgreSQL (prod). 11 tabelas em `app/models.py`.
 
 ## Modelos atuais
 - `Usuario` — auth, admin flag, tipo (lanchonete/fornecedor)

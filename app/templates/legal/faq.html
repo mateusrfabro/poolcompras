@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Perguntas frequentes — PoolCompras{% endblock %}
+{% block title %}Perguntas frequentes — Aggron{% endblock %}
 
 {% block content %}
 <div class="page legal-page">
@@ -8,7 +8,7 @@
 
     <section class="faq-secao">
         <details open>
-            <summary><strong>Como funciona o PoolCompras?</strong></summary>
+            <summary><strong>Como funciona o Aggron?</strong></summary>
             <p>
                 Você cadastra sua lanchonete, faz seu pedido durante uma rodada aberta
                 e nós juntamos o seu pedido com o de outras lanchonetes da rede.
@@ -79,7 +79,7 @@
             <summary><strong>E se o fornecedor não entregar?</strong></summary>
             <p>
                 A relação comercial (qualidade, prazo, recebimento) é entre lanchonete
-                e fornecedor &mdash; o PoolCompras não é parte da transação.
+                e fornecedor &mdash; o Aggron não é parte da transação.
                 <strong>Mas</strong>: a plataforma guarda histórico de avaliações e
                 comprovantes, e fornecedores com problemas recorrentes são removidos
                 da rede. Sua avaliação ao final da rodada conta para o rating público
@@ -91,25 +91,25 @@
             <summary><strong>Sou fornecedor &mdash; como funciona?</strong></summary>
             <p>
                 Modelo é diferente: você se cadastra, recebe a demanda agregada das rodadas
-                e envia cotação. O acordo comercial com PoolCompras é negociado caso a caso
+                e envia cotação. O acordo comercial com Aggron é negociado caso a caso
                 após o cadastro. Comece em
                 <a href="{{ url_for('auth.registro_fornecedor') }}">Cadastro de fornecedor</a>.
             </p>
         </details>
 
         <details>
-            <summary><strong>Quem está por trás do PoolCompras?</strong></summary>
+            <summary><strong>Quem está por trás do Aggron?</strong></summary>
             <p>
                 Iniciativa cooperativa baseada em Londrina-PR, focada em hamburguerias da região.
                 Contato direto:
-                <a href="mailto:contato@poolcompras.com">contato@poolcompras.com</a>.
+                <a href="mailto:contato@aggron.com.br">contato@aggron.com.br</a>.
             </p>
         </details>
     </section>
 
     <div class="faq-cta">
         <p>Não encontrou sua dúvida?</p>
-        <a href="mailto:contato@poolcompras.com" class="btn btn-outline">Falar com a gente</a>
+        <a href="mailto:contato@aggron.com.br" class="btn btn-outline">Falar com a gente</a>
     </div>
 </div>
 {% endblock %}

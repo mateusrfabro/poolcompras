@@ -1,4 +1,4 @@
-# Como conectar o Telegram ao PoolCompras
+# Como conectar o Telegram ao Aggron
 
 Bot gratuito — sem custo mensal, sem templates aprovados, sem Z-API.
 
@@ -6,8 +6,8 @@ Bot gratuito — sem custo mensal, sem templates aprovados, sem Z-API.
 
 1. Abra o Telegram e procure por **@BotFather**.
 2. Envie `/newbot`.
-3. Responda com **nome de exibição** (ex: `PoolCompras`).
-4. Responda com **username** terminando em `bot` (ex: `PoolComprasBot`).
+3. Responda com **nome de exibição** (ex: `Aggron`).
+4. Responda com **username** terminando em `bot` (ex: `AggronBot`).
 5. BotFather vai mandar o **token** — guarde.
 
 ## Parte 2 — Configurar o token no servidor
@@ -22,15 +22,15 @@ Em prod (systemd, variável de ambiente da VM):
 export TELEGRAM_BOT_TOKEN="123456789:ABC-DEF..."
 ```
 
-Sem a variável setada, o PoolCompras cai em fallback (loga no servidor).
+Sem a variável setada, o Aggron cai em fallback (loga no servidor).
 
 ## Parte 3 — Usuário vincula (UX automática — 3 cliques)
 
-1. Logar no PoolCompras → **Meu perfil**.
+1. Logar no Aggron → **Meu perfil**.
 2. Clicar **Conectar Telegram** → sistema abre o bot `@poolcomprasbot`
    no Telegram com um token de vinculação embutido.
 3. No Telegram, apertar **Iniciar** (ou enviar `/start`).
-4. Voltar no PoolCompras → clicar **Já dei /start, concluir** → sistema
+4. Voltar no Aggron → clicar **Já dei /start, concluir** → sistema
    descobre o chat_id automaticamente e envia uma mensagem de confirmação.
 
 Pronto. A vinculação é 1-via-1 (o token só serve pro usuário que pediu).

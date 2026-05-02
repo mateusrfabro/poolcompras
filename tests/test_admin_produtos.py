@@ -1,7 +1,7 @@
 """Testes das rotas /admin/produtos/novo e /editar.
 
 Cobre:
-- Campo subcategoria eh obrigatorio (regra de negocio do PoolCompras)
+- Campo subcategoria eh obrigatorio (regra de negocio do Aggron)
 - Criacao/edicao com todos os campos validos
 - Toggle ativo na edicao
 - Authz (so admin)

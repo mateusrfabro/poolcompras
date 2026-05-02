@@ -19,7 +19,7 @@ from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
 from app import db, limiter
-from app.services.notificacoes import enviar_telegram
+from app.services.notificacoes import enviar_telegram, post_telegram_raw
 from . import perfil_bp
 from .dados import _bot_username
 
@@ -51,20 +51,16 @@ def _iniciar_otp(chat_id) -> bool:
     secret = current_app.config["SECRET_KEY"]
     codigo_hash = _hash_codigo(codigo, secret)
 
-    # Envia ANTES de salvar pendencia — se falhar, nao contamina session
-    class _Pseudo:
-        def __init__(self, cid, uid):
-            self.telegram_chat_id = str(cid)
-            self.id = uid
-            self.nome_responsavel = ""
-            self.email = ""
-    ok = enviar_telegram(
-        _Pseudo(chat_id, current_user.id),
-        f"<b>PoolCompras — codigo de confirmacao</b>\n\n"
+    # Envia ANTES de salvar pendencia — se falhar, nao contamina session.
+    # Usamos post_telegram_raw direto (Usuario ainda nao tem chat_id salvo,
+    # entao enviar_telegram cairia no fallback). OTP nunca vai pra log.
+    ok = post_telegram_raw(
+        chat_id,
+        f"<b>Aggron — codigo de confirmacao</b>\n\n"
         f"Seu codigo de vinculacao: <code>{codigo}</code>\n\n"
         f"Digite-o no site pra concluir. Expira em 10 minutos.\n"
         f"Se nao solicitou, ignore esta mensagem.",
-        sensitive=True,  # OTP nao pode cair em log nem em DEBUG
+        contexto=f"otp-vinculacao usuario={current_user.id}",
     )
     if not ok:
         return False
@@ -265,7 +261,7 @@ def telegram_codigo():
         enviar_telegram(
             current_user,
             "<b>Telegram conectado!</b>\n\nA partir de agora voce recebe "
-            "notificacoes do PoolCompras aqui. Se quiser desvincular, volte "
+            "notificacoes do Aggron aqui. Se quiser desvincular, volte "
             "em Meu perfil -> Desconectar Telegram.",
         )
         flash("Telegram conectado com sucesso!", "success")
