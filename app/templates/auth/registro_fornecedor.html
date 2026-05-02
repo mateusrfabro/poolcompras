@@ -7,6 +7,19 @@
     <h2>Cadastro de Fornecedor</h2>
     <p class="subtitle">Cadastre-se para receber demandas e enviar cotações.</p>
 
+    <div class="card card-hl-primary mb-4">
+        <h3 class="mb-2">Como funciona pra fornecedor</h3>
+        <ul class="preco-itens">
+            <li>Você recebe a demanda agregada de várias lanchonetes em uma única rodada.</li>
+            <li>Envia sua cotação (preço de partida) e ajusta com volumes reais (preço final).</li>
+            <li>O pagamento é direto da lanchonete pro fornecedor — sem intermediação financeira.</li>
+            <li>Modelo de parceria com PoolCompras é negociado caso a caso após o cadastro.</li>
+        </ul>
+        <p class="muted mt-2">
+            Após enviar este cadastro, nossa equipe entra em contato pra alinhar os detalhes da parceria.
+        </p>
+    </div>
+
     <form method="POST" class="form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <h3>Dados de acesso</h3>

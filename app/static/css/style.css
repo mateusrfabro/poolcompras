@@ -230,6 +230,28 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 auto;
 }
 
+/* === Subtitulo de publico-alvo (separa "para lanchonetes" do resto) === */
+.secao-publico {
+    margin-top: var(--space-7);
+    margin-bottom: var(--space-3);
+    color: var(--gray-700);
+    font-size: 1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.precos-fornecedor-link {
+    margin-top: var(--space-3);
+    text-align: center;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}
+.precos-fornecedor-link a {
+    color: var(--primary);
+    font-weight: 500;
+}
+
 /* === Hero ROI tagline (linha de valor logo abaixo do subtitle) === */
 .hero-roi {
     max-width: 600px;

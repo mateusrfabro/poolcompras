@@ -19,6 +19,7 @@
     </p>
 </div>
 
+<h2 class="secao-titulo secao-publico">Para lanchonetes</h2>
 <section class="features">
     <div class="feature-card">
         <h3>1. Cadastre-se</h3>
@@ -43,15 +44,15 @@
     <div class="diferenciais-grid">
         <div class="diferencial-card">
             <span class="diferencial-icon" aria-hidden="true">
-                {# Tag de preco com diagonal — sem comissao por compra #}
+                {# Tag de preco com diagonal — modelo de assinatura simples #}
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                     <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
                     <circle cx="7" cy="7" r="1.5" fill="currentColor"/>
                     <line x1="4" y1="20" x2="20" y2="4" stroke-width="2.5"/>
                 </svg>
             </span>
-            <h3>Mensalidade fixa, sem comissão</h3>
-            <p><strong>R$ 500/mês fixo.</strong> Não tiramos % das suas compras — toda economia fica com você.</p>
+            <h3>Custo previsível pra lanchonete</h3>
+            <p><strong>R$ 500/mês fixo.</strong> Sem comissão sobre as suas compras — economia inteira fica com você.</p>
         </div>
         <div class="diferencial-card">
             <span class="diferencial-icon" aria-hidden="true">
@@ -156,16 +157,18 @@
 </section>
 {% endif %}
 
-{# Quanto custa — secao dedicada de transparencia de preco. #}
+{# Quanto custa — transparencia de preco DA LANCHONETE.
+   Modelo do fornecedor eh diferente (parceria caso a caso) e tem
+   seu proprio caminho via /registro/fornecedor. #}
 <section class="precos-secao" id="precos">
-    <h2 class="secao-titulo">Quanto custa?</h2>
+    <h2 class="secao-titulo">Quanto custa para a lanchonete?</h2>
     <div class="preco-card">
         <div class="preco-header">
             <span class="preco-moeda">R$</span>
             <span class="preco-valor">500</span>
             <span class="preco-periodo">/ mês</span>
         </div>
-        <p class="preco-sub">Mensalidade fixa por lanchonete. Sem comissão sobre compras.</p>
+        <p class="preco-sub">Mensalidade fixa por lanchonete. Sem comissão sobre as suas compras.</p>
         <ul class="preco-itens">
             <li>Acesso completo à plataforma</li>
             <li>Volume agregado com outras lanchonetes</li>
@@ -179,9 +182,13 @@
             O que vier depois é margem direta no seu bolso.
         </p>
         <div class="preco-acoes">
-            <a href="{{ url_for('auth.registro') }}" class="btn btn-primary">Quero participar</a>
+            <a href="{{ url_for('auth.registro') }}" class="btn btn-primary">Sou lanchonete — quero participar</a>
         </div>
     </div>
+    <p class="precos-fornecedor-link">
+        É fornecedor? O modelo da parceria é diferente —
+        <a href="{{ url_for('auth.registro_fornecedor') }}">saiba como funciona</a>.
+    </p>
 </section>
 
 {# CTA final — fundo azul, conforme padrao B2B do guia (CTA forte pre-footer). #}
