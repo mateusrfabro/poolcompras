@@ -1,4 +1,5 @@
-from flask import Flask
+from flask import Flask, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -8,6 +9,19 @@ from flask_limiter.util import get_remote_address
 from flask_talisman import Talisman
 from flask_caching import Cache
 from config import config
+
+
+def _ip_real_atras_cloudflare() -> str:
+    """Key func do Flask-Limiter ciente de Cloudflare Tunnel.
+
+    Prioriza CF-Connecting-IP (autoritativo, atacante nao consegue forjar
+    atras de outro Cloudflare). Fallback: X-Forwarded-For -> remote_addr.
+    Sem isso, rate-limit ficaria preso ao IP do tunnel (nao do user real).
+    """
+    cf = request.headers.get("CF-Connecting-IP", "").strip()
+    if cf:
+        return cf
+    return get_remote_address()
 
 db = SQLAlchemy()
 login_manager = LoginManager()
@@ -19,9 +33,10 @@ login_manager.login_message = "Faça login para acessar o sistema."
 login_manager.session_protection = "strong"
 csrf = CSRFProtect()
 migrate = Migrate()
-# Rate-limiter: chave = IP do cliente; backend padrao em memoria (suficiente para
-# single-process; para multiplos workers usar Redis no futuro).
-limiter = Limiter(key_func=get_remote_address, default_limits=["200 per hour"])
+# Rate-limiter: chave = IP do cliente. Backend definido em config (memory:// em
+# dev/test; redis://redis:6379/0 em prod via docker-compose).
+# key_func usa CF-Connecting-IP quando atras de Cloudflare Tunnel.
+limiter = Limiter(key_func=_ip_real_atras_cloudflare, default_limits=["200 per hour"])
 # Cache de KPIs do dashboard admin (TTL 30s). SimpleCache em dev/single-worker;
 # NullCache em testing pra cada teste pegar dado fresco; Redis em prod multi-worker
 # (config futura).
@@ -31,6 +46,13 @@ cache = Cache()
 def create_app(config_name="default"):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
+
+    # ProxyFix em prod: atras de Cloudflare Tunnel, request.remote_addr eh
+    # SEMPRE o IP do tunnel container, nunca do cliente. Sem ProxyFix nao
+    # adianta ler X-Forwarded-For — Werkzeug ignora headers fakes do remote.
+    # x_for=1 = confia em UM hop de proxy (o cloudflared rodando no Yggdrasil).
+    if config_name == "production":
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     # Em producao, SECRET_KEY tem que vir do ambiente. Sem fallback.
     if config_name == "production" and not app.config.get("SECRET_KEY"):

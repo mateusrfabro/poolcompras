@@ -126,3 +126,61 @@ def editar():
 
     return render_template("perfil/editar.html", usuario=usuario,
                            bot_username=_bot_username())
+
+
+@perfil_bp.route("/excluir-conta", methods=["POST"])
+@login_required
+@limiter.limit("3 per hour", error_message="Muitas tentativas. Aguarde.")
+def excluir_conta():
+    """Anonimiza a conta do usuario logado (LGPD Art. 18, V — direito de eliminacao).
+
+    Preserva integridade historica das rodadas/cotacoes/avaliacoes (anonimizando
+    referencias) sem apagar registros financeiros sujeitos a guarda fiscal.
+
+    Requer confirmacao explicita por digitacao da palavra EXCLUIR no form,
+    pra evitar exclusao acidental ou click-jack.
+    """
+    from datetime import datetime, timezone
+    import logging
+    from flask_login import logout_user
+    confirma = request.form.get("confirmacao_excluir", "").strip().upper()
+    if confirma != "EXCLUIR":
+        flash("Pra confirmar, digite EXCLUIR no campo. Conta nao foi alterada.", "warning")
+        return redirect(url_for("perfil.editar"))
+
+    usuario = current_user
+    uid = usuario.id
+    email_orig = usuario.email
+    # Anonimizacao: troca PII por placeholders deterministicos (nao-identificaveis)
+    usuario.email = f"excluido-{uid}@anonimo.local"
+    usuario.senha_hash = "EXCLUIDO"  # impede login (nao bate com Argon2 nem pbkdf2)
+    usuario.nome_responsavel = "Conta excluida"
+    usuario.telefone = None
+    usuario.telegram_chat_id = None
+    usuario.ativo = False
+    usuario.aceite_termos_em = None
+    # Lanchonete/Fornecedor associado: tambem desativado (preserva o registro
+    # mas remove dado pessoal sensivel — banco/PIX, email)
+    if usuario.lanchonete:
+        usuario.lanchonete.ativa = False
+    if usuario.fornecedor:
+        usuario.fornecedor.ativo = False
+        usuario.fornecedor.aparece_no_marketplace = False
+        usuario.fornecedor.email = None
+        usuario.fornecedor.chave_pix = None
+        usuario.fornecedor.banco = None
+        usuario.fornecedor.agencia = None
+        usuario.fornecedor.conta = None
+    db.session.commit()
+
+    # Log de auditoria SEM email do usuario excluido (privacidade pos-fato).
+    from app.routes.auth import _mask_email
+    logging.getLogger(__name__).info(
+        "USUARIO_EXCLUIDO usuario=%s email_orig_mask=%s",
+        uid, _mask_email(email_orig),
+    )
+
+    logout_user()
+    flash("Sua conta foi excluida. Dados pessoais foram anonimizados; historico "
+          "fiscal foi preservado conforme LGPD e exigencia legal.", "success")
+    return redirect(url_for("main.index"))

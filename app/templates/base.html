@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
+    <a class="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
     <nav class="navbar" aria-label="Navegação principal">
         <div class="nav-brand">
             {% if current_user.is_authenticated %}
@@ -68,7 +69,7 @@
         </div>
     </nav>
 
-    <main class="container">
+    <main class="container" id="conteudo-principal">
         {# H1 acessivel (leitores de tela). Visualmente oculto — a identidade
            visual continua a usar os h2 do page-header. #}
         <h1 class="sr-only">{{ self.title() }}</h1>
@@ -89,37 +90,49 @@
     </main>
 
     <footer class="footer">
-        {% if not current_user.is_authenticated %}
         <div class="footer-grid">
             <div class="footer-col">
                 <h4>PoolCompras</h4>
                 <ul>
                     <li><a href="{{ url_for('main.index') }}">Início</a></li>
+                    <li><a href="{{ url_for('main.faq') }}">Perguntas frequentes</a></li>
                     <li><a href="{{ url_for('marketplace.listar') }}">Fornecedores</a></li>
                 </ul>
             </div>
             <div class="footer-col">
                 <h4>Para você</h4>
                 <ul>
-                    <li><a href="{{ url_for('auth.registro') }}">Sou lanchonete</a></li>
-                    <li><a href="{{ url_for('auth.registro_fornecedor') }}">Sou fornecedor</a></li>
-                    <li><a href="{{ url_for('auth.login') }}">Entrar</a></li>
+                    {% if not current_user.is_authenticated %}
+                        <li><a href="{{ url_for('auth.registro') }}">Sou lanchonete</a></li>
+                        <li><a href="{{ url_for('auth.registro_fornecedor') }}">Sou fornecedor</a></li>
+                        <li><a href="{{ url_for('auth.login') }}">Entrar</a></li>
+                    {% else %}
+                        <li><a href="{{ url_for('main.dashboard') }}">Painel</a></li>
+                        <li><a href="{{ url_for('perfil.editar') }}">Meu perfil</a></li>
+                    {% endif %}
                 </ul>
             </div>
             <div class="footer-col">
                 <h4>Contato</h4>
                 <ul>
                     <li>Londrina, PR</li>
-                    <li>contato@poolcompras.com</li>
+                    <li><a href="mailto:contato@poolcompras.com">contato@poolcompras.com</a></li>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="{{ url_for('main.termos') }}">Termos de uso</a></li>
+                    <li><a href="{{ url_for('main.privacidade') }}">Privacidade (LGPD)</a></li>
                 </ul>
             </div>
         </div>
-        {% endif %}
         <div class="footer-bottom">
             <p>&copy; 2026 PoolCompras &mdash; Central de Compras Cooperativa | Londrina-PR</p>
         </div>
     </footer>
 
     <script src="{{ url_for('static', filename='js/confirm-submit.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/form-submitting.js') }}"></script>
 </body>
 </html>

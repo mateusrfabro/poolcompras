@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Política de Privacidade — PoolCompras{% endblock %}
+
+{% block content %}
+<div class="page legal-page">
+    <h2>Política de Privacidade</h2>
+    <p class="page-sub">Última atualização: 01 de maio de 2026 — em conformidade com a LGPD (Lei 13.709/2018)</p>
+
+    <section class="legal-secao">
+        <h3>1. Quem somos</h3>
+        <p>
+            <strong>PoolCompras</strong> é uma plataforma cooperativa sediada em Londrina-PR,
+            operada pelos sócios-fundadores. Tratamos dados pessoais e empresariais
+            estritamente para operar o serviço descrito nos Termos de Uso.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>2. Que dados coletamos</h3>
+        <p><strong>Da lanchonete (pessoa jurídica + responsável):</strong></p>
+        <ul>
+            <li>Nome do responsável, e-mail, telefone (WhatsApp).</li>
+            <li>Razão social, nome fantasia, CNPJ, endereço, bairro, cidade.</li>
+            <li>Histórico de pedidos, comprovantes de pagamento e avaliações que você der às rodadas.</li>
+            <li>Opcionalmente: chat_id do Telegram (apenas se você vincular voluntariamente).</li>
+        </ul>
+        <p><strong>Do fornecedor parceiro:</strong></p>
+        <ul>
+            <li>Razão social, contato, telefone, e-mail.</li>
+            <li>Dados bancários (PIX, banco, agência, conta) — exibidos apenas para a lanchonete que estiver pagando aquele fornecedor.</li>
+            <li>Histórico de cotações, vendas e avaliações recebidas.</li>
+        </ul>
+    </section>
+
+    <section class="legal-secao">
+        <h3>3. Para que usamos</h3>
+        <ul>
+            <li>Operar o serviço (montar rodadas, conectar lanchonete e fornecedor).</li>
+            <li>Notificar você sobre o andamento dos seus pedidos/cotações (Telegram + e-mail).</li>
+            <li>Gerar relatórios analíticos individuais (P&L do fornecedor, CMV da lanchonete).</li>
+            <li>Cumprir obrigações fiscais e legais.</li>
+            <li>Prevenir fraude e abuso (logs de acesso, mascarando dados pessoais quando possível).</li>
+        </ul>
+    </section>
+
+    <section class="legal-secao">
+        <h3>4. Com quem compartilhamos</h3>
+        <ul>
+            <li><strong>Lanchonetes</strong> veem seus próprios dados, suas rodadas e — quando uma cotação fica vencedora — os dados bancários e de contato do fornecedor escolhido (necessário para pagar).</li>
+            <li><strong>Fornecedores</strong> veem a demanda agregada de cada rodada e, após sua proposta ser aceita, os dados de contato/entrega das lanchonetes que aceitaram.</li>
+            <li><strong>Marketplace público</strong> (`/marketplace`): apenas fornecedores que ativaram explicitamente a opção em <em>Meu perfil</em> aparecem para visitantes não-logados, com dados limitados (razão social, cidade, nota média). Opt-in expresso, conforme LGPD Art. 7º, I.</li>
+            <li>Não vendemos dados a terceiros.</li>
+        </ul>
+    </section>
+
+    <section class="legal-secao">
+        <h3>5. Por quanto tempo guardamos</h3>
+        <ul>
+            <li>Dados de cadastro: enquanto sua conta estiver ativa.</li>
+            <li>Histórico de rodadas, pedidos e cotações: indefinidamente, para fins de auditoria, fiscal e analytics agregados — exceto em caso de solicitação expressa de exclusão (ver item 6).</li>
+            <li>Logs de acesso/segurança: 90 dias.</li>
+            <li>Comprovantes de pagamento: enquanto a rodada estiver ativa + 5 anos (prazo fiscal).</li>
+        </ul>
+    </section>
+
+    <section class="legal-secao">
+        <h3>6. Seus direitos (LGPD Art. 18)</h3>
+        <ul>
+            <li><strong>Acesso:</strong> solicitar cópia dos seus dados em <a href="mailto:contato@poolcompras.com">contato@poolcompras.com</a>.</li>
+            <li><strong>Correção:</strong> editar dados em <em>Meu perfil</em> a qualquer momento.</li>
+            <li><strong>Exclusão:</strong> solicitar a anonimização da sua conta em <em>Meu perfil &rarr; Excluir conta</em>. Histórico de transações pode ser preservado em forma anonimizada por exigência fiscal.</li>
+            <li><strong>Portabilidade:</strong> exportar seus dados em CSV (botões "Exportar CSV" em listagens; ou pedir export completo via e-mail).</li>
+            <li><strong>Revogação de consentimento:</strong> desvincular Telegram, sair do marketplace público, etc., a qualquer momento em <em>Meu perfil</em>.</li>
+        </ul>
+    </section>
+
+    <section class="legal-secao">
+        <h3>7. Segurança</h3>
+        <ul>
+            <li>Senhas armazenadas com hash Argon2id (padrão OWASP).</li>
+            <li>Conexão via HTTPS com HSTS.</li>
+            <li>CSP, Permissions-Policy e demais headers de segurança ativos.</li>
+            <li>Acesso a dados bancários do fornecedor exige reautenticação por senha.</li>
+            <li>Notificações com tokens (reset de senha, OTP de Telegram) nunca aparecem em log.</li>
+        </ul>
+    </section>
+
+    <section class="legal-secao">
+        <h3>8. Cookies e sessão</h3>
+        <p>
+            Usamos apenas cookies essenciais para autenticação (sessão Flask-Login) e
+            CSRF. Não usamos cookies de rastreamento ou analytics de terceiros.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>9. Encarregado de dados (DPO)</h3>
+        <p>
+            Para exercer qualquer direito acima ou contestar tratamento de dados:
+            <a href="mailto:contato@poolcompras.com">contato@poolcompras.com</a>
+            (assunto: <em>LGPD &mdash; Solicitação de titular</em>).
+        </p>
+    </section>
+</div>
+{% endblock %}

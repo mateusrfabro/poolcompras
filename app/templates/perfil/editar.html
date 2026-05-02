@@ -223,5 +223,34 @@
         </details>
         <script src="{{ url_for('static', filename='js/telegram-polling.js') }}"></script>
     {% endif %}
+
+    {# Excluir conta — LGPD Art. 18, V (direito de eliminacao). #}
+    <details class="excluir-conta-bloco">
+        <summary>Excluir minha conta</summary>
+        <div class="excluir-conta-conteudo">
+            <p>
+                Ao excluir sua conta, seus dados pessoais (e-mail, telefone, dados bancários)
+                são anonimizados <strong>imediatamente</strong> e você não consegue mais entrar
+                no PoolCompras. Histórico financeiro/fiscal das rodadas é preservado de forma
+                anonimizada por exigência legal.
+            </p>
+            <p class="muted">
+                Se quiser pausar temporariamente sem perder seus dados, prefira desativar a
+                conta com seu administrador (cancela cobrança e mantém o histórico acessível).
+            </p>
+            <form method="POST" action="{{ url_for('perfil.excluir_conta') }}" class="mt-3">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group">
+                    <label for="confirmacao_excluir">Pra confirmar, digite <strong>EXCLUIR</strong> em maiúsculas:</label>
+                    <input type="text" id="confirmacao_excluir" name="confirmacao_excluir"
+                           pattern="EXCLUIR" required autocomplete="off">
+                </div>
+                <button type="submit" class="btn btn-outline-danger"
+                        data-confirm="Tem certeza? Esta ação não pode ser desfeita.">
+                    Excluir minha conta
+                </button>
+            </form>
+        </div>
+    </details>
 </div>
 {% endblock %}

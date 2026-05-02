@@ -69,11 +69,14 @@ class ProductionConfig(Config):
     # Pool de conexoes Postgres pra prod atras de pgbouncer/HAProxy.
     # pool_pre_ping: testa conexao antes de usar (descarta a que pgbouncer
     #   matou em idle). pool_recycle: 5min — alinha com pgbouncer default.
+    # pool_size=3 + max_overflow=5 com 9 workers Gunicorn (2*CPU+1 em quad-core)
+    # = 27 conn baseline, pico 72. Postgres default max_connections=100, deixa
+    # margem segura. Antes era 5+10 = 45 base, pico 135 (estouraria).
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,
         "pool_recycle": 300,
-        "pool_size": 5,
-        "max_overflow": 10,
+        "pool_size": 3,
+        "max_overflow": 5,
     }
 
 

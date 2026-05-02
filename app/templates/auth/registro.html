@@ -36,6 +36,8 @@
                        minlength="8" autocomplete="new-password">
                 {% if erro_senha %}
                 <small class="field-error">A senha deve ter pelo menos 8 caracteres.</small>
+                {% else %}
+                <small class="muted">Mínimo 8 caracteres.</small>
                 {% endif %}
             </div>
         </div>
@@ -70,6 +72,20 @@
                 <input type="text" id="bairro" name="bairro"
                        value="{{ f.bairro or '' }}">
             </div>
+        </div>
+
+        <div class="form-group {% if erro_termos %}is-invalid{% endif %}">
+            <label class="form-checkbox">
+                <input type="checkbox" name="aceite_termos" required
+                       {{ 'checked' if f.aceite_termos }}>
+                Li e aceito os
+                <a href="{{ url_for('main.termos') }}" target="_blank" rel="noopener">Termos de uso</a>
+                e a
+                <a href="{{ url_for('main.privacidade') }}" target="_blank" rel="noopener">Política de privacidade</a>.
+            </label>
+            {% if erro_termos %}
+            <small class="field-error">Você precisa aceitar os Termos e a Privacidade pra continuar.</small>
+            {% endif %}
         </div>
 
         <button type="submit" class="btn btn-primary btn-block">Cadastrar</button>

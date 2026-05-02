@@ -85,6 +85,8 @@ def lanchonete_nova():
         )
         db.session.add(lanchonete)
         db.session.commit()
+        # Invalida KPI cacheado pra admin ver o numero novo na hora.
+        cache.delete("kpi_total_lanchonetes")
         from app.routes.auth import _mask_email
         logger.info(
             "ADMIN_USUARIO_CRIADO admin=%s tipo=lanchonete usuario=%s email=%s",
@@ -113,6 +115,7 @@ def lanchonete_editar(lanchonete_id):
         if lanchonete.responsavel:
             lanchonete.responsavel.ativo = lanchonete.ativa
         db.session.commit()
+        cache.delete("kpi_total_lanchonetes")  # ativa muda count
         flash("Lanchonete atualizada!", "success")
         return redirect(url_for("admin.lanchonetes"))
     return render_template("admin/lanchonete_form.html", lanchonete=lanchonete)

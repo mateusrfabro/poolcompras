@@ -33,6 +33,24 @@ def health():
         return jsonify({"status": "error", "db": "error"}), 500
 
 
+@main_bp.route("/termos")
+def termos():
+    """Termos de uso publicos. Sem auth."""
+    return render_template("legal/termos.html")
+
+
+@main_bp.route("/privacidade")
+def privacidade():
+    """Politica de privacidade publica (LGPD). Sem auth."""
+    return render_template("legal/privacidade.html")
+
+
+@main_bp.route("/faq")
+def faq():
+    """FAQ publica. Sem auth."""
+    return render_template("legal/faq.html")
+
+
 @main_bp.route("/")
 def index():
     if current_user.is_authenticated:

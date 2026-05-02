@@ -101,6 +101,7 @@ def test_signup_email_existente_nao_revela(app, client):
             "email": "lancha@test.com", "senha": "novasenha123",
             "nome_responsavel": "Foo", "telefone": "(43) 99999-1234",
             "nome_fantasia": "Foo", "cnpj": "", "endereco": "", "bairro": "",
+            "aceite_termos": "on",  # LGPD checkbox obrigatorio desde a1b2c3d4e5f6
         },
         follow_redirects=True,
     )

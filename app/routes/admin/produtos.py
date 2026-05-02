@@ -4,7 +4,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import select
 
-from app import db
+from app import db, cache
 from app.models import Produto, Rodada, RodadaProduto, Cotacao, Fornecedor
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
@@ -66,6 +66,7 @@ def produto_novo():
         )
         db.session.add(produto)
         db.session.commit()
+        cache.delete("kpi_total_produtos")  # admin ve count atualizado na hora
         flash("Produto cadastrado!", "success")
         return redirect(url_for("admin.produtos"))
 

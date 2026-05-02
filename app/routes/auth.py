@@ -41,7 +41,18 @@ auth_bp = Blueprint("auth", __name__)
 
 
 def _client_ip() -> str:
-    """IP do cliente tolerante a proxy (X-Forwarded-For primeiro)."""
+    """IP do cliente atras de Cloudflare Tunnel.
+
+    Prioridade:
+    1. CF-Connecting-IP — Cloudflare injeta o IP real, atacante nao consegue forjar
+       atras de outro Cloudflare. Esta eh a fonte autoritativa em prod.
+    2. X-Forwarded-For — fallback. Confiavel APENAS quando atras de proxy proprio
+       (ProxyFix configurado em wsgi). Em prod sem ProxyFix, atacante forja livremente.
+    3. request.remote_addr — fallback final.
+    """
+    cf = request.headers.get("CF-Connecting-IP", "").strip()
+    if cf:
+        return cf
     xff = request.headers.get("X-Forwarded-For", "")
     if xff:
         return xff.split(",")[0].strip()
@@ -149,6 +160,19 @@ def registro():
         cnpj = request.form.get("cnpj", "").strip()
         endereco = request.form.get("endereco", "").strip()
         bairro = request.form.get("bairro", "").strip()
+        aceite_termos = request.form.get("aceite_termos") == "on"
+
+        if not aceite_termos:
+            flash("Voce precisa aceitar os Termos e a Privacidade pra continuar.", "error")
+            return render_template(
+                "auth/registro.html",
+                erro_termos=True,
+                form={
+                    "email": email, "nome_responsavel": nome, "telefone": telefone,
+                    "nome_fantasia": nome_fantasia, "cnpj": cnpj,
+                    "endereco": endereco, "bairro": bairro,
+                },
+            )
 
         if len(senha) < 8:
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
@@ -179,6 +203,7 @@ def registro():
             nome_responsavel=nome,
             telefone=telefone,
             tipo="lanchonete",
+            aceite_termos_em=datetime.now(timezone.utc),
         )
         db.session.add(usuario)
         db.session.flush()
@@ -215,6 +240,18 @@ def registro_fornecedor():
         telefone = request.form.get("telefone", "").strip()
         razao_social = request.form.get("razao_social", "").strip()
         cidade = request.form.get("cidade", "").strip()
+        aceite_termos = request.form.get("aceite_termos") == "on"
+
+        if not aceite_termos:
+            flash("Voce precisa aceitar os Termos e a Privacidade pra continuar.", "error")
+            return render_template(
+                "auth/registro_fornecedor.html",
+                erro_termos=True,
+                form={
+                    "email": email, "nome_responsavel": nome, "telefone": telefone,
+                    "razao_social": razao_social, "cidade": cidade,
+                },
+            )
 
         if len(senha) < 8:
             flash("A senha deve ter pelo menos 8 caracteres.", "error")
@@ -242,6 +279,7 @@ def registro_fornecedor():
             nome_responsavel=nome,
             telefone=telefone,
             tipo="fornecedor",
+            aceite_termos_em=datetime.now(timezone.utc),
         )
         db.session.add(usuario)
         db.session.flush()
