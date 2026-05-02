@@ -185,7 +185,11 @@ def create_app(config_name="default"):
         flash("Arquivo muito grande. Tamanho maximo: 5 MB.", "error")
         # Volta pra referer ou home; sem template dedicado pra evitar churn.
         # 303 forca GET no destino (POST -> GET seguro apos erro).
-        return redirect(request.referrer or url_for("main.index"), code=303)
+        # Valida referer pra fechar open redirect (atacante poderia setar
+        # Referer pra evil.com em form cross-site).
+        from app.routes.auth import _proximo_url_seguro
+        destino = _proximo_url_seguro(request.referrer) or url_for("main.index")
+        return redirect(destino, code=303)
 
     @app.errorhandler(500)
     def erro_500(e):

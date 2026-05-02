@@ -4,7 +4,7 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import select
 
-from app import db
+from app import db, limiter
 from app.models import Fornecedor
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
@@ -23,6 +23,8 @@ def fornecedores():
 @admin_bp.route("/fornecedores/novo", methods=["GET", "POST"])
 @login_required
 @admin_required
+@limiter.limit("30 per hour", methods=["POST"],
+               error_message="Muitas criacoes em sequencia. Aguarde 1 hora.")
 def fornecedor_novo():
     if request.method == "POST":
         fornecedor = Fornecedor(

@@ -1,6 +1,6 @@
 """Rotas admin de analytics, funil de conversao, historico de aprovacoes e relatorio consolidado."""
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from flask import render_template, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import func, case

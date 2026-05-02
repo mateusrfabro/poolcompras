@@ -16,6 +16,7 @@ Sem webhook configurado, o fluxo continua via `/perfil/telegram/confirmar`
 Retorna sempre 200 pro Telegram (senao ele retenta; nao queremos loop).
 Loga erros internamente.
 """
+import hmac
 import logging
 import os
 
@@ -49,7 +50,10 @@ def receber_update(secret):
     Telegram em trafego normal manda <1/s pra um bot pequeno.
     """
     esperado = os.environ.get("TELEGRAM_WEBHOOK_SECRET")
-    if not esperado or secret != esperado:
+    # hmac.compare_digest evita timing attack na comparacao do secret —
+    # `==` Python eh early-exit por byte e expoe o tamanho/prefixo correto
+    # via medicao de tempo de resposta repetida.
+    if not esperado or not hmac.compare_digest(secret, esperado):
         abort(404)  # nao revela que a rota existe
 
     update = request.get_json(silent=True) or {}

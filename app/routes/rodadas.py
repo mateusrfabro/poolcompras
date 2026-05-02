@@ -195,44 +195,10 @@ def detalhe(rodada_id):
     )
 
 
-@rodadas_bp.route("/<int:rodada_id>/cotar", methods=["GET", "POST"])
-@login_required
-def cotar(rodada_id):
-    if not current_user.is_admin:
-        flash("Apenas administradores podem inserir cotações.", "error")
-        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
-
-    rodada = db.get_or_404(Rodada, rodada_id)
-    fornecedores = Fornecedor.query.filter_by(ativo=True).all()
-
-    produtos_ids = (
-        db.session.query(func.distinct(ItemPedido.produto_id))
-        .filter(ItemPedido.rodada_id == rodada_id)
-        .all()
-    )
-    produtos_ids = [p[0] for p in produtos_ids]
-    produtos = Produto.query.filter(Produto.id.in_(produtos_ids)).all()
-
-    if request.method == "POST":
-        fornecedor_id = request.form.get("fornecedor_id", type=int)
-        for produto in produtos:
-            preco = request.form.get(f"preco_{produto.id}", type=float)
-            if preco and preco > 0:
-                cotacao = Cotacao(
-                    rodada_id=rodada_id,
-                    fornecedor_id=fornecedor_id,
-                    produto_id=produto.id,
-                    preco_unitario=preco,
-                )
-                db.session.add(cotacao)
-
-        db.session.commit()
-        flash("Cotação registrada!", "success")
-        return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
-
-    return render_template(
-        "rodadas/cotar.html",
-        rodada=rodada,
-        fornecedores=fornecedores,
-        produtos=produtos,
-    )
+# Rota /cotar removida em 2026-05 — era dead code do fluxo legado:
+# - sem url_for em template nenhum
+# - criava Cotacao sem selecionada=True nem SubmissaoCotacao,
+#   contaminando o fluxo novo (fornecedor coloca preco_partida +
+#   preco_final via cotacao_partida.py / cotacao_final.py).
+# Se admin precisar inserir cotacao por fornecedor, fazer via fluxo
+# completo (SubmissaoCotacao + Cotacao + selecionada=True).

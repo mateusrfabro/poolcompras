@@ -24,6 +24,10 @@ class Usuario(UserMixin, db.Model):
     # Marcador pra invalidar tokens de reset + sessoes ao trocar senha.
     # Cada redefinir_senha / perfil com troca de senha atualiza esse campo.
     senha_atualizada_em = db.Column(db.DateTime(timezone=True), nullable=True)
+    # LGPD: timestamp de quando o usuario aceitou Termos+Privacidade.
+    # Migration a1b2c3d4e5f6 ja criou a coluna no DB; declarar aqui evita
+    # drift schema/ORM (db.create_all em ambiente novo + INSERT silencioso).
+    aceite_termos_em = db.Column(db.DateTime(timezone=True), nullable=True)
 
     # Chat ID do Telegram. Unique+index pra webhook futuro achar user dono
     # rapido. BigInteger suporta IDs negativos (grupos) e positivos (1:1).
