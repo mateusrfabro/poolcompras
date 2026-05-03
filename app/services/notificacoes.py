@@ -197,6 +197,11 @@ def _dispatch_em_lote(usuarios, titulo: str, detalhes: str) -> int:
                     getattr(usuario, "id", "?"), exc_info=True,
                 )
                 return False
+            finally:
+                # Defesa preventiva: scoped_session do Flask-SQLAlchemy eh
+                # per-thread. Se algum helper futuro tocar DB, a conexao
+                # fica retida no pool ate GC. Remover libera explicito.
+                db.session.remove()
 
     enviadas = 0
     with ThreadPoolExecutor(max_workers=_DISPATCH_MAX_WORKERS) as executor:

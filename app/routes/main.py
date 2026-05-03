@@ -51,6 +51,12 @@ def faq():
     return render_template("legal/faq.html")
 
 
+@main_bp.route("/sobre")
+def sobre():
+    """Quem Somos — pagina institucional B2B. Sem auth."""
+    return render_template("sobre.html")
+
+
 @main_bp.route("/")
 def index():
     if current_user.is_authenticated:

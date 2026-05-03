@@ -3,12 +3,31 @@ from flask import request, redirect, url_for, flash, render_template
 from flask_login import login_required, current_user
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import db, limiter
+from app import db, limiter, cache
 from app.auth_decorators import lanchonete_required
 from app.models import (
     ParticipacaoRodada, EventoRodada, Cotacao, Fornecedor, AvaliacaoRodada,
 )
+from app.services.kpis_lanchonete import (
+    rodadas_concluidas, media_avaliacao_dada,
+)
+from app.services.kpis_fornecedor import (
+    media_avaliacao_recebida, total_avaliacoes_recebidas,
+)
 from . import fluxo_bp, _agora, _registrar_evento, _so_dona_lanchonete
+
+
+def _invalidar_kpis_avaliacao(lanchonete_id, fornecedor_ids):
+    """Invalida caches de KPIs afetados por nova avaliacao.
+
+    Sem isso, dashboards do fornecedor avaliado e da propria lanchonete
+    ficam ate 30s mostrando contagem/media velha.
+    """
+    cache.delete_memoized(rodadas_concluidas, lanchonete_id)
+    cache.delete_memoized(media_avaliacao_dada, lanchonete_id)
+    for fid in fornecedor_ids:
+        cache.delete_memoized(media_avaliacao_recebida, fid)
+        cache.delete_memoized(total_avaliacoes_recebidas, fid)
 
 
 @fluxo_bp.route("/rodada/<int:rodada_id>/avaliar", methods=["POST"])
@@ -59,11 +78,14 @@ def avaliar(rodada_id):
                               f"Cliente avaliou com {nota} estrelas",
                               lanchonete_id=lanchonete.id, ator_id=current_user.id)
             db.session.commit()
+            _invalidar_kpis_avaliacao(lanchonete.id, fornecedores_ids)
             flash(f"Obrigado pela avaliacao de {nota} estrelas!", "success")
             return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
         # nota <= 3: salva parcial (para tracking) e vai pro detalhe
         db.session.commit()
+        # Nota geral salva mas sem fornecedor_ids ainda — invalida so kpis lanch.
+        _invalidar_kpis_avaliacao(lanchonete.id, [])
         return redirect(url_for("fluxo.avaliar_detalhado", rodada_id=rodada_id))
 
     except SQLAlchemyError:
@@ -116,6 +138,7 @@ def avaliar_detalhado(rodada_id):
                               f"Cliente detalhou avaliacao (geral: {p.avaliacao_geral} estrelas)",
                               lanchonete_id=lanchonete.id, ator_id=current_user.id)
             db.session.commit()
+            _invalidar_kpis_avaliacao(lanchonete.id, [f.id for f in fornecedores])
             flash("Avaliação detalhada registrada. Obrigado pelo feedback!", "success")
             return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
         except SQLAlchemyError:

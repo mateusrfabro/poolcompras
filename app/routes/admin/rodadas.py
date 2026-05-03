@@ -158,6 +158,7 @@ def rodada_finalizar(rodada_id):
     rps = RodadaProduto.query.filter_by(rodada_id=rodada_id).filter(
         RodadaProduto.preco_partida.isnot(None)
     ).all()
+    fornecedores_afetados = set()
     for rp in rps:
         forn_id = rp.adicionado_por_fornecedor_id
         if forn_id and rp.preco_partida:
@@ -173,6 +174,7 @@ def rodada_finalizar(rodada_id):
                     preco_unitario=rp.preco_partida,
                     selecionada=True,
                 ))
+                fornecedores_afetados.add(forn_id)
     rodada.status = Rodada.STATUS_FINALIZADA
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
@@ -181,6 +183,15 @@ def rodada_finalizar(rodada_id):
         descricao="Rodada finalizada pelo admin",
     ))
     db.session.commit()
+    # Invalida KPIs cacheados dos fornecedores que ganharam Cotacao(selecionada=True).
+    if fornecedores_afetados:
+        from app import cache
+        from app.services.kpis_fornecedor import (
+            total_cotacoes, cotacoes_vencedoras,
+        )
+        for fid in fornecedores_afetados:
+            cache.delete_memoized(total_cotacoes, fid)
+            cache.delete_memoized(cotacoes_vencedoras, fid)
     logger.info("ADMIN_RODADA_FINALIZADA admin=%s rodada=%s",
                 current_user.id, rodada_id)
     flash("Rodada finalizada! Lanchonetes podem agora aceitar a proposta.", "success")

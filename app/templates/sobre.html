@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Quem somos — Aggron{% endblock %}
+{% block meta_description %}Aggron foi fundada em 2026 por Mateus e Ademar, em Londrina, pra ajudar hamburguerias a comprar melhor sem perder margem pra distribuidor.{% endblock %}
+
+{% block content %}
+<div class="page legal-page">
+    <h2>Quem somos</h2>
+    <p class="page-sub">Dois sócios, uma cidade, e um problema chato pra resolver.</p>
+
+    <section class="legal-secao">
+        <h3>O que é a Aggron</h3>
+        <p>
+            A <strong>Aggron</strong> é uma central de compras cooperativa pra hamburguerias e
+            espetarias de Londrina e região. Em vez de cada lanchonete cotar sozinha
+            com fornecedor (e levar o preço de tabela), a gente <strong>junta o pedido
+            de todas em uma só rodada</strong> e cota com volume agregado — preço de
+            distribuidor pra quem compra como bar de bairro.
+        </p>
+        <p>
+            Não somos atacadista. Não compramos nada, não revendemos. A gente
+            <strong>organiza a rodada</strong>: cataloga produtos, recebe os pedidos das
+            lanchonetes, negocia com fornecedores parceiros e devolve o melhor
+            preço pra cada um. Pagamento é direto da lanchonete pro fornecedor —
+            a Aggron não toca o dinheiro.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>Por que existimos</h3>
+        <p>
+            Quem tem hamburgueria sabe: blend bovino é o item de maior peso no CMV,
+            e o preço varia 15-25% entre fornecedores na mesma cidade. Quem tem
+            volume consegue cotar; quem não tem, paga tabela. A Aggron transforma
+            <strong>10 hamburguerias pequenas em 1 cliente grande</strong> aos olhos do
+            fornecedor — e divide a economia entre quem participou.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>Quem está por trás</h3>
+        <ul>
+            <li>
+                <strong>Mateus Fabro</strong> — tech lead. Cuida do produto, do código e
+                de fazer a operação rodar redondo. Background em engenharia de
+                software com foco em sistemas B2B.
+            </li>
+            <li>
+                <strong>Ademar Adama</strong> — sócio de operação e infraestrutura. Cuida
+                da parte comercial, relacionamento com fornecedores e da
+                infraestrutura que mantém o sistema no ar (servidor próprio em
+                Londrina, sem dependência de cloud cara).
+            </li>
+        </ul>
+        <p class="muted mt-2">
+            Somos 2. Sem investidor, sem pressão de growth a qualquer custo. O
+            modelo é simples e tem que se sustentar pelo serviço — se a lanchonete
+            não economizar de verdade, ela cancela e a gente fecha.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>Como ganhamos dinheiro</h3>
+        <p>
+            <strong>Lanchonete:</strong> mensalidade fixa de
+            <strong>R$ 500,00/mês</strong>, sem comissão sobre as compras. A
+            economia inteira da rodada fica com a lanchonete.
+        </p>
+        <p>
+            <strong>Fornecedor:</strong> parceria comercial negociada caso a caso
+            (não é repassada à lanchonete). A Aggron entrega volume agregado e
+            recorrência; o fornecedor abre margem pra ter pedido garantido.
+        </p>
+        <p class="muted">
+            Esse modelo dá previsibilidade pra todo mundo: lanchonete sabe exatamente
+            quanto paga, fornecedor sabe quanto entrega, a gente sabe quanto sustenta.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>Onde estamos</h3>
+        <p>
+            Operamos em <strong>Londrina-PR</strong>. Plano é abrir Maringá, Cambé e
+            Ibiporã quando atingirmos massa critica em Londrina (~30 hamburguerias
+            ativas). Não vamos crescer pra fora antes de provar que o modelo
+            sustenta a base original.
+        </p>
+    </section>
+
+    <section class="legal-secao">
+        <h3>Contato direto</h3>
+        <p>
+            Atendimento por e-mail:
+            <a href="mailto:contato@aggron.com.br">contato@aggron.com.br</a>.
+            Quer falar com a gente antes de cadastrar?
+            <a href="{{ url_for('main.faq') }}">Veja as perguntas frequentes</a>
+            ou manda e-mail. Respondemos em até 1 dia útil.
+        </p>
+    </section>
+
+    <div class="faq-cta mt-4">
+        <h3>Pronto pra entrar?</h3>
+        <div class="cta-final-actions">
+            <a href="{{ url_for('auth.registro') }}" class="btn btn-primary">Cadastrar lanchonete</a>
+            <a href="{{ url_for('auth.registro_fornecedor') }}" class="btn btn-outline">Sou fornecedor</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
