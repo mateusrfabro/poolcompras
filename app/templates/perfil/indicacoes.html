@@ -2,12 +2,15 @@
 {% block title %}Indique e ganhe — Aggron{% endblock %}
 
 {% block content %}
+{# valor monetario derivado pra deixar claro o que vale 1 mes gratis #}
+{% set valor_mensalidade = "R$ 500,00" %}
 <div class="page indicacoes-page">
-    <h2>Indique amigos e ganhe mês grátis</h2>
+    <h2>Indique outras hamburguerias e ganhe {{ valor_mensalidade }}</h2>
     <p class="page-sub">
-        Compartilhe seu link. Cada lanchonete que se cadastrar e ficar ativa
-        por 30 dias conta como 1 indicação. Aos <strong>{{ necessarias }}</strong>,
-        você ganha 1 mês de mensalidade grátis.
+        Compartilhe seu link. Cada lanchonete indicada que se cadastrar e ficar
+        ativa por 30 dias conta como 1 indicação. Aos
+        <strong>{{ necessarias }}</strong>, você ganha
+        <strong>1 mês de mensalidade grátis ({{ valor_mensalidade }})</strong>.
     </p>
 
     {# Card do progresso #}
@@ -16,17 +19,25 @@
         <div class="indicacao-progresso">
             <div class="indicacao-num">
                 <span class="indicacao-num-grande">{{ status.elegiveis }}</span>
-                <span class="muted">/ {{ necessarias }} indicadas elegíveis</span>
+                <span class="muted">de {{ necessarias }} indicadas elegíveis</span>
+            </div>
+            {# barra de progresso visual #}
+            {% set pct = (status.elegiveis / necessarias * 100) if status.elegiveis < necessarias else 100 %}
+            <div class="indicacao-barra" role="progressbar"
+                 aria-valuenow="{{ status.elegiveis }}"
+                 aria-valuemin="0" aria-valuemax="{{ necessarias }}"
+                 aria-label="Progresso pra recompensa">
+                <div class="indicacao-barra-fill" style="width: {{ pct|round }}%"></div>
             </div>
             {% if status.aguardando_30d %}
-            <p class="muted">
+            <p class="muted mt-2">
                 Mais <strong>{{ status.aguardando_30d }}</strong>
                 {% if status.aguardando_30d == 1 %}indicada{% else %}indicadas{% endif %}
                 aguardando completar 30 dias de cadastro.
             </p>
             {% endif %}
             {% if status.total_recompensas_recebidas > 0 %}
-            <p class="muted">
+            <p class="muted mt-2">
                 Você já resgatou
                 <strong>{{ status.total_recompensas_recebidas }}</strong>
                 {% if status.total_recompensas_recebidas == 1 %}mês grátis{% else %}meses grátis{% endif %}
@@ -39,11 +50,12 @@
         <form method="POST" action="{{ url_for('perfil.resgatar_recompensa') }}" class="mt-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary"
-                    data-confirm="Resgatar 1 mês grátis usando 3 indicações elegíveis?">
-                Resgatar 1 mês grátis
+                    data-confirm="Vamos consumir as 3 indicações mais antigas elegíveis pra liberar 1 mês grátis. Continuar?">
+                Resgatar 1 mês grátis ({{ valor_mensalidade }})
             </button>
             <p class="muted mt-2">
-                Vamos avisar a equipe e aplicar o desconto no seu próximo boleto.
+                Aplicado no próximo boleto (em até <strong>5 dias úteis</strong>).
+                Você recebe a confirmação no Telegram.
             </p>
         </form>
         {% else %}
@@ -62,27 +74,50 @@
             <input type="text" id="indicacao-link" class="indicacao-link-input"
                    value="{{ link_indicacao }}" readonly aria-label="Seu link de indicação">
             <button type="button" class="btn btn-outline" id="copiar-link"
-                    data-target="indicacao-link">Copiar link</button>
+                    data-target="indicacao-link" data-feedback="copia-feedback">Copiar link</button>
         </div>
+        {# Feedback acessivel pra leitor de tela #}
+        <span id="copia-feedback" class="sr-only" aria-live="polite"></span>
+
+        {# Botao "Compartilhar no WhatsApp" com mensagem pronta — B2B BR vive no zap #}
+        {% set msg_wa = "Oi! To usando o Aggron pra comprar insumos junto com outras hamburguerias de Londrina (blend, queijo, batata, embalagem). Tô economizando 10-15%% na rodada. Se quiser entrar, usa meu link: " ~ link_indicacao %}
+        <a href="https://wa.me/?text={{ msg_wa|urlencode }}"
+           target="_blank" rel="noopener"
+           class="btn btn-primary mt-2">
+            Compartilhar no WhatsApp
+        </a>
+
         <p class="muted mt-2">
-            Seu código: <code class="indicacao-codigo">{{ codigo }}</code>
-            (pode passar o código direto se preferir).
-        </p>
-        <p class="muted mt-2">
-            <strong>Como funciona pra contar:</strong> a lanchonete indicada precisa
-            cadastrar pelo link, ficar ativa (não cancelar) por <strong>30 dias</strong>.
-            Auto-indicação não conta.
+            Seu código: <code class="indicacao-codigo" id="indicacao-codigo-only">{{ codigo }}</code>
+            <button type="button" class="btn-link" id="copiar-codigo"
+                    data-target="indicacao-codigo-only" data-feedback="copia-feedback"
+                    aria-label="Copiar código">copiar</button>
+            <span class="muted">— pode ditar por telefone se preferir.</span>
         </p>
     </div>
 
+    {# Como funciona — colapsavel pra nao distrair do link #}
+    <details class="card mt-3 indicacao-faq">
+        <summary><strong>Como funciona pra contar</strong></summary>
+        <ul class="mt-2 muted">
+            <li>A lanchonete indicada precisa cadastrar usando seu link (ou digitar o código).</li>
+            <li>Precisa ficar ativa (não cancelar) por <strong>30 dias</strong> a partir do cadastro.</li>
+            <li>Os 30 dias garantem que ela está realmente usando — assim a recompensa é justa.</li>
+            <li>Auto-indicação (você indicando você) não conta.</li>
+            <li>Sem limite de resgates — a cada 3 indicações elegíveis, mais 1 mês grátis.</li>
+        </ul>
+    </details>
+
     {# Lista de indicacoes feitas #}
     <div class="card mt-3">
-        <h3 class="mb-2">Suas indicações ({{ indicacoes|length }})</h3>
+        <h3 class="mb-2">Suas indicações{% if indicacoes %} ({{ indicacoes|length }}){% endif %}</h3>
         {% if not indicacoes %}
-        <p class="muted">
-            Você ainda não indicou ninguém. Compartilhe seu link com outras
-            hamburguerias da região!
-        </p>
+        <div class="empty-state">
+            <p>
+                Você ainda não indicou ninguém. Manda no grupo de hamburgueiros
+                do bairro pelo botão <strong>Compartilhar no WhatsApp</strong> acima.
+            </p>
+        </div>
         {% else %}
         <div class="table-wrapper">
             <table class="table">
@@ -104,11 +139,15 @@
                             {% elif ind.status == 'elegivel' %}
                             <span class="badge badge-ativo">Elegível</span>
                             {% elif ind.status == 'aguardando_30d' %}
-                            <span class="badge badge-fechada">
-                                Faltam {{ ind.dias_para_elegivel }} dia(s)
+                            <span class="badge badge-fechada"
+                                  title="Faltam {{ ind.dias_para_elegivel }} dia(s) pra completar 30 dias de cadastro ativo">
+                                {% if ind.dias_para_elegivel == 1 %}Falta 1 dia{% else %}Faltam {{ ind.dias_para_elegivel }} dias{% endif %}
                             </span>
                             {% elif ind.status == 'inativa' %}
-                            <span class="badge badge-inativo">Inativa (não conta)</span>
+                            <span class="badge badge-inativo"
+                                  title="A lanchonete cancelou ou foi desativada — não conta pra recompensa">
+                                Inativa (não conta)
+                            </span>
                             {% endif %}
                         </td>
                     </tr>

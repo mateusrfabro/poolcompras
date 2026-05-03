@@ -238,9 +238,35 @@ def test_dashboard_indicacoes_GET(app, client):
     r = client.get("/perfil/indicacoes")
     assert r.status_code == 200
     body = r.data.decode("utf-8", errors="ignore")
-    assert "Indique amigos" in body
+    assert "Indique outras hamburguerias" in body
     assert "/registro?ind=" in body  # link de indicacao montado
     assert "Resgatar" not in body or "Faltam" in body  # ainda sem 3 elegiveis
+
+
+def test_notif_quase_la_dispara_em_n_menos_1(app, monkeypatch):
+    """Apos a 2a indicacao (N-1=2), service tenta notificar via Telegram."""
+    chamadas = []
+
+    def fake_notificar(usuario, titulo, detalhes=""):
+        chamadas.append((usuario.id if usuario else None, titulo))
+        return True
+
+    # Patch lazy import dentro de _notificar_quase_la_se_aplicavel
+    import app.services.notificacoes as notif_mod
+    monkeypatch.setattr(notif_mod, "notificar_evento", fake_notificar)
+
+    indicador = Lanchonete.query.first()
+    indicada1 = Lanchonete.query.offset(1).first()
+    indicada2 = _criar_lanchonete_extra("Lanch QL", "lanchql@test.com")
+    cod = garantir_codigo(indicador)
+
+    # 1a indicacao — nao dispara notif
+    registrar_indicacao(cod, indicada1)
+    assert chamadas == []
+    # 2a indicacao — N-1 = 2, deve disparar
+    registrar_indicacao(cod, indicada2)
+    assert len(chamadas) == 1
+    assert "Falta 1 indicação" in chamadas[0][1]
 
 
 def test_resgatar_recompensa_sem_elegiveis_negado(app, client):

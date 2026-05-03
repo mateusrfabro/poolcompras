@@ -7,6 +7,7 @@ from app import db, cache, limiter
 from app.models import Lanchonete, Usuario
 from app.services.passwords import hash_senha
 from app.services.csv_export import csv_response
+from app.services.pii import mask_email
 from . import admin_bp, admin_required
 
 logger = logging.getLogger(__name__)
@@ -89,10 +90,9 @@ def lanchonete_nova():
         db.session.commit()
         # Invalida KPI cacheado pra admin ver o numero novo na hora.
         cache.delete("kpi_total_lanchonetes")
-        from app.routes.auth import _mask_email
         logger.info(
             "ADMIN_USUARIO_CRIADO admin=%s tipo=lanchonete usuario=%s email=%s",
-            current_user.id, lanchonete.usuario_id, _mask_email(email),
+            current_user.id, lanchonete.usuario_id, mask_email(email),
         )
         flash(f"Lanchonete '{lanchonete.nome_fantasia}' cadastrada. Login: {email}", "success")
         return redirect(url_for("admin.lanchonetes"))

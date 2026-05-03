@@ -1193,7 +1193,13 @@ h1, h2, h3, h4, h5, h6 {
     gap: 0;
     margin-bottom: 1.5rem;
     border-bottom: 2px solid var(--gray-200);
+    /* Mobile: scroll horizontal natural ao inves de quebrar em linhas */
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;  /* Firefox */
 }
+.sub-nav::-webkit-scrollbar { display: none; }  /* Chrome/Safari */
+.sub-nav-item { white-space: nowrap; }
 .sub-nav-item {
     padding: 0.7rem 1.2rem;
     text-decoration: none;
@@ -2062,6 +2068,99 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     color: var(--primary);
 }
+
+/* Botao flutuante WhatsApp pra contato pre-cadastro */
+.whatsapp-flutuante {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 56px;
+    height: 56px;
+    background: #25D366;
+    color: #fff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    z-index: 1000;
+    transition: transform 0.2s, box-shadow 0.2s;
+    text-decoration: none;
+}
+.whatsapp-flutuante:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    color: #fff;
+}
+.whatsapp-flutuante:focus-visible {
+    outline: 3px solid #1D3557;
+    outline-offset: 3px;
+}
+@media (max-width: 480px) {
+    .whatsapp-flutuante { bottom: 16px; right: 16px; width: 52px; height: 52px; }
+}
+
+/* Alert variante "indicacao" — usa accent (verde alimento) com border-left
+   pra diferenciar de alert-info (neutro/azul claro) e sinalizar beneficio. */
+.alert-indicacao {
+    background: #eafaf1;
+    color: var(--success-text);
+    border-left: 4px solid var(--accent);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    margin-bottom: var(--space-3);
+}
+
+/* Barra de progresso da recompensa */
+.indicacao-barra {
+    display: block;
+    width: 100%;
+    height: 12px;
+    background: var(--gray-200);
+    border-radius: 6px;
+    margin-top: var(--space-3);
+    overflow: hidden;
+}
+.indicacao-barra-fill {
+    height: 100%;
+    background: var(--primary);
+    border-radius: 6px;
+    transition: width 0.4s ease;
+}
+
+/* Botao "link" (texto inline com aparencia de link, sem fundo) */
+.btn-link {
+    background: none;
+    border: none;
+    padding: 0;
+    color: var(--primary);
+    text-decoration: underline;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+}
+.btn-link:hover { color: var(--primary-dark); }
+.btn-link:disabled { color: var(--gray-500); cursor: default; text-decoration: none; }
+
+/* Empty state generico */
+.empty-state {
+    padding: var(--space-3);
+    background: var(--gray-100);
+    border-radius: var(--radius);
+    color: var(--gray-700);
+    text-align: center;
+}
+
+/* FAQ colapsado dentro da pagina indicacoes */
+.indicacao-faq summary {
+    cursor: pointer;
+    padding: var(--space-2) 0;
+    font-size: 1rem;
+    color: var(--secondary);
+}
+.indicacao-faq[open] summary { margin-bottom: var(--space-2); }
+.indicacao-faq ul { padding-left: var(--space-4); }
+.indicacao-faq li { margin-bottom: var(--space-2); }
 
 /* Card-CTA "Indique e ganhe" no painel da lanchonete */
 .indicacao-cta {

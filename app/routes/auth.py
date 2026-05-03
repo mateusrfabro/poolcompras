@@ -59,17 +59,9 @@ def _client_ip() -> str:
     return request.remote_addr or "-"
 
 
-def _mask_email(email: str) -> str:
-    """Mask de email pra log (LGPD): 'mateus@gmail.com' -> 'm***@gmail.com'.
-
-    Mantem dominio (util pra correlacao com domain-based abuse) e 1a letra
-    do local (util pra correlacao com mesmo user). Tira o resto.
-    """
-    if not email or "@" not in email:
-        return "?"
-    local, dominio = email.split("@", 1)
-    inicial = local[0] if local else "?"
-    return f"{inicial}***@{dominio}"
+# _mask_email mora em app/services/pii.py — mantem alias aqui pra
+# compatibilidade com chamadas existentes (admin/lanchonetes, perfil/dados).
+from app.services.pii import mask_email as _mask_email  # noqa: E402,F401
 
 # Token de recuperacao de senha — sem tabela extra, assinado com SECRET_KEY
 _RECUPERACAO_SALT = "recuperar-senha"

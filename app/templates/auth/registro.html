@@ -6,12 +6,25 @@
 <div class="form-page">
     <h2>Cadastrar Lanchonete</h2>
     {% if codigo_indicacao_pre %}
-    <div class="alert alert-info">
-        Voce esta sendo indicado(a) com o codigo
+    <div class="alert alert-indicacao">
+        Você está sendo indicado(a) com o código
         <strong>{{ codigo_indicacao_pre }}</strong>. Ao se cadastrar, a
-        lanchonete que te indicou pode ganhar 1 mes gratis.
+        lanchonete que te indicou pode ganhar 1 mês grátis (R$ 500,00).
     </div>
     {% endif %}
+
+    <div class="card card-hl-primary mb-4">
+        <h3 class="mb-2">Como funciona em 3 passos</h3>
+        <ul class="preco-itens">
+            <li><strong>Cadastre.</strong> Você entra no Aggron pagando R$ 500,00/mês fixo. Sem comissão sobre as compras.</li>
+            <li><strong>Faça seu pedido.</strong> A cada 15 dias abrimos uma rodada — você marca o que precisa (blend, queijo, batata, embalagem) e a quantidade.</li>
+            <li><strong>Economize.</strong> Juntamos com outras hamburguerias, cotamos com fornecedores parceiros e te devolvemos o melhor preço. Você paga direto pro fornecedor; a Aggron não toca o dinheiro.</li>
+        </ul>
+        <p class="muted mt-2">
+            Após cadastrar, nossa equipe entra em contato pra alinhar a próxima rodada.
+        </p>
+    </div>
+
     <form method="POST" class="form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if codigo_indicacao_pre %}

@@ -234,6 +234,18 @@ def create_app(config_name="default"):
         "kg": "kg", "g": "g", "ml": "ml", "l": "l",
     }
 
+    # Context processor global: injeta WHATSAPP_NUMERO em todos os templates
+    # pra renderizar botao flutuante de contato pre-cadastro. Vazio = botao
+    # nao aparece (config opcional).
+    @app.context_processor
+    def _inject_globals():
+        numero = app.config.get("WHATSAPP_NUMERO") or ""
+        if numero:
+            url = f"https://wa.me/{numero}?text=Oi%2C%20queria%20entender%20o%20Aggron"
+        else:
+            url = ""
+        return {"whatsapp_url": url}
+
     # Filter: formata quantidade removendo .0 quando inteira (ex: 5.0 -> "5", 11.7 -> "11,7")
     @app.template_filter("qtd")
     def format_quantidade(valor):

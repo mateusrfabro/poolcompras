@@ -424,6 +424,7 @@ class EventoRodada(db.Model):
     TIPO_AVALIACAO_ENVIADA       = "avaliacao_enviada"
     TIPO_RODADA_FINALIZADA       = "rodada_finalizada"
     TIPO_RODADA_CANCELADA        = "rodada_cancelada"
+    TIPO_RODADA_EM_NEGOCIACAO    = "rodada_em_negociacao"
     TIPO_DEADLINE_VENCIDO        = "deadline_vencido"
 
     id = db.Column(db.Integer, primary_key=True)

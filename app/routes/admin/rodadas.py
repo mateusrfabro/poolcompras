@@ -135,7 +135,7 @@ def rodada_encerrar_coleta(rodada_id):
     rodada.status = Rodada.STATUS_EM_NEGOCIACAO
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
-        tipo="rodada_em_negociacao",
+        tipo=EventoRodada.TIPO_RODADA_EM_NEGOCIACAO,
         ator_id=current_user.id,
         descricao="Admin encerrou a coleta de pedidos e iniciou a negociação",
     ))
@@ -178,7 +178,7 @@ def rodada_finalizar(rodada_id):
     rodada.status = Rodada.STATUS_FINALIZADA
     db.session.add(EventoRodada(
         rodada_id=rodada_id,
-        tipo="rodada_finalizada",
+        tipo=EventoRodada.TIPO_RODADA_FINALIZADA,
         ator_id=current_user.id,
         descricao="Rodada finalizada pelo admin",
     ))

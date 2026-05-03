@@ -1,20 +1,20 @@
 """Programa de indicacao — dashboard da lanchonete + acao de resgatar."""
 import logging
+from datetime import datetime, timedelta, timezone
 
 from flask import (
     render_template, redirect, url_for, flash, request, current_app,
 )
 from flask_login import login_required, current_user
-from datetime import datetime, timezone
 
 from app import db, limiter
 from app.auth_decorators import lanchonete_required
+from app.models import Indicacao, Lanchonete
 from app.services.indicacao import (
     garantir_codigo, indicacoes_da_lanchonete, calcular_status_recompensa,
-    RECOMPENSA_INDICADAS_NECESSARIAS,
+    RECOMPENSA_INDICADAS_NECESSARIAS, RECOMPENSA_DIAS_ATIVA_MINIMO,
 )
-from app.services.notificacoes import post_telegram_raw
-from app.models import Indicacao
+from app.services.notificacoes import post_telegram_raw, _escape
 from . import perfil_bp
 
 logger = logging.getLogger(__name__)
@@ -62,19 +62,20 @@ def resgatar_recompensa():
         return redirect(url_for("perfil.indicacoes"))
 
     # Pega as 3 indicacoes mais antigas elegiveis (FIFO).
-    from datetime import timedelta
-    from app.services.indicacao import RECOMPENSA_DIAS_ATIVA_MINIMO
-    from app.models import Lanchonete as L
+    # with_for_update bloqueia as rows ate o commit — Postgres respeita,
+    # SQLite ignora (aceitavel em dev). Fecha race entre 2 abas/cliques
+    # rapidos que poderiam consumir 6 indicacoes ao inves de 3.
     cutoff = datetime.now(timezone.utc) - timedelta(days=RECOMPENSA_DIAS_ATIVA_MINIMO)
     indicacoes_pra_consumir = (
         Indicacao.query
         .filter_by(indicador_lanchonete_id=lanchonete.id)
         .filter(Indicacao.recompensa_aplicada_em.is_(None))
         .filter(Indicacao.criado_em <= cutoff)
-        .join(L, Indicacao.indicada_lanchonete_id == L.id)
-        .filter(L.ativa.is_(True))
+        .join(Lanchonete, Indicacao.indicada_lanchonete_id == Lanchonete.id)
+        .filter(Lanchonete.ativa.is_(True))
         .order_by(Indicacao.criado_em.asc())
         .limit(RECOMPENSA_INDICADAS_NECESSARIAS)
+        .with_for_update()
         .all()
     )
     if len(indicacoes_pra_consumir) < RECOMPENSA_INDICADAS_NECESSARIAS:
@@ -93,13 +94,15 @@ def resgatar_recompensa():
     )
 
     # Notifica admin via Telegram (se canal configurado) pra aplicar
-    # desconto no proximo boleto.
+    # desconto no proximo boleto. _escape() blinda HTML injection via
+    # nome_fantasia controlado pelo user (parse_mode=HTML).
     chat_id = current_app.config.get("TELEGRAM_ADMIN_CHAT_ID")
     if chat_id:
+        nome_safe = _escape(lanchonete.nome_fantasia)
         post_telegram_raw(
             chat_id,
             f"<b>Aggron — Recompensa de indicacao resgatada</b>\n\n"
-            f"Lanchonete <b>{lanchonete.nome_fantasia}</b> (id {lanchonete.id}) "
+            f"Lanchonete <b>{nome_safe}</b> (id {lanchonete.id}) "
             f"resgatou 1 mes gratis (3 indicadas elegiveis).\n\n"
             f"Acao manual: aplicar desconto no proximo boleto.",
             contexto=f"recompensa-indicacao lanchonete={lanchonete.id}",

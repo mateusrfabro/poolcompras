@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models import Lanchonete, Indicacao
@@ -88,7 +89,7 @@ def registrar_indicacao(codigo: str, indicada_lanchonete: Lanchonete) -> bool:
     if not indicador:
         return False
     if indicador.id == indicada_lanchonete.id:
-        logger.info("INDICACAO_AUTO_BLOQUEADA lanchonete=%s", indicada_lanchonete.id)
+        logger.info("INDICACAO_AUTO_BLOQUEADA")
         return False
     try:
         db.session.add(Indicacao(
@@ -101,16 +102,53 @@ def registrar_indicacao(codigo: str, indicada_lanchonete: Lanchonete) -> bool:
             "INDICACAO_REGISTRADA indicador=%s indicada=%s",
             indicador.id, indicada_lanchonete.id,
         )
+        # Notif "quase la" pro indicador quando ele chegou em N-1 indicacoes
+        # totais (independente de elegibilidade — vai virar elegivel em 30d).
+        # Best-effort: nao bloqueia o cadastro se Telegram cair.
+        try:
+            _notificar_quase_la_se_aplicavel(indicador)
+        except Exception:  # pylint: disable=broad-except
+            logger.warning(
+                "INDICACAO_NOTIF_QUASE_LA_FALHOU indicador=%s",
+                indicador.id, exc_info=True,
+            )
         return True
     except IntegrityError:
         # UNIQUE(indicada_lanchonete_id) violado — race ou tentativa de
         # reclassificar. Silencioso.
         db.session.rollback()
-        logger.info(
-            "INDICACAO_DUPLICADA_BLOQUEADA indicada=%s",
-            indicada_lanchonete.id,
-        )
+        logger.info("INDICACAO_DUPLICADA_BLOQUEADA")
         return False
+
+
+def _notificar_quase_la_se_aplicavel(indicador: Lanchonete) -> None:
+    """Dispara Telegram pro indicador quando o total de indicacoes pendentes
+    (sem recompensa aplicada) bate em N-1. Heuristica: se contagem == N-1
+    APOS este cadastro, eh a transicao — primeira vez. Disparado 1x por
+    "quase chegada".
+
+    Comportamento de gatilho clasico (efeito da meta proxima): user que
+    chega em 2/3 tem maior prob de ir buscar o 3o.
+    """
+    from app.services.notificacoes import notificar_evento  # local: evita ciclo
+    pendentes = (
+        Indicacao.query
+        .filter_by(indicador_lanchonete_id=indicador.id)
+        .filter(Indicacao.recompensa_aplicada_em.is_(None))
+        .count()
+    )
+    if pendentes != RECOMPENSA_INDICADAS_NECESSARIAS - 1:
+        return
+    if not indicador.responsavel:
+        return
+    titulo = f"Falta 1 indicação pra você ganhar 1 mês grátis"
+    detalhes = (
+        f"Você já tem {pendentes} indicações registradas. "
+        f"Indique mais 1 e, quando completar 30 dias ativa, libera o "
+        f"resgate de R$ 500,00 no seu próximo boleto."
+    )
+    notificar_evento(indicador.responsavel, titulo, detalhes)
+    logger.info("INDICACAO_NOTIF_QUASE_LA_ENVIADA indicador=%s", indicador.id)
 
 
 def indicacoes_da_lanchonete(lanchonete_id: int) -> list[dict]:
@@ -125,8 +163,11 @@ def indicacoes_da_lanchonete(lanchonete_id: int) -> list[dict]:
     """
     agora = datetime.now(timezone.utc)
     cutoff = agora - timedelta(days=RECOMPENSA_DIAS_ATIVA_MINIMO)
+    # joinedload(indicada) evita N+1: cada item do loop acessa
+    # ind.indicada.ativa e ind.indicada.nome_fantasia.
     indicacoes = (
         Indicacao.query
+        .options(joinedload(Indicacao.indicada))
         .filter_by(indicador_lanchonete_id=lanchonete_id)
         .order_by(Indicacao.criado_em.desc())
         .all()

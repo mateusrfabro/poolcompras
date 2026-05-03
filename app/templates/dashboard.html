@@ -9,20 +9,11 @@
     {% endif %}
 
     <nav class="sub-nav" aria-label="Seções">
-        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item sub-nav-active">Painel</a>
+        <a href="{{ url_for('main.dashboard') }}" class="sub-nav-item sub-nav-active" aria-current="page">Painel</a>
         <a href="{{ url_for('historico.analytics') }}" class="sub-nav-item">Meu Resumo</a>
         <a href="{{ url_for('historico.cmv') }}" class="sub-nav-item">Meu CMV</a>
         <a href="{{ url_for('perfil.indicacoes') }}" class="sub-nav-item">Indique e ganhe</a>
     </nav>
-
-    {# CTA "Indique e ganhe" — visivel sempre pra trazer atencao #}
-    <div class="indicacao-cta">
-        <div class="indicacao-cta-texto">
-            <h4>Indique 3 lanchonetes, ganhe 1 mês grátis</h4>
-            <p>Compartilhe seu link de indicação. Sem limite de resgates.</p>
-        </div>
-        <a href="{{ url_for('perfil.indicacoes') }}" class="btn btn-outline">Ver meu link</a>
-    </div>
 
     {# KPIs rápidos #}
     {% if kpis %}
@@ -76,6 +67,15 @@
             {% endfor %}
         </div>
     {% endif %}
+
+    {# CTA "Indique e ganhe" — depois das pendencias pra nao ofuscar urgencia operacional #}
+    <div class="indicacao-cta">
+        <div class="indicacao-cta-texto">
+            <h3>Indique 3 hamburguerias e ganhe R$ 500,00 (1 mês grátis)</h3>
+            <p>Compartilhe seu link de indicação. Sem limite de resgates.</p>
+        </div>
+        <a href="{{ url_for('perfil.indicacoes') }}" class="btn btn-outline">Ver meu link</a>
+    </div>
 
     {# Rodada aberta #}
     {% if rodada_aberta %}

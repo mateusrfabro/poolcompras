@@ -7,14 +7,18 @@ Regras:
 - Troca de senha exige senha_atual correta (protege de sessao sequestrada)
 - Campos sensiveis (PIX/banco/CNPJ): mudanca exige reauth com senha_atual
 """
+import logging
 from datetime import datetime, timezone
 
 from flask import render_template, redirect, url_for, flash, request, current_app
-from flask_login import login_required, current_user
+from flask_login import login_required, current_user, logout_user
 from app.services.passwords import check_senha, hash_senha
+from app.services.pii import mask_email
 
 from app import db, limiter
 from . import perfil_bp
+
+logger = logging.getLogger(__name__)
 
 
 # Campos sensiveis: mudanca exige reautenticacao com senha_atual.
@@ -140,9 +144,6 @@ def excluir_conta():
     Requer confirmacao explicita por digitacao da palavra EXCLUIR no form,
     pra evitar exclusao acidental ou click-jack.
     """
-    from datetime import datetime, timezone
-    import logging
-    from flask_login import logout_user
     confirma = request.form.get("confirmacao_excluir", "").strip().upper()
     if confirma != "EXCLUIR":
         flash("Pra confirmar, digite EXCLUIR no campo. Conta nao foi alterada.", "warning")
@@ -174,10 +175,9 @@ def excluir_conta():
     db.session.commit()
 
     # Log de auditoria SEM email do usuario excluido (privacidade pos-fato).
-    from app.routes.auth import _mask_email
-    logging.getLogger(__name__).info(
+    logger.info(
         "USUARIO_EXCLUIDO usuario=%s email_orig_mask=%s",
-        uid, _mask_email(email_orig),
+        uid, mask_email(email_orig),
     )
 
     logout_user()

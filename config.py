@@ -22,6 +22,10 @@ class Config:
     # Chat ID do admin pra notif administrativas (resgate de indicacao,
     # alertas operacionais). String vazia = notif desativada.
     TELEGRAM_ADMIN_CHAT_ID = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
+    # Numero WhatsApp publico pra contato pre-cadastro (B2B BR adora voz).
+    # Formato so digitos com codigo pais (ex: 5543999999999). Vazio = botao
+    # nao aparece. Configurar em prod via .env quando Ademar definir.
+    WHATSAPP_NUMERO = os.getenv("WHATSAPP_NUMERO", "")
 
     # TTL explicito da sessao logada. Default Flask eh 31 dias — alto demais
     # pra B2B com dados financeiros. 14 dias permite "nao desconectar nunca"
