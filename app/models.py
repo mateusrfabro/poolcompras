@@ -73,6 +73,12 @@ class Lanchonete(db.Model):
     cidade = db.Column(db.String(80), default="Londrina")
     ativa = db.Column(db.Boolean, default=True, index=True)
     criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    # Programa de indicacao: codigo unico que a lanchonete espalha pra
+    # convidar amigas. Ex: link aggron.com.br/registro?ind=ABC123. 8 chars
+    # alfanumericos sem caracteres confusos (sem 0/O/1/I/L). 32^8 = ~1.1T
+    # combinacoes, colisao desprezivel. Nullable=True pra preservar legacy
+    # rows; servico gera lazy no primeiro acesso ao dashboard.
+    codigo_indicacao = db.Column(db.String(8), unique=True, index=True, nullable=True)
 
     pedidos = db.relationship("ItemPedido", backref="lanchonete")
 
@@ -340,6 +346,57 @@ class AvaliacaoRodada(db.Model):
         UniqueConstraint("rodada_id", "lanchonete_id", "fornecedor_id",
                          name="uq_avaliacao_rodada_lanchonete_fornecedor"),
         CheckConstraint("estrelas BETWEEN 1 AND 5", name="ck_avaliacao_estrelas_1a5"),
+    )
+
+
+class Indicacao(db.Model):
+    """Programa de indicacao: lanchonete A indicou lanchonete B.
+
+    Regra de recompensa (MVP): apos 3 indicadas com `ativa=True` HA mais
+    de 30 dias e ainda sem recompensa aplicada, a indicadora ganha 1 mes
+    gratis na proxima cobranca. Recompensa eh aplicada manualmente pela
+    equipe (sistema notifica admin via Telegram).
+    """
+    __tablename__ = "indicacoes"
+
+    id = db.Column(db.Integer, primary_key=True)
+    indicador_lanchonete_id = db.Column(
+        db.Integer, db.ForeignKey("lanchonetes.id"),
+        nullable=False, index=True,
+    )
+    # UNIQUE: 1 lanchonete tem no maximo 1 indicador (quem chegou primeiro
+    # via link). Bloqueia atacante reclassificando depois.
+    indicada_lanchonete_id = db.Column(
+        db.Integer, db.ForeignKey("lanchonetes.id"),
+        nullable=False, unique=True,
+    )
+    # Snapshot do codigo usado no momento da indicacao. Caso a indicadora
+    # gere codigo novo no futuro, mantem trilha do que foi usado.
+    codigo_usado = db.Column(db.String(8), nullable=False)
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False, index=True,
+    )
+    # Quando essa indicacao foi "consumida" como parte de uma recompensa.
+    # NULL = ainda elegivel pra computar a proxima recompensa.
+    recompensa_aplicada_em = db.Column(db.DateTime(timezone=True), nullable=True)
+
+    indicador = db.relationship(
+        "Lanchonete", foreign_keys=[indicador_lanchonete_id],
+        backref="indicacoes_feitas",
+    )
+    indicada = db.relationship(
+        "Lanchonete", foreign_keys=[indicada_lanchonete_id],
+    )
+
+    __table_args__ = (
+        # Bloqueia auto-indicacao no nivel do DB (defesa em profundidade —
+        # service ja valida).
+        CheckConstraint(
+            "indicador_lanchonete_id <> indicada_lanchonete_id",
+            name="ck_indicacao_nao_propria",
+        ),
     )
 
 

@@ -19,6 +19,9 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
     # Username do bot Telegram (usado pra montar deep link t.me/<username>?start=...)
     TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "poolcomprasbot")
+    # Chat ID do admin pra notif administrativas (resgate de indicacao,
+    # alertas operacionais). String vazia = notif desativada.
+    TELEGRAM_ADMIN_CHAT_ID = os.getenv("TELEGRAM_ADMIN_CHAT_ID", "")
 
     # TTL explicito da sessao logada. Default Flask eh 31 dias — alto demais
     # pra B2B com dados financeiros. 14 dias permite "nao desconectar nunca"

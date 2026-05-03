@@ -5,8 +5,18 @@
 {% set f = form or {} %}
 <div class="form-page">
     <h2>Cadastrar Lanchonete</h2>
+    {% if codigo_indicacao_pre %}
+    <div class="alert alert-info">
+        Voce esta sendo indicado(a) com o codigo
+        <strong>{{ codigo_indicacao_pre }}</strong>. Ao se cadastrar, a
+        lanchonete que te indicou pode ganhar 1 mes gratis.
+    </div>
+    {% endif %}
     <form method="POST" class="form-card">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        {% if codigo_indicacao_pre %}
+        <input type="hidden" name="ind" value="{{ codigo_indicacao_pre }}">
+        {% endif %}
         <h3>Dados do responsável</h3>
         <div class="form-row">
             <div class="form-group">

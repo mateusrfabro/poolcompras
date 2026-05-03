@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Indique e ganhe — Aggron{% endblock %}
+
+{% block content %}
+<div class="page indicacoes-page">
+    <h2>Indique amigos e ganhe mês grátis</h2>
+    <p class="page-sub">
+        Compartilhe seu link. Cada lanchonete que se cadastrar e ficar ativa
+        por 30 dias conta como 1 indicação. Aos <strong>{{ necessarias }}</strong>,
+        você ganha 1 mês de mensalidade grátis.
+    </p>
+
+    {# Card do progresso #}
+    <div class="card card-hl-primary">
+        <h3 class="mb-2">Seu progresso</h3>
+        <div class="indicacao-progresso">
+            <div class="indicacao-num">
+                <span class="indicacao-num-grande">{{ status.elegiveis }}</span>
+                <span class="muted">/ {{ necessarias }} indicadas elegíveis</span>
+            </div>
+            {% if status.aguardando_30d %}
+            <p class="muted">
+                Mais <strong>{{ status.aguardando_30d }}</strong>
+                {% if status.aguardando_30d == 1 %}indicada{% else %}indicadas{% endif %}
+                aguardando completar 30 dias de cadastro.
+            </p>
+            {% endif %}
+            {% if status.total_recompensas_recebidas > 0 %}
+            <p class="muted">
+                Você já resgatou
+                <strong>{{ status.total_recompensas_recebidas }}</strong>
+                {% if status.total_recompensas_recebidas == 1 %}mês grátis{% else %}meses grátis{% endif %}
+                até agora.
+            </p>
+            {% endif %}
+        </div>
+
+        {% if status.pode_resgatar %}
+        <form method="POST" action="{{ url_for('perfil.resgatar_recompensa') }}" class="mt-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="Resgatar 1 mês grátis usando 3 indicações elegíveis?">
+                Resgatar 1 mês grátis
+            </button>
+            <p class="muted mt-2">
+                Vamos avisar a equipe e aplicar o desconto no seu próximo boleto.
+            </p>
+        </form>
+        {% else %}
+        <p class="muted mt-3">
+            Faltam <strong>{{ necessarias - status.elegiveis }}</strong>
+            {% if necessarias - status.elegiveis == 1 %}indicação elegível{% else %}indicações elegíveis{% endif %}
+            pra liberar o resgate.
+        </p>
+        {% endif %}
+    </div>
+
+    {# Link copiavel #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Seu link de indicação</h3>
+        <div class="indicacao-link-bloco">
+            <input type="text" id="indicacao-link" class="indicacao-link-input"
+                   value="{{ link_indicacao }}" readonly aria-label="Seu link de indicação">
+            <button type="button" class="btn btn-outline" id="copiar-link"
+                    data-target="indicacao-link">Copiar link</button>
+        </div>
+        <p class="muted mt-2">
+            Seu código: <code class="indicacao-codigo">{{ codigo }}</code>
+            (pode passar o código direto se preferir).
+        </p>
+        <p class="muted mt-2">
+            <strong>Como funciona pra contar:</strong> a lanchonete indicada precisa
+            cadastrar pelo link, ficar ativa (não cancelar) por <strong>30 dias</strong>.
+            Auto-indicação não conta.
+        </p>
+    </div>
+
+    {# Lista de indicacoes feitas #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Suas indicações ({{ indicacoes|length }})</h3>
+        {% if not indicacoes %}
+        <p class="muted">
+            Você ainda não indicou ninguém. Compartilhe seu link com outras
+            hamburguerias da região!
+        </p>
+        {% else %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Lanchonete</th>
+                        <th>Indicada em</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ind in indicacoes %}
+                    <tr>
+                        <td>{{ ind.indicada.nome_fantasia if ind.indicada else '—' }}</td>
+                        <td>{{ ind.criado_em.strftime('%d/%m/%Y') }}</td>
+                        <td>
+                            {% if ind.status == 'recompensada' %}
+                            <span class="badge badge-finalizada">Mês grátis aplicado</span>
+                            {% elif ind.status == 'elegivel' %}
+                            <span class="badge badge-ativo">Elegível</span>
+                            {% elif ind.status == 'aguardando_30d' %}
+                            <span class="badge badge-fechada">
+                                Faltam {{ ind.dias_para_elegivel }} dia(s)
+                            </span>
+                            {% elif ind.status == 'inativa' %}
+                            <span class="badge badge-inativo">Inativa (não conta)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+    </div>
+
+    <p class="form-footer mt-3">
+        <a href="{{ url_for('perfil.editar') }}">← Voltar ao perfil</a>
+    </p>
+</div>
+
+<script src="{{ url_for('static', filename='js/copiar-link.js') }}"></script>
+{% endblock %}

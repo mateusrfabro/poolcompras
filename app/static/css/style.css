@@ -2017,3 +2017,74 @@ h1, h2, h3, h4, h5, h6 {
 .timeline-line-1 { font-size: 0.95rem; }
 .timeline-line-2 { font-size: 0.9rem; color: #4b5563; margin-top: 0.15rem; }
 .timeline-line-3 { font-size: 0.8rem; margin-top: 0.15rem; }
+
+/* === Programa de indicacao === */
+.indicacoes-page { max-width: 760px; margin: 0 auto; }
+
+.indicacao-progresso { margin-bottom: var(--space-3); }
+.indicacao-num { font-size: 1.1rem; }
+.indicacao-num-grande {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 2.4rem;
+    font-weight: 700;
+    color: var(--primary);
+    margin-right: var(--space-2);
+    line-height: 1;
+}
+
+.indicacao-link-bloco {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+    flex-wrap: wrap;
+}
+.indicacao-link-input {
+    flex: 1;
+    min-width: 240px;
+    padding: 0.6rem 0.8rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius);
+    background: var(--gray-100);
+    font-family: monospace;
+    font-size: 0.9rem;
+    color: var(--gray-900);
+}
+.indicacao-link-input:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+.indicacao-codigo {
+    background: var(--gray-100);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-family: monospace;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+/* Card-CTA "Indique e ganhe" no painel da lanchonete */
+.indicacao-cta {
+    background: linear-gradient(135deg, #EDF2F7 0%, #ffffff 100%);
+    border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--accent);
+    border-radius: var(--radius);
+    padding: var(--space-3) var(--space-4);
+    margin-top: var(--space-3);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+}
+.indicacao-cta-texto h4 {
+    margin: 0;
+    font-family: var(--font-heading);
+    color: var(--secondary);
+    font-size: 1.05rem;
+}
+.indicacao-cta-texto p {
+    margin: 0.2rem 0 0 0;
+    color: var(--gray-700);
+    font-size: 0.9rem;
+}

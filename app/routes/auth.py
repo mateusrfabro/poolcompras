@@ -216,12 +216,24 @@ def registro():
         db.session.add(lanchonete)
         db.session.commit()
 
+        # Programa de indicacao: se veio com ?ind=CODIGO, registra.
+        # Falha silenciosa (codigo invalido / auto-indicacao) — anti-enumeration.
+        codigo_indicacao = request.form.get("ind", "").strip()
+        if codigo_indicacao:
+            from app.services.indicacao import registrar_indicacao
+            registrar_indicacao(codigo_indicacao, lanchonete)
+
         session.clear()
+        session.permanent = True
         login_user(usuario)
         flash("Cadastro realizado! Bem-vindo ao Aggron.", "success")
         return redirect(url_for("main.dashboard"))
 
-    return render_template("auth/registro.html")
+    # GET: passa ?ind= da query pro template (hidden field)
+    return render_template(
+        "auth/registro.html",
+        codigo_indicacao_pre=request.args.get("ind", "").strip(),
+    )
 
 
 @auth_bp.route("/registro/fornecedor", methods=["GET", "POST"])
