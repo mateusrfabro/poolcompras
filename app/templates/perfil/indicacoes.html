@@ -80,7 +80,7 @@
         <span id="copia-feedback" class="sr-only" aria-live="polite"></span>
 
         {# Botao "Compartilhar no WhatsApp" com mensagem pronta — B2B BR vive no zap #}
-        {% set msg_wa = "Oi! To usando o Aggron pra comprar insumos junto com outras hamburguerias de Londrina (blend, queijo, batata, embalagem). Tô economizando 10-15%% na rodada. Se quiser entrar, usa meu link: " ~ link_indicacao %}
+        {% set msg_wa = "Olá! Estou usando o Aggron pra cotar insumos com volume agregado entre hamburguerias de Londrina. Economia média de 10-15%% por rodada. Se quiser entrar, use meu link: " ~ link_indicacao %}
         <a href="https://wa.me/?text={{ msg_wa|urlencode }}"
            target="_blank" rel="noopener"
            class="btn btn-primary mt-2">
@@ -114,8 +114,9 @@
         {% if not indicacoes %}
         <div class="empty-state">
             <p>
-                Você ainda não indicou ninguém. Manda no grupo de hamburgueiros
-                do bairro pelo botão <strong>Compartilhar no WhatsApp</strong> acima.
+                Você ainda não indicou ninguém. Compartilhe no grupo de
+                hamburguerias da região pelo botão
+                <strong>Compartilhar no WhatsApp</strong> acima.
             </p>
         </div>
         {% else %}

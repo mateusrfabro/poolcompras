@@ -1,104 +1,68 @@
 {% extends "base.html" %}
-{% block title %}Quem somos — Aggron{% endblock %}
-{% block meta_description %}Aggron foi fundada em 2026 por Mateus e Ademar, em Londrina, pra ajudar hamburguerias a comprar melhor sem perder margem pra distribuidor.{% endblock %}
+{% block title %}Sobre a Aggron{% endblock %}
+{% block meta_description %}Aggron — central de compras cooperativa pra hamburguerias e espetarias de Londrina. Volume agregado, preço de atacado, pagamento direto ao fornecedor.{% endblock %}
 
 {% block content %}
 <div class="page legal-page">
-    <h2>Quem somos</h2>
-    <p class="page-sub">Dois sócios, uma cidade, e um problema chato pra resolver.</p>
+    <h2>Sobre a Aggron</h2>
 
     <section class="legal-secao">
-        <h3>O que é a Aggron</h3>
+        <h3>O que somos</h3>
         <p>
-            <strong>Não somos atacadista. Não compramos nada, não revendemos.</strong>
-            A Aggron <strong>organiza a rodada</strong>: cataloga produtos, recebe os
-            pedidos das lanchonetes, negocia com fornecedores parceiros e devolve o
-            melhor preço pra cada um. Pagamento é direto da lanchonete pro
-            fornecedor — a Aggron não toca o dinheiro nem entra na nota fiscal.
+            <strong>Não somos atacadista. Não compramos nada. Não revendemos.</strong>
         </p>
         <p>
-            É uma central de compras cooperativa pra hamburguerias e espetarias de
-            Londrina e região. Em vez de cada lanchonete cotar sozinha com
-            fornecedor (e levar o preço de tabela), a gente <strong>junta o pedido
-            de todas em uma só rodada</strong> e cota com volume agregado — preço de
-            distribuidor pra quem compra como bar de bairro.
-            <strong>Rodada todo dia</strong> — sua hamburgueria recebe produto
-            fresco quando precisa, sem encher estoque, e o preço de volume
-            continua valendo.
+            A Aggron organiza rodadas diárias de cotação coletiva pra
+            hamburguerias e espetarias de Londrina. Volume agregado, preço de
+            atacado, pagamento direto da lanchonete pro fornecedor.
         </p>
     </section>
 
     <section class="legal-secao">
         <h3>Por que existimos</h3>
         <p>
-            Quem tem hamburgueria sabe: blend bovino é o item de maior peso no CMV,
-            e o preço varia 15-25% entre fornecedores na mesma cidade. Quem tem
-            volume consegue cotar; quem não tem, paga tabela. A Aggron transforma
-            <strong>10 hamburguerias pequenas em 1 cliente grande</strong> aos olhos do
-            fornecedor — e divide a economia entre quem participou.
+            Blend bovino é o item de maior peso no CMV de uma hamburgueria — e
+            o preço varia 15&ndash;25% entre fornecedores na mesma cidade. Quem
+            tem volume cota; quem não tem, paga tabela. A Aggron resolve isso
+            juntando os pedidos da rede em uma só cotação.
         </p>
     </section>
 
     <section class="legal-secao">
         <h3>Quem está por trás</h3>
         <ul>
-            <li>
-                <strong>Mateus Fabro</strong> — tech lead. Cuida do produto, do código e
-                de fazer a operação rodar redondo. Background em engenharia de
-                software com foco em sistemas B2B.
-            </li>
-            <li>
-                <strong>Ademar Adama</strong> — sócio de operação e infraestrutura. Cuida
-                da parte comercial, relacionamento com fornecedores e da
-                infraestrutura que mantém o sistema no ar (servidor próprio em
-                Londrina, sem dependência de cloud cara).
-            </li>
+            <li><strong>Mateus Fabro</strong> — sócio fundador</li>
+            <li><strong>Ademar Costa</strong> — sócio fundador</li>
         </ul>
-        <p class="muted mt-2">
-            Somos 2. Sem investidor, sem pressão de growth a qualquer custo. O
-            modelo se sustenta pelo serviço — quando a rodada não traz economia
-            real, a lanchonete cancela. Por isso desenhamos cada rodada com foco
-            em desconto comprovado, não em volume de transação.
-        </p>
     </section>
 
     <section class="legal-secao">
         <h3>Como ganhamos dinheiro</h3>
         <p>
-            <strong>Lanchonete:</strong> mensalidade fixa de
-            <strong>R$ 500,00/mês</strong>, sem comissão sobre as compras. A
-            economia inteira da rodada fica com a lanchonete.
+            Mensalidade fixa de <strong>R$ 500,00 por lanchonete</strong>, sem
+            comissão sobre as compras.
         </p>
         <p>
-            <strong>Fornecedor:</strong> parceria comercial negociada caso a caso
-            (não é repassada à lanchonete). A Aggron entrega volume agregado e
-            recorrência; o fornecedor abre margem pra ter pedido garantido.
-        </p>
-        <p class="muted">
-            Esse modelo dá previsibilidade pra todo mundo: lanchonete sabe exatamente
-            quanto paga, fornecedor sabe quanto entrega, a gente sabe quanto sustenta.
+            Com cada fornecedor parceiro, acordo comercial bilateral &mdash;
+            privado e separado da rodada. O preço da rodada é o preço da
+            cotação; nada é embutido depois.
         </p>
     </section>
 
     <section class="legal-secao">
         <h3>Onde estamos</h3>
         <p>
-            Operamos em <strong>Londrina-PR</strong>. Plano é abrir Maringá, Cambé e
-            Ibiporã assim que atingirmos massa crítica em Londrina. Não vamos
-            crescer pra fora antes de provar que o modelo sustenta a base
-            original — preferimos rodada bem feita pra 10 hamburguerias do que
-            mal feita pra 50.
+            <strong>Londrina-PR.</strong> Próximas cidades: Maringá, Cambé e
+            Ibiporã.
         </p>
     </section>
 
     <section class="legal-secao">
         <h3>Contato direto</h3>
         <p>
-            Atendimento por e-mail:
-            <a href="mailto:contato@aggron.com.br">contato@aggron.com.br</a>.
-            Quer falar com a gente antes de cadastrar?
-            <a href="{{ url_for('main.faq') }}">Veja as perguntas frequentes</a>
-            ou manda e-mail. Respondemos em até 1 dia útil.
+            <a href="mailto:contato@aggron.com.br">contato@aggron.com.br</a>
+            &mdash; resposta em até 1 dia útil. Dúvidas frequentes:
+            <a href="{{ url_for('main.faq') }}">veja a FAQ</a>.
         </p>
     </section>
 
