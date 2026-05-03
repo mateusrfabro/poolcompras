@@ -166,7 +166,7 @@ def telegram_confirmar():
 
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     if not bot_token:
-        flash("Bot Telegram nao esta configurado no servidor. Contate o admin.", "error")
+        flash("Bot Telegram não está configurado no servidor. Contate a Aggron.", "error")
         return redirect(url_for("perfil.editar"))
 
     chat_id = _buscar_chat_id_por_token(bot_token, token_esperado)
@@ -179,11 +179,11 @@ def telegram_confirmar():
         return redirect(url_for("perfil.editar"))
 
     if not _iniciar_otp(chat_id):
-        flash("Nao conseguimos enviar o codigo de confirmacao. Tente novamente.", "error")
+        flash("Não conseguimos enviar o código de confirmação. Tente novamente.", "error")
         return redirect(url_for("perfil.editar"))
 
     flash(
-        "Enviamos um codigo de 6 digitos no seu Telegram — cole-o abaixo pra concluir.",
+        "Enviamos um código de 6 dígitos no seu Telegram — cole-o abaixo para concluir.",
         "info",
     )
     return redirect(url_for("perfil.telegram_codigo"))
@@ -200,11 +200,11 @@ def telegram_manual():
     """
     chat_id = request.form.get("chat_id", "").strip()
     if not chat_id or not chat_id.lstrip("-").isdigit():
-        flash("chat_id invalido (deve ser numerico).", "error")
+        flash("chat_id inválido (deve ser numérico).", "error")
         return redirect(url_for("perfil.editar"))
 
     if not os.environ.get("TELEGRAM_BOT_TOKEN"):
-        flash("Bot Telegram nao esta configurado no servidor.", "error")
+        flash("Bot Telegram não está configurado no servidor.", "error")
         return redirect(url_for("perfil.editar"))
 
     if not _iniciar_otp(chat_id):

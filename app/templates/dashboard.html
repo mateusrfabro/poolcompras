@@ -92,7 +92,7 @@
             {% elif participacao_atual and participacao_atual.pedido_devolvido_em %}
                 <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Ajustar e reenviar</a>
             {% elif participacao_atual and participacao_atual.pedido_enviado_em %}
-                <span class="badge badge-aguardando_aprovacao">Aguardando admin</span>
+                <span class="badge badge-aguardando_aprovacao">Aguardando aprovação</span>
                 <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-outline btn-sm">Editar</a>
             {% elif meus_pedidos %}
                 <a href="{{ url_for('pedidos.catalogo') }}" class="btn btn-primary">Atualizar pedido</a>
@@ -130,7 +130,7 @@
     {% else %}
         <div class="card">
             <h3>Nenhuma rodada aberta</h3>
-            <p>Aguarde a próxima rodada de compras. Você será notificado!</p>
+            <p>A Aggron abrirá uma nova rodada em breve. Você será notificado por Telegram quando ela começar.</p>
         </div>
     {% endif %}
 

@@ -106,7 +106,7 @@ def login():
             if not getattr(usuario, "ativo", True):
                 logger.warning("LOGIN_BLOQUEADO email=%s ip=%s motivo=inativo",
                                _mask_email(email), _client_ip())
-                flash("Conta desativada. Contate o administrador.", "error")
+                flash("Conta desativada. Contate a Aggron.", "error")
                 return render_template("auth/login.html", email_anterior=email)
             # Defesa contra session fixation: zera o cookie de sessao antes de
             # autenticar. Cookie que o atacante possa ter plantado eh descartado.
@@ -153,7 +153,7 @@ def registro():
         aceite_termos = request.form.get("aceite_termos") == "on"
 
         if not aceite_termos:
-            flash("Voce precisa aceitar os Termos e a Privacidade pra continuar.", "error")
+            flash("Você precisa aceitar os Termos e a Privacidade para continuar.", "error")
             return render_template(
                 "auth/registro.html",
                 erro_termos=True,
@@ -245,7 +245,7 @@ def registro_fornecedor():
         aceite_termos = request.form.get("aceite_termos") == "on"
 
         if not aceite_termos:
-            flash("Voce precisa aceitar os Termos e a Privacidade pra continuar.", "error")
+            flash("Você precisa aceitar os Termos e a Privacidade para continuar.", "error")
             return render_template(
                 "auth/registro_fornecedor.html",
                 erro_termos=True,

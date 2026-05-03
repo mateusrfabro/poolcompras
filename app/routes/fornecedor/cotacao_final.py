@@ -66,7 +66,7 @@ def cotar_final(rodada_id):
     """
     rodada = db.get_or_404(Rodada, rodada_id)
     if rodada.status != "em_negociacao":
-        flash("Esta rodada nao esta em fase de negociacao.", "warning")
+        flash("Esta rodada não está em fase de negociação.", "warning")
         return redirect(url_for("fornecedor.dashboard"))
 
     fornecedor = current_user.fornecedor
@@ -113,7 +113,7 @@ def cotar_final(rodada_id):
 
     if request.method == "POST":
         if bloqueado:
-            flash("Cotacao ja foi aprovada pelo admin — nao eh mais editavel.", "error")
+            flash("Cotação já foi aprovada pela Aggron — não é mais editável.", "error")
             return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
         acao = request.form.get("acao", "salvar")
@@ -158,17 +158,17 @@ def cotar_final(rodada_id):
             ).count()
             if total_precos == 0:
                 db.session.rollback()
-                flash("Voce precisa preencher ao menos 1 preco antes de enviar.", "error")
+                flash("Você precisa preencher ao menos 1 preço antes de enviar.", "error")
                 return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
             submissao.enviada_em = datetime.now(timezone.utc)
             submissao.devolvida_em = None
             db.session.commit()
-            flash("Cotacao enviada pra aprovacao do admin.", "success")
+            flash("Cotação enviada para aprovação da Aggron.", "success")
             return redirect(url_for("fornecedor.dashboard"))
 
         db.session.commit()
-        flash(f"Cotacao salva (rascunho). {count} preco(s). Clique em 'Enviar pra aprovacao' quando finalizar.", "success")
+        flash(f"Cotação salva (rascunho). {count} preço(s). Clique em 'Enviar para aprovação' quando finalizar.", "success")
         return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
 
     (linhas, total_partida, total_final,
@@ -210,7 +210,7 @@ def adicionar_nota_negociacao(rodada_id):
         rodada_id=rodada_id, fornecedor_id=fornecedor.id,
     ).first()
     if not submissao:
-        flash("Voce ainda nao enviou cotacao pra esta rodada.", "error")
+        flash("Você ainda não enviou cotação para esta rodada.", "error")
         return redirect(url_for("fornecedor.cotar_final", rodada_id=rodada_id))
     if submissao.aprovada_em:
         flash("Cotacao ja foi aprovada — sem negociacao ativa.", "warning")

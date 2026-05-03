@@ -11,7 +11,7 @@
             <p class="page-sub">
                 <strong class="countdown-text">{{ rodada.data_fechamento|countdown }}</strong>
                 <span class="muted">— Encerra em: {{ rodada.data_fechamento|datetime_br }}</span>.
-                Marque a quantidade de cada produto que você precisa (deixe em branco ou 0 pra não pedir).
+                Indique a quantidade de cada produto. Deixe em branco para não pedir.
             </p>
         </div>
         <span class="badge badge-aberta badge-lg">Em aberto</span>
@@ -49,12 +49,12 @@
             <div class="page-header mb-0">
                 <div>
                     <strong>Pedido usual</strong> — você já pediu na rodada <em>{{ ultima_rodada_pedido.nome }}</em>.
-                    <br><span class="muted text-sm">Podemos copiar os itens do último pedido pra você só ajustar o que mudou.</span>
+                    <br><span class="muted text-sm">A Aggron pode copiar os itens do último pedido para você ajustar apenas o que mudou.</span>
                 </div>
                 <form method="POST" action="{{ url_for('pedidos.repetir_ultimo_pedido') }}" class="inline-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit" class="btn btn-primary btn-sm"
-                            data-confirm="Copiar itens da rodada {{ ultima_rodada_pedido.nome }}? Itens que voce ja tem salvos nao serao sobrescritos.">
+                            data-confirm="Copiar itens da rodada {{ ultima_rodada_pedido.nome }}? Itens já salvos não serão sobrescritos.">
                         Usar meu último pedido
                     </button>
                 </form>
@@ -64,23 +64,22 @@
 
     {% if participacao and participacao.pedido_devolvido_em %}
         <div class="card card-urgent mb-4">
-            <strong>Pedido devolvido pelo admin.</strong> Ajuste abaixo e clique em "Enviar pedido" novamente.
+            <strong>Pedido devolvido pela Aggron.</strong> Ajuste abaixo e clique em "Enviar pedido" novamente.
             {% if participacao.pedido_motivo_devolucao %}
                 <p><em>Motivo:</em> {{ participacao.pedido_motivo_devolucao }}</p>
             {% endif %}
         </div>
     {% elif participacao and participacao.pedido_aprovado_em %}
         <div class="card card-hl-success mb-4">
-            <strong>Pedido aprovado pelo admin.</strong> Nao eh mais possivel editar este pedido.
+            <strong>Pedido aprovado.</strong> Não é mais possível editar este pedido.
         </div>
     {% elif participacao and participacao.pedido_reprovado_em %}
         <div class="card card-urgent mb-4">
-            <strong>Pedido reprovado pelo admin.</strong> Entre em contato para entender o motivo.
+            <strong>Pedido reprovado.</strong> Entre em contato com a Aggron para entender o motivo.
         </div>
     {% elif participacao and participacao.pedido_enviado_em %}
         <div class="card card-hl-only mb-4">
-            <strong>Pedido enviado em {{ participacao.pedido_enviado_em|datetime_br }}.</strong> Aguardando moderacao do admin.
-            Voce ainda pode editar e reenviar.
+            <strong>Pedido enviado em {{ participacao.pedido_enviado_em|datetime_br }}.</strong> Aguardando aprovação da Aggron. Você ainda pode editar e reenviar.
         </div>
     {% endif %}
 
@@ -139,7 +138,7 @@
                     Salvar (rascunho)
                 </button>
                 <button type="submit" name="acao" value="enviar" class="btn btn-primary btn-flex-2"
-                        data-confirm="Enviar o pedido para o admin? Depois de enviar voce ainda pode editar ate ser aprovado.">
+                        data-confirm="Enviar o pedido para aprovação? Depois de enviar você ainda pode editar até ser aprovado.">
                     {% if participacao and participacao.pedido_enviado_em %}
                         Reenviar pedido
                     {% else %}

@@ -104,7 +104,7 @@ def catalogo():
 
     if request.method == "POST":
         if pedido_bloqueado:
-            flash("Pedido ja foi moderado pelo admin e nao pode mais ser editado.", "error")
+            flash("Pedido já foi avaliado pela Aggron e não pode mais ser editado.", "error")
             return redirect(url_for("pedidos.catalogo"))
 
         acao = request.form.get("acao", "salvar")
@@ -158,7 +158,7 @@ def catalogo():
             ).count() + count_add - count_del
             if total_itens <= 0:
                 db.session.rollback()
-                flash("Voce precisa escolher ao menos 1 item antes de enviar o pedido.", "error")
+                flash("Você precisa escolher ao menos 1 item antes de enviar o pedido.", "error")
                 return redirect(url_for("pedidos.catalogo"))
 
             participacao.pedido_enviado_em = datetime.now(timezone.utc)
@@ -166,7 +166,7 @@ def catalogo():
             participacao.pedido_devolvido_em = None
             participacao.pedido_motivo_devolucao = None
             db.session.commit()
-            flash("Pedido enviado para aprovacao do admin.", "success")
+            flash("Pedido enviado para aprovação da Aggron.", "success")
             return redirect(url_for("main.dashboard"))
 
         # Acao = salvar (rascunho)
@@ -316,7 +316,7 @@ def repetir_ultimo_pedido():
         rodada_id=rodada.id, lanchonete_id=lanchonete.id,
     ).first()
     if participacao and (participacao.pedido_aprovado_em or participacao.pedido_reprovado_em):
-        flash("Pedido ja foi moderado e nao pode mais ser editado.", "error")
+        flash("Pedido já foi avaliado e não pode mais ser editado.", "error")
         return redirect(url_for("pedidos.catalogo"))
 
     # Ultima rodada da lanchonete
@@ -330,7 +330,7 @@ def repetir_ultimo_pedido():
         .first()
     )
     if not ultima:
-        flash("Voce ainda nao tem pedido anterior pra copiar.", "warning")
+        flash("Você ainda não tem pedido anterior para copiar.", "warning")
         return redirect(url_for("pedidos.catalogo"))
 
     # Produtos disponiveis no catalogo atual

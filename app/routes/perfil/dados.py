@@ -146,7 +146,7 @@ def excluir_conta():
     """
     confirma = request.form.get("confirmacao_excluir", "").strip().upper()
     if confirma != "EXCLUIR":
-        flash("Pra confirmar, digite EXCLUIR no campo. Conta nao foi alterada.", "warning")
+        flash("Para confirmar, digite EXCLUIR no campo. A conta não foi alterada.", "warning")
         return redirect(url_for("perfil.editar"))
 
     usuario = current_user

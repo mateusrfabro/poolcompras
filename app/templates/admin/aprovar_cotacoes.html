@@ -10,7 +10,7 @@
             <h2>Aprovar cotações finais — {{ rodada.nome }}</h2>
             <p class="page-sub">
                 Fornecedores enviam preços finais com base nos volumes reais.
-                Você aprova para liberar aos lanchonetes, ou devolve pra negociar.
+                Você aprova para liberar aos lanchonetes, ou devolve para negociar.
             </p>
         </div>
         <span class="badge badge-{{ rodada.status }} badge-lg">{{ rodada.status|status_label }}</span>
@@ -86,7 +86,7 @@
                     <button type="submit" name="acao" value="aprovar" class="btn btn-primary">Aprovar</button>
                     <button type="submit" name="acao" value="devolver" class="btn btn-outline"
                             data-confirm="Devolver esta cotação para o fornecedor ajustar?">
-                        Devolver pra negociação
+                        Devolver para negociação
                     </button>
                 </form>
             </div>

@@ -50,7 +50,7 @@
         <form method="POST" action="{{ url_for('perfil.resgatar_recompensa') }}" class="mt-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="btn btn-primary"
-                    data-confirm="Vamos consumir as 3 indicações mais antigas elegíveis pra liberar 1 mês grátis. Continuar?">
+                    data-confirm="A Aggron vai consumir as 3 indicações mais antigas elegíveis para liberar 1 mês grátis. Continuar?">
                 Resgatar 1 mês grátis ({{ valor_mensalidade }})
             </button>
             <p class="muted mt-2">
@@ -62,7 +62,7 @@
         <p class="muted mt-3">
             Faltam <strong>{{ necessarias - status.elegiveis }}</strong>
             {% if necessarias - status.elegiveis == 1 %}indicação elegível{% else %}indicações elegíveis{% endif %}
-            pra liberar o resgate.
+            para liberar o resgate.
         </p>
         {% endif %}
     </div>
@@ -80,7 +80,7 @@
         <span id="copia-feedback" class="sr-only" aria-live="polite"></span>
 
         {# Botao "Compartilhar no WhatsApp" com mensagem pronta — B2B BR vive no zap #}
-        {% set msg_wa = "Olá! Estou usando o Aggron pra cotar insumos com volume agregado entre hamburguerias de Londrina. Economia média de 10-15%% por rodada. Se quiser entrar, use meu link: " ~ link_indicacao %}
+        {% set msg_wa = "Olá! Estou usando o Aggron para cotar insumos com volume agregado entre hamburguerias de Londrina. Economia média de 10-15%% por rodada. Se quiser entrar, use meu link: " ~ link_indicacao %}
         <a href="https://wa.me/?text={{ msg_wa|urlencode }}"
            target="_blank" rel="noopener"
            class="btn btn-primary mt-2">

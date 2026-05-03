@@ -19,18 +19,18 @@
     {# Status da submissao #}
     {% if submissao and submissao.aprovada_em %}
         <div class="card card-hl-success-bg mb-4">
-            <strong>Cotação aprovada pelo admin</strong> em {{ submissao.aprovada_em|datetime_br }}.
+            <strong>Cotação aprovada pela Aggron</strong> em {{ submissao.aprovada_em|datetime_br }}.
             <br><span class="muted">Os preços estão disponíveis para as lanchonetes aceitarem a proposta.</span>
         </div>
     {% elif submissao and submissao.devolvida_em %}
         <div class="card card-urgent mb-4">
-            <strong>Cotação devolvida pelo admin</strong> em {{ submissao.devolvida_em|datetime_br }}.
+            <strong>Cotação devolvida pela Aggron</strong> em {{ submissao.devolvida_em|datetime_br }}.
             <br><span class="muted">Ajuste os preços abaixo conforme a negociação e reenvie.</span>
         </div>
     {% elif submissao and submissao.enviada_em %}
         <div class="card card-hl-only mb-4">
             <strong>Cotação enviada em {{ submissao.enviada_em|datetime_br }}.</strong>
-            Aguardando aprovação do admin.
+            Aguardando aprovação da Aggron.
         </div>
     {% endif %}
 
@@ -110,8 +110,8 @@
                         Salvar (rascunho)
                     </button>
                     <button type="submit" name="acao" value="enviar" class="btn btn-primary btn-flex-2"
-                            data-confirm="Enviar esta cotação pra aprovação do admin?">
-                        {% if submissao and submissao.enviada_em %}Reenviar pra aprovação{% else %}Enviar pra aprovação{% endif %}
+                            data-confirm="Enviar esta cotação para aprovação da Aggron?">
+                        {% if submissao and submissao.enviada_em %}Reenviar para aprovação{% else %}Enviar para aprovação{% endif %}
                     </button>
                 </div>
             {% endif %}

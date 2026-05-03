@@ -58,7 +58,7 @@ def resgatar_recompensa():
     lanchonete = current_user.lanchonete
     status = calcular_status_recompensa(lanchonete.id)
     if not status["pode_resgatar"]:
-        flash("Voce ainda nao tem 3 indicadas elegiveis pra resgatar.", "warning")
+        flash("Você ainda não tem 3 indicadas elegíveis para resgatar.", "warning")
         return redirect(url_for("perfil.indicacoes"))
 
     # Pega as 3 indicacoes mais antigas elegiveis (FIFO).

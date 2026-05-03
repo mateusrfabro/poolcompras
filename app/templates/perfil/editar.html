@@ -241,7 +241,7 @@
             <form method="POST" action="{{ url_for('perfil.excluir_conta') }}" class="mt-3">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group">
-                    <label for="confirmacao_excluir">Pra confirmar, digite <strong>EXCLUIR</strong> em maiúsculas:</label>
+                    <label for="confirmacao_excluir">Para confirmar, digite <strong>EXCLUIR</strong> em maiúsculas:</label>
                     <input type="text" id="confirmacao_excluir" name="confirmacao_excluir"
                            pattern="EXCLUIR" required autocomplete="off">
                 </div>

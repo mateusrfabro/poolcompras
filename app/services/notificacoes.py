@@ -133,8 +133,8 @@ def enviar_link_recuperacao(usuario, link: str) -> bool:
     """Envia link de recuperacao de senha. Canal preferencial: Telegram.
     Marcado sensitive: o link contem token assinado — nunca cair em log."""
     texto = (
-        f"Olá, {_escape(usuario.nome_responsavel)}!\n\n"
-        f"Recebemos um pedido pra redefinir sua senha no Aggron.\n"
+        f"Olá, {_escape(usuario.nome_responsavel)}.\n\n"
+        f"Recebemos uma solicitação para redefinir sua senha no Aggron.\n"
         f"Clique no link abaixo (válido por 1 hora):\n\n"
         f"{link}\n\n"
         f"Se você não solicitou, ignore esta mensagem."
@@ -219,7 +219,7 @@ def notificar_fornecedores_nova_rodada(rodada) -> int:
     titulo = "Nova rodada para cotar"
     detalhes = (
         f"O catálogo da rodada '{rodada.nome}' foi liberado. "
-        f"Acesse o painel pra enviar seu preço de partida."
+        f"Acesse o painel para enviar seu preço de partida."
     )
     # joinedload(responsavel) evita N+1: 1 query traz todos fornecedores +
     # responsaveis. Sem isso, 50 fornecedores = 50 SELECTs em usuarios.
@@ -240,7 +240,7 @@ def notificar_lanchonetes_rodada_aberta(rodada) -> int:
     titulo = "Rodada aberta"
     detalhes = (
         f"A rodada '{rodada.nome}' está aberta para pedidos. "
-        f"Monte seu pedido antes do fechamento."
+        f"Selecione produtos e quantidade antes do fechamento."
     )
     lanchonetes = (
         Lanchonete.query
@@ -269,7 +269,7 @@ def notificar_fornecedores_cotacao_final(rodada) -> int:
     titulo = "Cotação final disponível"
     detalhes = (
         f"A coleta de pedidos da rodada '{rodada.nome}' foi encerrada. "
-        f"Acesse o painel pra enviar seu preço final com os volumes reais."
+        f"Acesse o painel para enviar seu preço final com os volumes reais."
     )
     fornecedores = (
         Fornecedor.query
@@ -296,7 +296,7 @@ def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
     titulo = "Proposta de fornecedor disponível"
     detalhes = (
         f"O fornecedor {fornecedor.razao_social} teve cotação aprovada na "
-        f"rodada '{rodada.nome}'. Acesse o painel pra aceitar ou recusar a proposta."
+        f"rodada '{rodada.nome}'. Acesse o painel para aceitar ou recusar a proposta."
     )
     lanchonetes = (
         Lanchonete.query

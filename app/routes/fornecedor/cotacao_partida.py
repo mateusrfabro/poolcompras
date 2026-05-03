@@ -133,7 +133,7 @@ def cotar_catalogo(rodada_id):
                 adicionado_por_fornecedor_id=fornecedor.id,
                 aprovado=None,
             ))
-            flash(f"Produto '{nome_novo}' sugerido. Aguardando aprovação do admin.", "success")
+            flash(f"Produto '{nome_novo}' sugerido. Aguardando aprovação da Aggron.", "success")
 
         # 3. Auto-libera se nao ha produtos pendentes
         pendentes = RodadaProduto.query.filter_by(

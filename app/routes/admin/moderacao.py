@@ -88,7 +88,7 @@ def moderar_pedidos(rodada_id):
 
         part = db.session.get(ParticipacaoRodada, participacao_id)
         if not part or part.rodada_id != rodada_id:
-            flash("Participacao nao encontrada.", "error")
+            flash("Participação não encontrada.", "error")
             return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
 
         nome_lanchonete = part.lanchonete.nome_fantasia if part.lanchonete else f"#{part.lanchonete_id}"
@@ -137,7 +137,7 @@ def moderar_pedidos(rodada_id):
         elif acao == "reverter":
             # Sem aprovacao em vigor, nao ha o que reverter.
             if part.pedido_aprovado_em is None:
-                flash(f"Pedido de {nome_lanchonete} nao esta aprovado — nada a reverter.", "info")
+                flash(f"Pedido de {nome_lanchonete} não está aprovado — nada a reverter.", "info")
                 return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
             part.pedido_aprovado_em = None
             part.pedido_aprovado_por_id = None
@@ -207,7 +207,7 @@ def aprovar_cotacoes(rodada_id):
         acao = request.form.get("acao")
         sub = db.session.get(SubmissaoCotacao, submissao_id)
         if not sub or sub.rodada_id != rodada_id:
-            flash("Submissao nao encontrada.", "error")
+            flash("Submissão não encontrada.", "error")
             return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
 
         nome_forn = sub.fornecedor.razao_social if sub.fornecedor else f"#{sub.fornecedor_id}"
@@ -235,14 +235,14 @@ def aprovar_cotacoes(rodada_id):
             sub.devolvida_em = datetime.now(timezone.utc)
             sub.enviada_em = None
             sub.aprovada_em = None
-            flash(f"Cotacao de {nome_forn} devolvida pra negociacao.", "success")
+            flash(f"Cotação de {nome_forn} devolvida para negociação.", "success")
             notif_titulo = "Cotação devolvida"
             notif_detalhes = (f"Sua cotação na rodada '{rodada.nome}' foi devolvida "
                               f"pelo admin. Ajuste os preços e reenvie.")
         elif acao == "reverter":
             # Sem aprovacao em vigor, nada a reverter.
             if sub.aprovada_em is None:
-                flash(f"Cotacao de {nome_forn} nao esta aprovada — nada a reverter.", "info")
+                flash(f"Cotação de {nome_forn} não está aprovada — nada a reverter.", "info")
                 return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
             sub.aprovada_em = None
             sub.aprovada_por_id = None
@@ -320,7 +320,7 @@ def aprovar_cotacoes(rodada_id):
 def adicionar_nota_negociacao_admin(submissao_id):
     sub = db.session.get(SubmissaoCotacao, submissao_id)
     if not sub:
-        flash("Submissao nao encontrada.", "error")
+        flash("Submissão não encontrada.", "error")
         return redirect(url_for("main.dashboard"))
     texto = request.form.get("texto", "").strip()
     if not texto:
