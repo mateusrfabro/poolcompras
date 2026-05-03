@@ -9,6 +9,10 @@ from app.models import (
 )
 from app.services.pendencias import pendencias_fornecedor
 from app.services.pnl_fornecedor import calcular_pnl
+from app.services.kpis_fornecedor import (
+    total_cotacoes, cotacoes_vencedoras, media_avaliacao_recebida,
+    total_avaliacoes_recebidas,
+)
 from . import fornecedor_bp, fornecedor_required
 
 
@@ -45,16 +49,12 @@ def dashboard():
     kpis = None
     if fornecedor:
         fid = fornecedor.id
-        total_cot = Cotacao.query.filter_by(fornecedor_id=fid).count()
-        vencedoras = Cotacao.query.filter_by(fornecedor_id=fid, selecionada=True).count()
+        # KPIs cacheados (TTL 30s) — espelha kpis_admin.
+        total_cot = total_cotacoes(fid)
+        vencedoras = cotacoes_vencedoras(fid)
         taxa_vitoria = round(vencedoras / total_cot * 100, 1) if total_cot else 0
-        media_recebida = (
-            db.session.query(func.avg(AvaliacaoRodada.estrelas))
-            .filter(AvaliacaoRodada.fornecedor_id == fid)
-            .scalar()
-        )
-        media_recebida = round(float(media_recebida), 1) if media_recebida else 0
-        rodadas_a_cotar_ids = [r.id for r in rodadas_para_cotar if r.status == "aguardando_cotacao"]
+        media_recebida = media_avaliacao_recebida(fid)
+        rodadas_a_cotar_ids = [r.id for r in rodadas_para_cotar if r.status == Rodada.STATUS_AGUARDANDO_COTACAO]
         ja_cotei_nestas = set()
         if rodadas_a_cotar_ids:
             ja_cotei_nestas = {
@@ -161,9 +161,11 @@ def analytics():
 
     fid = fornecedor.id
 
-    total_cotacoes = Cotacao.query.filter_by(fornecedor_id=fid).count()
-    cotacoes_vencedoras = Cotacao.query.filter_by(fornecedor_id=fid, selecionada=True).count()
-    taxa_vitoria = round(cotacoes_vencedoras / total_cotacoes * 100, 1) if total_cotacoes else 0
+    # KPIs cacheados (TTL 30s) — `total_cotacoes` aqui sombreia o helper
+    # importado, entao usamos os helpers via aliases inline pra clareza.
+    total_cotacoes_n = total_cotacoes(fid)
+    cotacoes_vencedoras_n = cotacoes_vencedoras(fid)
+    taxa_vitoria = round(cotacoes_vencedoras_n / total_cotacoes_n * 100, 1) if total_cotacoes_n else 0
 
     rodadas_participou = (
         db.session.query(func.count(func.distinct(Cotacao.rodada_id)))
@@ -171,13 +173,8 @@ def analytics():
         .scalar()
     ) or 0
 
-    media_recebida = (
-        db.session.query(func.avg(AvaliacaoRodada.estrelas))
-        .filter(AvaliacaoRodada.fornecedor_id == fid)
-        .scalar()
-    )
-    total_avaliacoes = AvaliacaoRodada.query.filter_by(fornecedor_id=fid).count()
-    media_recebida = round(float(media_recebida), 1) if media_recebida else 0
+    media_recebida = media_avaliacao_recebida(fid)
+    total_avaliacoes = total_avaliacoes_recebidas(fid)
 
     top_produtos = (
         db.session.query(
@@ -211,8 +208,8 @@ def analytics():
     return render_template(
         "fornecedor/analytics.html",
         fornecedor=fornecedor,
-        total_cotacoes=total_cotacoes,
-        cotacoes_vencedoras=cotacoes_vencedoras,
+        total_cotacoes=total_cotacoes_n,
+        cotacoes_vencedoras=cotacoes_vencedoras_n,
         taxa_vitoria=taxa_vitoria,
         rodadas_participou=rodadas_participou,
         media_recebida=media_recebida,

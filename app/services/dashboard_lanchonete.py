@@ -3,6 +3,10 @@ from sqlalchemy import func
 from app import db
 from app.models import ItemPedido, ParticipacaoRodada, Rodada, Cotacao
 from app.services.pendencias import pendencias_lanchonete
+from app.services.kpis_lanchonete import (
+    total_rodadas_participadas, rodadas_concluidas as kpi_rodadas_concluidas,
+    media_avaliacao_dada,
+)
 
 
 def dashboard_data(lanchonete_id):
@@ -17,31 +21,12 @@ def dashboard_data(lanchonete_id):
     """
     pendencias = pendencias_lanchonete(lanchonete_id)
 
-    total_rodadas = (
-        db.session.query(func.count(func.distinct(ItemPedido.rodada_id)))
-        .filter(ItemPedido.lanchonete_id == lanchonete_id)
-        .scalar()
-    ) or 0
-
-    rodadas_concluidas = (
-        ParticipacaoRodada.query
-        .filter_by(lanchonete_id=lanchonete_id)
-        .filter(ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .count()
-    )
-
-    media_que_deu = (
-        db.session.query(func.avg(ParticipacaoRodada.avaliacao_geral))
-        .filter(ParticipacaoRodada.lanchonete_id == lanchonete_id,
-                ParticipacaoRodada.avaliacao_geral.isnot(None))
-        .scalar()
-    ) or 0
-
+    # KPIs cacheados (TTL 30s) — espelha kpis_admin/kpis_fornecedor.
     kpis = {
-        "total_rodadas": total_rodadas,
-        "rodadas_concluidas": rodadas_concluidas,
+        "total_rodadas": total_rodadas_participadas(lanchonete_id),
+        "rodadas_concluidas": kpi_rodadas_concluidas(lanchonete_id),
         "pendencias": len(pendencias),
-        "media_que_deu": round(float(media_que_deu), 1),
+        "media_que_deu": media_avaliacao_dada(lanchonete_id),
     }
 
     # Ultimas 3 rodadas finalizadas com preview (total gasto + nota dada)

@@ -1,5 +1,6 @@
 import os
 import secrets
+from datetime import timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -18,6 +19,12 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
     # Username do bot Telegram (usado pra montar deep link t.me/<username>?start=...)
     TELEGRAM_BOT_USERNAME = os.getenv("TELEGRAM_BOT_USERNAME", "poolcomprasbot")
+
+    # TTL explicito da sessao logada. Default Flask eh 31 dias — alto demais
+    # pra B2B com dados financeiros. 14 dias permite "nao desconectar nunca"
+    # entre semanas de uso normal sem deixar token vivo por 1 mes inteiro.
+    # Login marca session.permanent=True pra esse TTL ser aplicado.
+    PERMANENT_SESSION_LIFETIME = timedelta(days=14)
 
     # Flask-Caching: SimpleCache eh in-memory por processo. Suficiente pra
     # single-worker (gunicorn -w 1) ou pra dev. Em multi-worker usar Redis.

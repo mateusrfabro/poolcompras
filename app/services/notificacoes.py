@@ -14,6 +14,7 @@ Docs da API: https://core.telegram.org/bots/api#sendmessage
 """
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 
 import requests
 from flask import current_app
@@ -28,6 +29,10 @@ logger = logging.getLogger(__name__)
 
 _TELEGRAM_TIMEOUT_SEG = 5  # evita travar a request se api.telegram.org cair
 _TELEGRAM_API = "https://api.telegram.org/bot{token}/sendMessage"
+# Concorrencia do dispatcher em massa. 10 workers x 5s timeout = pior caso
+# ~25s pra 50 destinatarios (vs 250s sequencial). Mais que isso pode bater
+# em rate-limit do Telegram (30 msgs/s/bot).
+_DISPATCH_MAX_WORKERS = 10
 
 
 def _tem_canal_ativo(usuario) -> bool:
@@ -166,6 +171,41 @@ def _escape(txt: str) -> str:
 # de Models ficam locais pra evitar import circular (notificacoes <-> models).
 # =============================================================================
 
+
+def _dispatch_em_lote(usuarios, titulo: str, detalhes: str) -> int:
+    """Dispara notificacao pra varios usuarios em paralelo.
+
+    Sem isso, 50 destinatarios x 5s timeout = ate 250s travando o request
+    do admin que clica 'enviar catalogo'. Com 10 workers, pior caso ~25s.
+
+    Cada worker abre seu proprio app_context (ThreadPoolExecutor nao
+    propaga current_app — Flask context eh per-thread).
+    """
+    if not usuarios:
+        return 0
+    app = current_app._get_current_object()  # noqa: SLF001 — Flask API
+
+    def _send_one(usuario) -> bool:
+        with app.app_context():
+            try:
+                return notificar_evento(usuario, titulo, detalhes)
+            except Exception:  # pylint: disable=broad-except
+                # Notificacao eh best-effort — uma falha nao pode derrubar
+                # as outras. Loga e segue.
+                logger.warning(
+                    "DISPATCH_TELEGRAM_EXC usuario=%s",
+                    getattr(usuario, "id", "?"), exc_info=True,
+                )
+                return False
+
+    enviadas = 0
+    with ThreadPoolExecutor(max_workers=_DISPATCH_MAX_WORKERS) as executor:
+        for ok in executor.map(_send_one, usuarios):
+            if ok:
+                enviadas += 1
+    return enviadas
+
+
 def notificar_fornecedores_nova_rodada(rodada) -> int:
     """Avisa fornecedores ATIVOS que tem rodada nova esperando preco de partida.
 
@@ -176,7 +216,6 @@ def notificar_fornecedores_nova_rodada(rodada) -> int:
         f"O catálogo da rodada '{rodada.nome}' foi liberado. "
         f"Acesse o painel pra enviar seu preço de partida."
     )
-    enviadas = 0
     # joinedload(responsavel) evita N+1: 1 query traz todos fornecedores +
     # responsaveis. Sem isso, 50 fornecedores = 50 SELECTs em usuarios.
     fornecedores = (
@@ -185,9 +224,8 @@ def notificar_fornecedores_nova_rodada(rodada) -> int:
         .filter_by(ativo=True)
         .all()
     )
-    for f in fornecedores:
-        if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
-            enviadas += 1
+    usuarios = [f.responsavel for f in fornecedores if f.responsavel]
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
     logger.info("NOTIF_RODADA_NOVA rodada=%s enviadas=%s", rodada.id, enviadas)
     return enviadas
 
@@ -199,16 +237,14 @@ def notificar_lanchonetes_rodada_aberta(rodada) -> int:
         f"A rodada '{rodada.nome}' está aberta para pedidos. "
         f"Monte seu pedido antes do fechamento."
     )
-    enviadas = 0
     lanchonetes = (
         Lanchonete.query
         .options(joinedload(Lanchonete.responsavel))
         .filter_by(ativa=True)
         .all()
     )
-    for l in lanchonetes:
-        if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
-            enviadas += 1
+    usuarios = [l.responsavel for l in lanchonetes if l.responsavel]
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
     logger.info("NOTIF_RODADA_ABERTA rodada=%s enviadas=%s", rodada.id, enviadas)
     return enviadas
 
@@ -230,16 +266,14 @@ def notificar_fornecedores_cotacao_final(rodada) -> int:
         f"A coleta de pedidos da rodada '{rodada.nome}' foi encerrada. "
         f"Acesse o painel pra enviar seu preço final com os volumes reais."
     )
-    enviadas = 0
     fornecedores = (
         Fornecedor.query
         .options(joinedload(Fornecedor.responsavel))
         .filter(Fornecedor.id.in_(forn_ids))
         .all()
     )
-    for f in fornecedores:
-        if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
-            enviadas += 1
+    usuarios = [f.responsavel for f in fornecedores if f.responsavel]
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
     logger.info("NOTIF_COTACAO_FINAL rodada=%s enviadas=%s", rodada.id, enviadas)
     return enviadas
 
@@ -259,16 +293,14 @@ def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
         f"O fornecedor {fornecedor.razao_social} teve cotação aprovada na "
         f"rodada '{rodada.nome}'. Acesse o painel pra aceitar ou recusar a proposta."
     )
-    enviadas = 0
     lanchonetes = (
         Lanchonete.query
         .options(joinedload(Lanchonete.responsavel))
         .filter(Lanchonete.id.in_(lanch_ids))
         .all()
     )
-    for l in lanchonetes:
-        if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
-            enviadas += 1
+    usuarios = [l.responsavel for l in lanchonetes if l.responsavel]
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
     logger.info("NOTIF_PROPOSTA_DISPONIVEL rodada=%s fornecedor=%s enviadas=%s",
                 rodada.id, fornecedor.id, enviadas)
     return enviadas
@@ -287,7 +319,7 @@ def notificar_cancelamento(rodada) -> int:
     }
     titulo = "Rodada cancelada"
     detalhes = f"A rodada '{rodada.nome}' foi cancelada pelo administrador."
-    enviadas = 0
+    usuarios = []
     if lanch_ids:
         lanchonetes = (
             Lanchonete.query
@@ -295,9 +327,7 @@ def notificar_cancelamento(rodada) -> int:
             .filter(Lanchonete.id.in_(lanch_ids))
             .all()
         )
-        for l in lanchonetes:
-            if l.responsavel and notificar_evento(l.responsavel, titulo, detalhes):
-                enviadas += 1
+        usuarios.extend(l.responsavel for l in lanchonetes if l.responsavel)
     if forn_ids:
         fornecedores = (
             Fornecedor.query
@@ -305,9 +335,8 @@ def notificar_cancelamento(rodada) -> int:
             .filter(Fornecedor.id.in_(forn_ids))
             .all()
         )
-        for f in fornecedores:
-            if f.responsavel and notificar_evento(f.responsavel, titulo, detalhes):
-                enviadas += 1
+        usuarios.extend(f.responsavel for f in fornecedores if f.responsavel)
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
     logger.info("NOTIF_RODADA_CANCELADA rodada=%s enviadas=%s",
                 rodada.id, enviadas)
     return enviadas

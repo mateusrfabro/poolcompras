@@ -250,7 +250,19 @@ def telegram_codigo():
         secret = current_app.config["SECRET_KEY"]
         esperado_hash = pendente["codigo_hash"]
         if not hmac.compare_digest(_hash_codigo(informado, secret), esperado_hash):
-            flash("Codigo incorreto. Tente de novo.", "error")
+            # Hardening: invalidar pendencia apos 3 erros (rate-limit
+            # 20/h ainda vale, mas brute-force de OTP de 6 digitos com
+            # 17 tentativas restantes em 10min e' baixo mas nao zero —
+            # fechar pendencia forca novo /start no Telegram).
+            pendente["tentativas"] = pendente.get("tentativas", 0) + 1
+            if pendente["tentativas"] >= 3:
+                session.pop("telegram_otp_pendente", None)
+                flash("Muitas tentativas erradas. Clique em 'Conectar Telegram' "
+                      "novamente pra receber um novo codigo.", "error")
+                return redirect(url_for("perfil.editar"))
+            session["telegram_otp_pendente"] = pendente
+            restantes = 3 - pendente["tentativas"]
+            flash(f"Codigo incorreto. Resta(m) {restantes} tentativa(s).", "error")
             return render_template("perfil/telegram_codigo.html",
                                     bot_username=_bot_username())
 

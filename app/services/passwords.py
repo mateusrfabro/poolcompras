@@ -28,10 +28,14 @@ from argon2 import exceptions as argon2_exceptions
 from werkzeug.security import check_password_hash
 
 
-# Em testing, params leves pra nao atrasar a suite (269 testes).
+# Em testing, params leves pra nao atrasar a suite (277 testes).
 # Em prod/dev, defaults proximos do OWASP cheat-sheet (memory_cost 64MB).
 def _params_atuais():
-    if os.environ.get("PYTEST_CURRENT_TEST") or os.environ.get("FLASK_ENV") == "testing":
+    # PYTEST_CURRENT_TEST eh setada pelo pytest automaticamente — fonte
+    # confiavel. NAO usamos FLASK_ENV='testing' como sinal: algum dev pode
+    # setar isso em prod por engano e gerar hashes fracos que nunca
+    # voltariam a Argon2 forte (rehash so acontece se needs_rehash detectar).
+    if os.environ.get("PYTEST_CURRENT_TEST"):
         return dict(time_cost=1, memory_cost=8, parallelism=1)
     return dict(time_cost=2, memory_cost=64 * 1024, parallelism=1)
 

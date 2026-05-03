@@ -119,6 +119,10 @@ def login():
             # Defesa contra session fixation: zera o cookie de sessao antes de
             # autenticar. Cookie que o atacante possa ter plantado eh descartado.
             session.clear()
+            # Marca sessao como permanent pra que PERMANENT_SESSION_LIFETIME
+            # (config) tenha efeito. Sem isso, sessao seria session-only
+            # (cookie sem expiracao explicita — vive ate o browser fechar).
+            session.permanent = True
             login_user(usuario)
             logger.info("LOGIN_OK usuario=%s email=%s tipo=%s ip=%s",
                         usuario.id, _mask_email(email), usuario.tipo, _client_ip())
