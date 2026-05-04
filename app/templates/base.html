@@ -83,8 +83,10 @@
 
     <main class="container" id="conteudo-principal">
         {# H1 acessivel (leitores de tela). Visualmente oculto — a identidade
-           visual continua a usar os h2 do page-header. #}
-        <h1 class="sr-only">{{ self.title() }}</h1>
+           visual continua a usar os h2 do page-header. Paginas que tem h1
+           visivel (home, /sobre futuro) sobrescrevem este block como vazio
+           pra evitar duplo h1. #}
+        {% block h1_oculto %}<h1 class="sr-only">{{ self.title() }}</h1>{% endblock %}
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-container" aria-live="polite" aria-atomic="true">

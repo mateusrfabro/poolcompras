@@ -150,7 +150,18 @@ def rodada_encerrar_coleta(rodada_id):
 @admin_required
 def rodada_finalizar(rodada_id):
     """Admin finaliza a negociação -> rodada 'finalizada' (lanchonetes aceitam)."""
-    rodada = db.get_or_404(Rodada, rodada_id)
+    # with_for_update bloqueia a row da Rodada ate o commit. Sem isso,
+    # 2 admins clicando "Finalizar" simultaneo passam ambos pelo guard
+    # de status (race entre check e write) e o segundo gera IntegrityError
+    # ao inserir Cotacao(selecionada=True) duplicata pelo
+    # uq_cotacao_rodada_fornecedor_produto. Postgres respeita; SQLite
+    # ignora silente em dev.
+    rodada = db.session.execute(
+        db.select(Rodada).where(Rodada.id == rodada_id).with_for_update()
+    ).scalar_one_or_none()
+    if rodada is None:
+        from flask import abort
+        abort(404)
     if rodada.status != Rodada.STATUS_EM_NEGOCIACAO:
         flash("Só é possível finalizar rodadas em negociação.", "warning")
         return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))

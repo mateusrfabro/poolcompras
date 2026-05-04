@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 {% block title %}Aggron - Central de Compras para Hamburguerias{% endblock %}
 
+{# Home tem h1 visivel no hero — desativa o sr-only h1 do base pra evitar
+   duplo h1 (violacao WCAG/SEO). Paginas internas mantem o sr-only. #}
+{% block h1_oculto %}{% endblock %}
+
 {% block content %}
 <div class="hero">
     <h1>Compre junto, pague menos.</h1>
-    <p class="hero-sub">Central de compras cooperativa para hamburguerias de Londrina.
-       Junte seu pedido com outras lanchonetes e pague preço de atacado por insumos de qualidade.</p>
+    <p class="hero-sub">Hamburguerias de Londrina cotando juntas. Volume agregado, preço de atacado, pagamento direto ao fornecedor.</p>
 
     <div class="hero-actions">
         <a href="{{ url_for('auth.registro') }}" class="btn btn-primary btn-lg">Sou lanchonete</a>

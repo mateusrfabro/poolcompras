@@ -1882,7 +1882,9 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--gray-700);
 }
 
-.muted { color: var(--gray-500); }
+/* .muted texto auxiliar — gray-700 (8.6:1 sobre branco) atinge WCAG AA.
+   Antes era gray-500 (#adb5bd, 2.4:1) que falhava em texto longo. */
+.muted { color: var(--gray-700); }
 
 /* === Marketplace publico === */
 .marketplace-card .marketplace-cidade {

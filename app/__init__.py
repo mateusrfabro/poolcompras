@@ -170,6 +170,34 @@ def create_app(config_name="default"):
     def erro_403(e):
         return render_template("errors/403.html"), 403
 
+    @app.errorhandler(400)
+    def erro_400(e):
+        # Cobre principalmente CSRF token missing/expirado. Default Werkzeug
+        # vaza "The CSRF token is missing" em texto-puro feio. Template
+        # generico mantem identidade visual + nao revela info interna.
+        wants_json = (
+            request.is_json
+            or "application/json" in (request.headers.get("Accept") or "")
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        )
+        if wants_json:
+            return jsonify({"erro": "requisicao_invalida"}), 400
+        return render_template("errors/400.html"), 400
+
+    @app.errorhandler(429)
+    def erro_429(e):
+        # Rate-limit do Flask-Limiter (login 5/min, registro 10/h, etc).
+        # Mensagem amigavel + Retry-After do header. Default Werkzeug
+        # mostra HTML cru — UX ruim em mobile.
+        wants_json = (
+            request.is_json
+            or "application/json" in (request.headers.get("Accept") or "")
+            or request.headers.get("X-Requested-With") == "XMLHttpRequest"
+        )
+        if wants_json:
+            return jsonify({"erro": "muitas_tentativas"}), 429
+        return render_template("errors/429.html"), 429
+
     @app.errorhandler(413)
     def erro_413(e):
         # Upload maior que MAX_CONTENT_LENGTH (5MB hoje). Pra AJAX retorna

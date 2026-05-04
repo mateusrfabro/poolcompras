@@ -146,6 +146,21 @@ def registro():
         senha = request.form.get("senha", "")
         nome = request.form.get("nome_responsavel", "").strip()
         telefone = request.form.get("telefone", "").strip()
+        # WhatsApp obrigatorio (canal default Aggron). Validacao minima:
+        # tem digito + tamanho de telefone BR razoavel (8-11 digitos).
+        digitos_tel = sum(c.isdigit() for c in telefone)
+        if not telefone or digitos_tel < 8:
+            flash("WhatsApp é obrigatório para contato e notificações.", "error")
+            return render_template(
+                "auth/registro.html",
+                form={"email": request.form.get("email", "").strip().lower(),
+                      "nome_responsavel": nome,
+                      "telefone": telefone,
+                      "nome_fantasia": request.form.get("nome_fantasia", "").strip(),
+                      "cnpj": request.form.get("cnpj", "").strip(),
+                      "endereco": request.form.get("endereco", "").strip(),
+                      "bairro": request.form.get("bairro", "").strip()},
+            )
         nome_fantasia = request.form.get("nome_fantasia", "").strip()
         cnpj = request.form.get("cnpj", "").strip()
         endereco = request.form.get("endereco", "").strip()
@@ -249,6 +264,18 @@ def registro_fornecedor():
             return render_template(
                 "auth/registro_fornecedor.html",
                 erro_termos=True,
+                form={
+                    "email": email, "nome_responsavel": nome, "telefone": telefone,
+                    "razao_social": razao_social, "cidade": cidade,
+                },
+            )
+
+        # WhatsApp obrigatorio (canal default Aggron pra contato comercial).
+        digitos_tel = sum(c.isdigit() for c in telefone)
+        if not telefone or digitos_tel < 8:
+            flash("Telefone/WhatsApp é obrigatório para contato comercial.", "error")
+            return render_template(
+                "auth/registro_fornecedor.html",
                 form={
                     "email": email, "nome_responsavel": nome, "telefone": telefone,
                     "razao_social": razao_social, "cidade": cidade,

@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Requisição inválida — Aggron{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>400</h1>
+    <h2>Requisição inválida</h2>
+    <p>
+        A requisição não pôde ser processada. Pode ser que sua sessão tenha
+        expirado ou o formulário ficou aberto por muito tempo.
+    </p>
+    <div class="error-page-actions">
+        <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.index') }}"
+           class="btn btn-primary">Recarregar página</a>
+    </div>
+</div>
+{% endblock %}

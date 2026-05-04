@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Muitas tentativas — Aggron{% endblock %}
+
+{% block content %}
+<div class="error-page">
+    <h1>429</h1>
+    <h2>Muitas tentativas em pouco tempo</h2>
+    <p>
+        Detectamos um número alto de requisições em sequência da sua conexão.
+        Aguarde alguns minutos antes de tentar novamente.
+    </p>
+    <p class="muted">
+        Esta é uma proteção automática contra abuso. Se você está em uma rede
+        compartilhada (escritório, café), o limite pode ter sido atingido por
+        outra pessoa.
+    </p>
+    <div class="error-page-actions">
+        <a href="{{ url_for('main.dashboard') if current_user.is_authenticated else url_for('main.index') }}"
+           class="btn btn-primary">Voltar</a>
+    </div>
+</div>
+{% endblock %}

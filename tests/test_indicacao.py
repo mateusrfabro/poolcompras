@@ -143,7 +143,7 @@ def test_registro_sem_ind_nao_cria_indicacao(app, client):
     initial = Indicacao.query.count()
     r = client.post("/registro", data={
         "email": "semind@x.com", "senha": "novasenha123",
-        "nome_responsavel": "Nada", "telefone": "",
+        "nome_responsavel": "Nada", "telefone": "(43) 99999-1111",
         "nome_fantasia": "Sem Ind", "cnpj": "",
         "endereco": "", "bairro": "", "aceite_termos": "on",
     }, follow_redirects=False)
@@ -156,7 +156,7 @@ def test_registro_com_ind_invalido_nao_quebra(app, client):
     initial = Indicacao.query.count()
     r = client.post("/registro", data={
         "email": "indinval@x.com", "senha": "novasenha123",
-        "nome_responsavel": "Y", "telefone": "",
+        "nome_responsavel": "Y", "telefone": "(43) 99999-2222",
         "nome_fantasia": "Ind Invalido Lanch", "cnpj": "",
         "endereco": "", "bairro": "", "aceite_termos": "on",
         "ind": "INEXISTE",
