@@ -93,6 +93,14 @@ class ProductionConfig(Config):
         "max_overflow": 5,
     }
 
+    # Cache em prod: Redis se CACHE_REDIS_URL estiver setado. Sem isso cai
+    # pra SimpleCache (in-memory por worker) — nesse modo, com 9 workers
+    # Gunicorn cada um tem cache isolado e a invalidacao em escrita so
+    # propaga no worker que tratou a request, deixando ate 30s (TTL) de
+    # divergencia nos KPIs. Com Redis, cache global compartilhado.
+    CACHE_TYPE = "RedisCache" if os.getenv("CACHE_REDIS_URL") else "SimpleCache"
+    CACHE_REDIS_URL = os.getenv("CACHE_REDIS_URL", "")
+
 
 config = {
     "development": DevelopmentConfig,

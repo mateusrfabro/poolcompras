@@ -397,6 +397,18 @@ class Indicacao(db.Model):
             "indicador_lanchonete_id <> indicada_lanchonete_id",
             name="ck_indicacao_nao_propria",
         ),
+        # Partial index pra queries hot do dashboard de indicacoes:
+        # calcular_status_recompensa, _notificar_quase_la, resgatar_recompensa.
+        # Filtro recompensa_aplicada_em IS NULL casa com 100% das rows ate o
+        # primeiro resgate; depois disso poda ~3 rows por resgate. ORDER BY
+        # criado_em ASC do FIFO no resgate vira lookup direto.
+        db.Index(
+            "ix_indicacao_pendentes",
+            "indicador_lanchonete_id",
+            "criado_em",
+            postgresql_where=db.text("recompensa_aplicada_em IS NULL"),
+            sqlite_where=db.text("recompensa_aplicada_em IS NULL"),
+        ),
     )
 
 
