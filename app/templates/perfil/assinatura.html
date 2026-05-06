@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Minha assinatura — Aggron{% endblock %}
+
+{% block content %}
+<div class="page assinatura-page">
+    <h2>Minha assinatura</h2>
+    <p class="page-sub">
+        Acompanhe o pagamento das mensalidades e baixe a nota fiscal de
+        cada parcela.
+    </p>
+
+    {% if not assinatura %}
+    {# Lanchonete legacy sem contrato — bloco informativo #}
+    <div class="card card-hl-warning mt-3">
+        <h3 class="mb-2">Você ainda não tem contrato gerado</h3>
+        <p class="muted mb-2">
+            Seu cadastro foi feito antes da área financeira existir. Entre
+            em contato com a Aggron pelo WhatsApp pra gente gerar seu
+            contrato anual e disponibilizar os boletos.
+        </p>
+    </div>
+    {% else %}
+
+    {# Card principal: plano + vigencia #}
+    <div class="card card-hl-primary mt-3">
+        <div class="grid grid-2-1">
+            <div>
+                <h3 class="mb-1">Plano Aggron</h3>
+                <p class="muted mb-1">
+                    {{ assinatura.parcelas_total }}x R$
+                    {{ "%.2f"|format(assinatura.valor_mensal)|replace(".", ",") }}
+                    — pagamento direto ao fornecedor das compras, sem
+                    comissão sobre as cotações.
+                </p>
+                <p class="muted">
+                    Vigência:
+                    <strong>{{ assinatura.vigencia_inicio.strftime('%d/%m/%Y') }}</strong>
+                    a <strong>{{ assinatura.vigencia_fim.strftime('%d/%m/%Y') }}</strong>
+                </p>
+            </div>
+            <div class="text-right">
+                <span class="badge badge-{{ 'ativo' if assinatura.status == 'ativa' else 'inativo' }}">
+                    {{ assinatura.status|capitalize }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {# Resumo das parcelas #}
+    <div class="grid grid-3 mt-2">
+        <div class="card">
+            <h4 class="muted mb-1">Pagas</h4>
+            <p class="kpi-num">{{ contagens.pagas }} / {{ contagens.total }}</p>
+        </div>
+        <div class="card">
+            <h4 class="muted mb-1">Pendentes</h4>
+            <p class="kpi-num">{{ contagens.pendentes }}</p>
+        </div>
+        <div class="card">
+            <h4 class="muted mb-1">Atrasadas</h4>
+            <p class="kpi-num">{{ contagens.atrasadas }}</p>
+        </div>
+    </div>
+
+    {# Tabela das 12 parcelas #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Parcelas</h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Mês de referência</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>Nota fiscal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in assinatura.faturas|sort(attribute='parcela_numero') %}
+                <tr>
+                    <td>{{ f.parcela_numero }}</td>
+                    <td>{{ f.mes_referencia.strftime('%m/%Y') }}</td>
+                    <td>{{ f.vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>R$ {{ "%.2f"|format(f.valor)|replace(".", ",") }}</td>
+                    <td>
+                        {% if f.status == 'paga' %}
+                            <span class="badge badge-ativo">Paga</span>
+                            {% if f.pago_em %}
+                            <small class="muted d-block">
+                                em {{ f.pago_em.strftime('%d/%m/%Y') }}
+                            </small>
+                            {% endif %}
+                        {% elif f.status == 'atrasada' %}
+                            <span class="badge badge-inativo">Atrasada</span>
+                        {% elif f.status == 'cancelada' %}
+                            <span class="badge badge-fechada">Cancelada</span>
+                        {% else %}
+                            <span class="badge badge-fechada">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if f.nf_pdf_key %}
+                            <a href="{{ url_for('uploads.servir', key=f.nf_pdf_key) }}"
+                               class="btn-link" download>Baixar NF</a>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+
+    {# Bloco "como funciona / como pagar" — referencia clara pra duvidas #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Como pagar</h3>
+        <ul class="muted">
+            <li>O pagamento da mensalidade Aggron é feito por PIX ou boleto, conforme combinado no início do contrato.</li>
+            <li>Após enviar o pagamento, a Aggron registra como <strong>Paga</strong> em até 5 dias úteis.</li>
+            <li>A nota fiscal aparece pra download nesta página assim que emitida (e também é enviada pro seu e-mail cadastrado).</li>
+            <li>Dúvidas sobre cobrança? Fale pelo WhatsApp da Aggron.</li>
+        </ul>
+    </div>
+    {% endif %}
+
+    <p class="form-footer mt-3">
+        <a href="{{ url_for('perfil.editar') }}">← Voltar ao perfil</a>
+    </p>
+</div>
+{% endblock %}

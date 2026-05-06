@@ -10,4 +10,4 @@ perfil_bp = Blueprint("perfil", __name__, url_prefix="/perfil")
 
 
 # Importar submodulos DEPOIS do blueprint pra registrar rotas
-from . import dados, telegram, indicacoes  # noqa: E402,F401
+from . import dados, telegram, indicacoes, assinatura  # noqa: E402,F401
