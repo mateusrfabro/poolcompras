@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}{{ assinatura.lanchonete.nome_fantasia }} — Financeiro{% endblock %}
+
+{% block content %}
+<div class="page">
+    <p class="muted">
+        <a href="{{ url_for('admin.financeiro') }}">← Voltar ao financeiro</a>
+    </p>
+
+    <div class="page-header">
+        <h2>{{ assinatura.lanchonete.nome_fantasia }}</h2>
+        <p class="page-sub muted">
+            Vigência: {{ assinatura.vigencia_inicio.strftime('%d/%m/%Y') }}
+            a {{ assinatura.vigencia_fim.strftime('%d/%m/%Y') }} —
+            {{ assinatura.parcelas_total }}x R$ {{ "%.2f"|format(assinatura.valor_mensal)|replace(".", ",") }}
+        </p>
+    </div>
+
+    <div class="card mt-3">
+        <h3 class="mb-2">Parcelas</h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Mês ref.</th>
+                    <th>Vencimento</th>
+                    <th>Valor</th>
+                    <th>Status</th>
+                    <th>NF</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in assinatura.faturas %}
+                <tr>
+                    <td>{{ f.parcela_numero }}</td>
+                    <td>{{ f.mes_referencia.strftime('%m/%Y') }}</td>
+                    <td>{{ f.vencimento.strftime('%d/%m/%Y') }}</td>
+                    <td>R$ {{ "%.2f"|format(f.valor)|replace(".", ",") }}</td>
+                    <td>
+                        {% if f.status == 'paga' %}
+                            <span class="badge badge-ativo">Paga</span>
+                            {% if f.pago_em %}
+                            <small class="muted d-block">{{ f.pago_em.strftime('%d/%m/%Y') }}</small>
+                            {% endif %}
+                        {% elif f.status == 'atrasada' %}
+                            <span class="badge badge-inativo">Atrasada</span>
+                        {% elif f.status == 'cancelada' %}
+                            <span class="badge badge-fechada">Cancelada</span>
+                        {% else %}
+                            <span class="badge badge-fechada">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if f.nf_pdf_key %}
+                            <a href="{{ url_for('uploads.servir', key=f.nf_pdf_key) }}"
+                               class="btn-link">Baixar</a>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if f.status == 'pendente' %}
+                        <form method="POST"
+                              action="{{ url_for('admin.fatura_marcar_paga', fatura_id=f.id) }}"
+                              class="form-inline mb-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-primary"
+                                    data-confirm="Marcar parcela #{{ f.parcela_numero }} como paga?">
+                                Marcar paga
+                            </button>
+                        </form>
+                        {% elif f.status == 'paga' %}
+                        <form method="POST"
+                              action="{{ url_for('admin.fatura_marcar_pendente', fatura_id=f.id) }}"
+                              class="form-inline mb-1">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-sm btn-outline"
+                                    data-confirm="Desfazer baixa da parcela #{{ f.parcela_numero }}?">
+                                Desfazer
+                            </button>
+                        </form>
+                        {% endif %}
+                        <form method="POST"
+                              action="{{ url_for('admin.fatura_upload_nf', fatura_id=f.id) }}"
+                              enctype="multipart/form-data" class="form-inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="file" name="nf" accept="application/pdf"
+                                   required class="input-sm">
+                            <button type="submit" class="btn btn-sm btn-outline">
+                                {% if f.nf_pdf_key %}Trocar NF{% else %}Subir NF{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+</div>
+{% endblock %}

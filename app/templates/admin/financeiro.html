@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+{% block title %}Financeiro — Aggron{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Financeiro</h2>
+        <p class="page-sub muted">
+            Acompanhe assinaturas, mensalidades e baixas. Pagamento eh marcado
+            manualmente apos confirmar PIX/boleto.
+        </p>
+    </div>
+
+    {# KPIs #}
+    <div class="grid grid-3 mt-2">
+        <div class="card">
+            <h4 class="muted mb-1">Total pendente</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(total_pendente)|replace(".", ",") }}</p>
+        </div>
+        <div class="card">
+            <h4 class="muted mb-1">Pago no mes</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(total_pago_mes)|replace(".", ",") }}</p>
+        </div>
+        <div class="card">
+            <h4 class="muted mb-1">Lanchonetes sem contrato</h4>
+            <p class="kpi-num">{{ sem_contrato|length }}</p>
+        </div>
+    </div>
+
+    {# Lanchonetes legacy sem contrato — botao gerar retroativo #}
+    {% if sem_contrato %}
+    <div class="card card-hl-warning mt-3">
+        <h3 class="mb-2">Lanchonetes sem contrato ({{ sem_contrato|length }})</h3>
+        <p class="muted mb-2">
+            Cadastros antigos (antes do modulo financeiro). Gerar contrato
+            cria 1 assinatura ativa + 12 parcelas de R$ 500,00.
+        </p>
+        <div class="table-wrapper"><table class="table">
+            <thead><tr><th>Lanchonete</th><th>Cadastrada em</th><th></th></tr></thead>
+            <tbody>
+            {% for l in sem_contrato %}
+            <tr>
+                <td>{{ l.nome_fantasia }}</td>
+                <td>{{ l.criado_em.strftime('%d/%m/%Y') if l.criado_em else '—' }}</td>
+                <td>
+                    <form method="POST"
+                          action="{{ url_for('admin.gerar_contrato_retroativo', lanchonete_id=l.id) }}"
+                          class="form-inline">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-sm btn-outline"
+                                data-confirm="Gerar contrato de 12x R$ 500,00 pra {{ l.nome_fantasia }}?">
+                            Gerar contrato
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+    {% endif %}
+
+    {# Lista de assinaturas #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Assinaturas ativas{% if assinaturas %} ({{ assinaturas|length }}){% endif %}</h3>
+        {% if not assinaturas %}
+            <div class="empty-state">Nenhuma assinatura criada ainda.</div>
+        {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Lanchonete</th>
+                    <th>Vigência</th>
+                    <th>Plano</th>
+                    <th>Pagas</th>
+                    <th>Pendentes</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for a in assinaturas %}
+                {% set pagas = a.faturas|selectattr("status","equalto","paga")|list|length %}
+                {% set pendentes = a.faturas|selectattr("status","equalto","pendente")|list|length %}
+                <tr>
+                    <td>{{ a.lanchonete.nome_fantasia if a.lanchonete else '—' }}</td>
+                    <td>
+                        {{ a.vigencia_inicio.strftime('%d/%m/%Y') }}
+                        a {{ a.vigencia_fim.strftime('%d/%m/%Y') }}
+                    </td>
+                    <td>{{ a.parcelas_total }}x R$ {{ "%.2f"|format(a.valor_mensal)|replace(".", ",") }}</td>
+                    <td>{{ pagas }}/{{ a.parcelas_total }}</td>
+                    <td>{{ pendentes }}</td>
+                    <td>
+                        <span class="badge badge-{{ 'ativo' if a.status == 'ativa' else 'inativo' }}">
+                            {{ a.status|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('admin.financeiro_detalhe', assinatura_id=a.id) }}"
+                           class="btn btn-sm btn-outline">Detalhe</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

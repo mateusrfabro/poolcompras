@@ -8,4 +8,4 @@ from app.auth_decorators import admin_required  # noqa: F401 (re-export pra subm
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 
-from . import produtos, fornecedores, lanchonetes, rodadas, moderacao, analytics  # noqa: E402,F401
+from . import produtos, fornecedores, lanchonetes, rodadas, moderacao, analytics, financeiro  # noqa: E402,F401

@@ -115,6 +115,20 @@ def create_app(config_name="default"):
     from app.services.storage import init_storage
     init_storage(app)
 
+    # Em testing, o conftest mantem 1 app_context aberto durante todo o teste,
+    # entao `g` (que vive no app_context) PERSISTE entre requests. Flask-Login
+    # cacheia `g._login_user` no 1o request e retorna o user errado nos
+    # subsequentes (mesmo com session diferente). Limpar antes de cada request
+    # forca re-resolver via session_transaction. So afeta testes — em prod
+    # cada request tem seu app_context novo.
+    if config_name == "testing":
+        from flask import g as _g
+
+        @app.before_request
+        def _reset_login_user_cache():
+            if hasattr(_g, "_login_user"):
+                delattr(_g, "_login_user")
+
     from app.routes.auth import auth_bp
     from app.routes.main import main_bp
     from app.routes.pedidos import pedidos_bp

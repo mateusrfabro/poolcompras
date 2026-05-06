@@ -14,7 +14,7 @@ from flask_login import login_required, current_user
 from io import BytesIO
 from sqlalchemy import select
 from app import db
-from app.models import ParticipacaoRodada, Cotacao
+from app.models import ParticipacaoRodada, Cotacao, Fatura, Assinatura
 from app.services.storage import get_storage
 
 uploads_bp = Blueprint("uploads", __name__, url_prefix="/uploads")
@@ -23,26 +23,57 @@ uploads_bp = Blueprint("uploads", __name__, url_prefix="/uploads")
 @uploads_bp.route("/<path:key>")
 @login_required
 def servir(key):
-    """Serve o arquivo se o usuario tem permissao."""
-    # 1. Localiza a participacao dona deste comprovante
-    participacao = db.session.execute(
-        select(ParticipacaoRodada).where(ParticipacaoRodada.comprovante_key == key)
-    ).scalar_one_or_none()
-    if not participacao:
-        # Pode ser arquivo de outro tipo no futuro. Por agora, so comprovantes.
-        abort(404)
+    """Serve o arquivo se o usuario tem permissao.
 
-    # 2. Checa autorizacao
-    if not _pode_ver(current_user, participacao):
-        abort(403)
-
-    # 3. Le via storage e serve
+    Roteia por prefixo da key:
+    - 'nf/...' -> NF de Fatura (admin OU lanchonete dona do contrato)
+    - resto -> comprovante de pagamento (admin/lanchonete dona/fornecedor que cotou)
+    """
     storage = get_storage()
     if not storage.exists(key):
         abort(404)
 
+    if key.startswith("nf/"):
+        return _servir_nf(key, storage)
+    return _servir_comprovante(key, storage)
+
+
+def _servir_nf(key, storage):
+    """NF de Fatura. Acesso: admin ou lanchonete dona da assinatura."""
+    fatura = db.session.execute(
+        select(Fatura).where(Fatura.nf_pdf_key == key)
+    ).scalar_one_or_none()
+    if not fatura:
+        abort(404)
+
+    if not current_user.is_admin:
+        if not current_user.is_lanchonete or not current_user.lanchonete:
+            abort(403)
+        assinatura = db.session.get(Assinatura, fatura.assinatura_id)
+        if not assinatura or assinatura.lanchonete_id != current_user.lanchonete.id:
+            abort(403)
+
     conteudo = storage.read(key)
-    # Descobre content-type pela extensao (storage sanitizou ao salvar)
+    return send_file(
+        BytesIO(conteudo),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=f"nf_{fatura.mes_referencia.strftime('%Y_%m')}_parcela_{fatura.parcela_numero}.pdf",
+    )
+
+
+def _servir_comprovante(key, storage):
+    """Comprovante de pagamento (fluxo antigo)."""
+    participacao = db.session.execute(
+        select(ParticipacaoRodada).where(ParticipacaoRodada.comprovante_key == key)
+    ).scalar_one_or_none()
+    if not participacao:
+        abort(404)
+
+    if not _pode_ver(current_user, participacao):
+        abort(403)
+
+    conteudo = storage.read(key)
     ext = key.rsplit(".", 1)[-1].lower() if "." in key else ""
     mimes = {"pdf": "application/pdf", "png": "image/png",
              "jpg": "image/jpeg", "jpeg": "image/jpeg"}

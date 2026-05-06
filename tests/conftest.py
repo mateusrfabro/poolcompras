@@ -113,8 +113,28 @@ def client(app):
 
 
 def _login(client, email, senha="testpass"):
-    return client.post("/login", data={"email": email, "senha": senha},
-                       follow_redirects=False)
+    """Loga o user via session_transaction com _id de flask-login.
+
+    POST /login funciona pro 1o test_client mas o handler em /login
+    avalia current_user.is_authenticated que leaka entre test_clients
+    do mesmo app_context (1o login persiste o user proxy globalmente).
+    Setar a session diretamente bypassa esse glitch e testa as rotas
+    sem se importar com o pipeline de auth.
+    """
+    user = Usuario.query.filter_by(email=email).first()
+    if user is None:
+        raise AssertionError(f"Usuario {email} nao existe no seed.")
+    # _id eh o "session identifier" de flask-login (anti-fixation).
+    # Em testes, qualquer string fixa serve — o middleware so checa
+    # presenca + igualdade entre requests da mesma sessao.
+    import hashlib
+    sid = hashlib.sha512(f"test-{user.id}".encode()).hexdigest()
+    with client.session_transaction() as s:
+        s["_user_id"] = str(user.id)
+        s["_fresh"] = True
+        s["_id"] = sid
+        s["_permanent"] = True
+    return None
 
 
 # Cada fixture cria SEU PROPRIO test_client para evitar sobrescrita de sessao
