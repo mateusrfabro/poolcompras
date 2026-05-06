@@ -223,6 +223,18 @@ def registro():
         db.session.add(lanchonete)
         db.session.commit()
 
+        # Gera assinatura ativa + 12 faturas pendentes (R$500/mes).
+        # Admin marca pagamento manualmente depois em /admin/financeiro.
+        # Falha aqui nao bloqueia signup — log + admin gera retroativo.
+        try:
+            from app.services.assinatura import criar_assinatura_inicial
+            criar_assinatura_inicial(lanchonete)
+        except Exception:
+            logger.exception(
+                "ASSINATURA_FALHA_NO_SIGNUP lanchonete=%s — gerar manual",
+                lanchonete.id,
+            )
+
         # Programa de indicacao: se veio com ?ind=CODIGO, registra.
         # Falha silenciosa (codigo invalido / auto-indicacao) — anti-enumeration.
         codigo_indicacao = request.form.get("ind", "").strip()
