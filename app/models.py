@@ -412,6 +412,130 @@ class Indicacao(db.Model):
     )
 
 
+class Assinatura(db.Model):
+    """Assinatura mensal de uma lanchonete (contrato anual de 12 parcelas).
+
+    MVP: 1 assinatura ativa por lanchonete, ciclo anual fixo de 12 meses,
+    sem upgrade/downgrade. Renovacao gera nova Assinatura com novo
+    vigencia_inicio (process manual no admin no MVP).
+    """
+    __tablename__ = "assinaturas"
+
+    STATUS_ATIVA      = "ativa"
+    STATUS_SUSPENSA   = "suspensa"     # bloqueio temporario (inadimplencia em analise)
+    STATUS_CANCELADA  = "cancelada"    # encerrada antes da vigencia (rescisao)
+    STATUS_ENCERRADA  = "encerrada"    # ciclo de 12 meses concluido sem renovar
+
+    STATUS_VALIDOS = (STATUS_ATIVA, STATUS_SUSPENSA, STATUS_CANCELADA, STATUS_ENCERRADA)
+
+    id = db.Column(db.Integer, primary_key=True)
+    lanchonete_id = db.Column(
+        db.Integer, db.ForeignKey("lanchonetes.id"),
+        nullable=False, index=True,
+    )
+    # Valor da mensalidade no momento do contrato. Snapshot — se preco
+    # mudar no futuro, contratos antigos preservam o valor original.
+    valor_mensal   = db.Column(Numeric(12, 2), nullable=False)
+    parcelas_total = db.Column(db.Integer, nullable=False, default=12)
+    vigencia_inicio = db.Column(db.Date, nullable=False)
+    vigencia_fim    = db.Column(db.Date, nullable=False)
+    status = db.Column(db.String(20), nullable=False,
+                       default=STATUS_ATIVA, index=True)
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    lanchonete = db.relationship("Lanchonete", backref="assinaturas")
+    faturas = db.relationship(
+        "Fatura", backref="assinatura",
+        order_by="Fatura.parcela_numero",
+        cascade="all, delete-orphan",
+    )
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('ativa','suspensa','cancelada','encerrada')",
+            name="ck_assinatura_status_valido",
+        ),
+        CheckConstraint("valor_mensal > 0", name="ck_assinatura_valor_positivo"),
+        CheckConstraint(
+            "parcelas_total BETWEEN 1 AND 24",
+            name="ck_assinatura_parcelas_range",
+        ),
+        CheckConstraint(
+            "vigencia_fim >= vigencia_inicio",
+            name="ck_assinatura_vigencia_ordem",
+        ),
+    )
+
+
+class Fatura(db.Model):
+    """Parcela mensal de uma Assinatura (12 por contrato no MVP).
+
+    Admin marca como paga manualmente apos receber PIX/boleto fora do
+    sistema. NF eh upload de PDF pelo admin (no MVP). Integracao com
+    NFe.io / Notazz / Asaas fica pra v2.
+    """
+    __tablename__ = "faturas"
+
+    STATUS_PENDENTE  = "pendente"
+    STATUS_PAGA      = "paga"
+    STATUS_ATRASADA  = "atrasada"      # vencido sem pagamento — script periodico marca
+    STATUS_CANCELADA = "cancelada"     # parcela invalidada (rescisao, erro)
+
+    STATUS_VALIDOS = (STATUS_PENDENTE, STATUS_PAGA, STATUS_ATRASADA, STATUS_CANCELADA)
+
+    id = db.Column(db.Integer, primary_key=True)
+    assinatura_id = db.Column(
+        db.Integer, db.ForeignKey("assinaturas.id"),
+        nullable=False, index=True,
+    )
+    parcela_numero = db.Column(db.Integer, nullable=False)  # 1..parcelas_total
+    # Mes que a parcela cobre (ex: 2026-05-01 = "mai/2026"). Sempre
+    # primeiro dia do mes pra simplificar agrupamento e evitar drift de TZ.
+    mes_referencia = db.Column(db.Date, nullable=False, index=True)
+    valor          = db.Column(Numeric(12, 2), nullable=False)
+    vencimento     = db.Column(db.Date, nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False,
+                       default=STATUS_PENDENTE, index=True)
+
+    pago_em      = db.Column(db.DateTime(timezone=True), nullable=True)
+    pago_por_id  = db.Column(db.Integer, db.ForeignKey("usuarios.id"),
+                             nullable=True, index=True)
+    # Storage key do PDF da NF (mesmo padrao de comprovante_key em
+    # ParticipacaoRodada). Admin sobe via /admin/financeiro/<fatura>/nf.
+    nf_pdf_key      = db.Column(db.String(255), nullable=True)
+    nf_emitida_em   = db.Column(db.DateTime(timezone=True), nullable=True)
+    observacao      = db.Column(db.String(500), nullable=True)
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    pago_por = db.relationship("Usuario", foreign_keys=[pago_por_id])
+
+    __table_args__ = (
+        # Unica parcela N por assinatura (idempotencia da geracao em massa).
+        UniqueConstraint("assinatura_id", "parcela_numero",
+                         name="uq_fatura_assinatura_parcela"),
+        CheckConstraint(
+            "status IN ('pendente','paga','atrasada','cancelada')",
+            name="ck_fatura_status_valido",
+        ),
+        CheckConstraint("valor > 0", name="ck_fatura_valor_positivo"),
+        CheckConstraint(
+            "parcela_numero BETWEEN 1 AND 24",
+            name="ck_fatura_parcela_range",
+        ),
+        # Lista de inadimplentes do dashboard admin: hot path
+        # (status='pendente' OR 'atrasada') AND vencimento <= hoje.
+        db.Index("ix_fatura_status_vencimento", "status", "vencimento"),
+    )
+
+
 class EventoRodada(db.Model):
     """Log imutavel de eventos para timeline e auditoria.
 
