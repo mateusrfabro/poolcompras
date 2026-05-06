@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}{{ fornecedor.razao_social }} — Comissão{% endblock %}
+
+{% block content %}
+<div class="page">
+    <p class="muted">
+        <a href="{{ url_for('admin.comissoes') }}">← Voltar a comissões</a>
+    </p>
+
+    <div class="page-header">
+        <h2>{{ fornecedor.razao_social }}</h2>
+        <p class="page-sub muted">Detalhe de comissão por rodada e por dia.</p>
+    </div>
+
+    <div class="grid grid-3 mt-2">
+        <div class="card">
+            <h4 class="muted mb-1">Percentual contratado</h4>
+            <p class="kpi-num">{{ dados.percentual }}%</p>
+        </div>
+        <div class="card">
+            <h4 class="muted mb-1">Receita</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(dados.receita_total)|replace(".", ",") }}</p>
+        </div>
+        <div class="card card-hl-primary">
+            <h4 class="muted mb-1">Comissão devida</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(dados.comissao_total)|replace(".", ",") }}</p>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <h3 class="mb-2">Por rodada</h3>
+        {% if not dados.por_rodada %}
+        <div class="empty-state">Sem rodadas finalizadas com venda.</div>
+        {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr><th>Rodada</th><th>Data</th><th>Receita</th><th>Comissão</th></tr>
+            </thead>
+            <tbody>
+                {% for r in dados.por_rodada %}
+                <tr>
+                    <td>{{ r.nome }}</td>
+                    <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+                    <td>R$ {{ "%.2f"|format(r.receita)|replace(".", ",") }}</td>
+                    <td>R$ {{ "%.2f"|format(r.comissao)|replace(".", ",") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+        {% endif %}
+    </div>
+
+    {% if dados.por_dia %}
+    <div class="card mt-3">
+        <h3 class="mb-2">Por dia</h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr><th>Data</th><th>Receita</th><th>Comissão</th></tr>
+            </thead>
+            <tbody>
+                {% for d in dados.por_dia %}
+                <tr>
+                    <td>{{ d.data.strftime('%d/%m/%Y') }}</td>
+                    <td>R$ {{ "%.2f"|format(d.receita)|replace(".", ",") }}</td>
+                    <td>R$ {{ "%.2f"|format(d.comissao)|replace(".", ",") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

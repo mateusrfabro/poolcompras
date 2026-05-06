@@ -8,4 +8,4 @@ from app.auth_decorators import fornecedor_required  # noqa: F401
 fornecedor_bp = Blueprint("fornecedor", __name__, url_prefix="/fornecedor")
 
 
-from . import dashboard, cotacao_partida, cotacao_final  # noqa: E402,F401
+from . import dashboard, cotacao_partida, cotacao_final, comissoes  # noqa: E402,F401

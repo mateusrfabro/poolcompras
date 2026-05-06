@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Comissão Aggron — Fornecedor{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Comissão Aggron</h2>
+        <p class="page-sub muted">
+            Quanto você deve à Aggron com base nas vendas efetivadas
+            (cotações vencedoras × volume aceito pela lanchonete).
+        </p>
+    </div>
+
+    {% if not dados or dados.percentual == 0 %}
+    <div class="card card-hl-warning mt-3">
+        <h3 class="mb-2">Sua comissão ainda não foi configurada</h3>
+        <p class="muted">
+            A Aggron entra em contato pra acertar o percentual conforme o
+            contrato. Enquanto isso, suas vendas continuam normais sem
+            cobrança de comissão.
+        </p>
+    </div>
+    {% else %}
+
+    <div class="grid grid-3 mt-2">
+        <div class="card">
+            <h4 class="muted mb-1">Percentual</h4>
+            <p class="kpi-num">{{ dados.percentual }}%</p>
+        </div>
+        <div class="card">
+            <h4 class="muted mb-1">Vendas efetivadas</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(dados.receita_total)|replace(".", ",") }}</p>
+        </div>
+        <div class="card card-hl-primary">
+            <h4 class="muted mb-1">Comissão devida</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(dados.comissao_total)|replace(".", ",") }}</p>
+        </div>
+    </div>
+
+    {# Detalhe por rodada #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Por rodada</h3>
+        {% if not dados.por_rodada %}
+            <div class="empty-state">Nenhuma rodada com venda efetivada ainda.</div>
+        {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Rodada</th>
+                    <th>Data</th>
+                    <th>Receita</th>
+                    <th>Comissão ({{ dados.percentual }}%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in dados.por_rodada %}
+                <tr>
+                    <td>{{ r.nome }}</td>
+                    <td>{{ r.data.strftime('%d/%m/%Y') if r.data else '—' }}</td>
+                    <td>R$ {{ "%.2f"|format(r.receita)|replace(".", ",") }}</td>
+                    <td>R$ {{ "%.2f"|format(r.comissao)|replace(".", ",") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+        {% endif %}
+    </div>
+
+    {# Por dia — ajuda fornecedor a ver fluxo #}
+    {% if dados.por_dia %}
+    <div class="card mt-3">
+        <h3 class="mb-2">Por dia</h3>
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr><th>Data</th><th>Receita</th><th>Comissão</th></tr>
+            </thead>
+            <tbody>
+                {% for d in dados.por_dia %}
+                <tr>
+                    <td>{{ d.data.strftime('%d/%m/%Y') }}</td>
+                    <td>R$ {{ "%.2f"|format(d.receita)|replace(".", ",") }}</td>
+                    <td>R$ {{ "%.2f"|format(d.comissao)|replace(".", ",") }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

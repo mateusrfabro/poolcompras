@@ -1,5 +1,7 @@
 """Rotas admin de Fornecedores (CRUD + export)."""
 import logging
+from decimal import Decimal, InvalidOperation
+
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import select
@@ -10,6 +12,20 @@ from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
 
 logger = logging.getLogger(__name__)
+
+
+def _parse_pct(raw: str) -> Decimal:
+    """Converte string de % do form pra Decimal limitado a [0,100]."""
+    if raw is None:
+        return Decimal("0")
+    raw = str(raw).strip().replace(",", ".")
+    if not raw:
+        return Decimal("0")
+    try:
+        v = Decimal(raw)
+    except (InvalidOperation, ValueError):
+        return Decimal("0")
+    return max(Decimal("0"), min(Decimal("100"), v))
 
 
 @admin_bp.route("/fornecedores")
@@ -37,6 +53,7 @@ def fornecedor_novo():
             banco=request.form.get("banco", "").strip() or None,
             agencia=request.form.get("agencia", "").strip() or None,
             conta=request.form.get("conta", "").strip() or None,
+            percentual_comissao=_parse_pct(request.form.get("percentual_comissao", "0")),
         )
         db.session.add(fornecedor)
         db.session.commit()
@@ -67,6 +84,9 @@ def fornecedor_editar(fornecedor_id):
         fornecedor.banco = request.form.get("banco", "").strip() or None
         fornecedor.agencia = request.form.get("agencia", "").strip() or None
         fornecedor.conta = request.form.get("conta", "").strip() or None
+        fornecedor.percentual_comissao = _parse_pct(
+            request.form.get("percentual_comissao", "0"),
+        )
         fornecedor.ativo = "ativo" in request.form
         # Invariante: Usuario.ativo segue Fornecedor.ativo (mesma logica da
         # rota lanchonete_editar). Fornecedor "desativado" nao deve logar.

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Comissões — Aggron{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Comissões dos fornecedores</h2>
+        <p class="page-sub muted">
+            Receita Aggron sobre as vendas efetivadas (cotações vencedoras
+            × volumes aceitos). Configurado por fornecedor no cadastro.
+        </p>
+    </div>
+
+    <div class="grid grid-2 mt-2">
+        <div class="card">
+            <h4 class="muted mb-1">Receita total dos fornecedores</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(total_receita)|replace(".", ",") }}</p>
+        </div>
+        <div class="card card-hl-primary">
+            <h4 class="muted mb-1">Comissão Aggron a receber</h4>
+            <p class="kpi-num">R$ {{ "%.2f"|format(total_comissao)|replace(".", ",") }}</p>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <h3 class="mb-2">Por fornecedor</h3>
+        {% if not linhas %}
+            <div class="empty-state">Nenhum fornecedor ativo cadastrado.</div>
+        {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Fornecedor</th>
+                    <th>Comissão %</th>
+                    <th>Receita</th>
+                    <th>Comissão devida</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for l in linhas %}
+                <tr>
+                    <td>{{ l.razao_social }}</td>
+                    <td>{{ l.percentual }}%</td>
+                    <td>R$ {{ "%.2f"|format(l.receita_total)|replace(".", ",") }}</td>
+                    <td>R$ {{ "%.2f"|format(l.comissao_total)|replace(".", ",") }}</td>
+                    <td>
+                        <a href="{{ url_for('admin.comissoes_detalhe', fornecedor_id=l.fornecedor_id) }}"
+                           class="btn btn-sm btn-outline">Detalhe</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

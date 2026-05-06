@@ -193,7 +193,22 @@ class Fornecedor(db.Model):
     agencia = db.Column(db.String(20))
     conta = db.Column(db.String(30))
 
+    # % de comissao que o fornecedor paga pra Aggron sobre cada venda
+    # efetivada. Default 0 = legacy/sem contrato. Admin define no cadastro
+    # e o valor pode ser ajustado depois (snapshot por venda fica em
+    # ComissaoFornecedor — TODO v2; por agora calcula on-the-fly).
+    percentual_comissao = db.Column(
+        Numeric(5, 2), nullable=False, default=0,
+    )
+
     cotacoes = db.relationship("Cotacao", backref="fornecedor")
+
+    __table_args__ = (
+        CheckConstraint(
+            "percentual_comissao >= 0 AND percentual_comissao <= 100",
+            name="ck_fornecedor_comissao_pct",
+        ),
+    )
 
 
 class Cotacao(db.Model):
