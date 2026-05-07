@@ -10,7 +10,10 @@ import pytest
 from werkzeug.security import generate_password_hash
 
 from app import create_app, db, limiter
-from app.models import Usuario, Lanchonete, Fornecedor, Produto, Rodada, RodadaProduto
+from app.models import (
+    Usuario, Lanchonete, Fornecedor, Produto, Rodada, RodadaProduto,
+    Vendedor,
+)
 
 
 @pytest.fixture
@@ -68,6 +71,11 @@ def _seed_minimo():
 
     # Admin
     novo_usuario("admin@test.com", "admin")
+
+    # Vendedor (SDR) — usado pelos testes do CRM. user_id sequencial.
+    uv = novo_usuario("vendedor@test.com", "vendedor")
+    db.session.add(Vendedor(usuario_id=uv.id, nome="Vendedor Teste",
+                             meta_mensal_clientes=10, ativo=True))
 
     # Lanchonete A
     u1 = novo_usuario("lancha@test.com", "lanchonete")
@@ -165,4 +173,11 @@ def client_lanchB(app):
 def client_forn(app):
     c = app.test_client()
     _login(c, "forn@test.com")
+    return c
+
+
+@pytest.fixture
+def client_vendedor(app):
+    c = app.test_client()
+    _login(c, "vendedor@test.com")
     return c

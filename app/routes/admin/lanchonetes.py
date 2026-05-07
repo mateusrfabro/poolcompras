@@ -4,11 +4,22 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import select
 from app import db, cache, limiter
-from app.models import Lanchonete, Usuario
+from app.models import Lanchonete, Usuario, Vendedor
 from app.services.passwords import hash_senha
 from app.services.csv_export import csv_response
 from app.services.pii import mask_email
 from . import admin_bp, admin_required
+
+
+def _parse_vendedor_id(raw: str):
+    """Form devolve string vazia quando 'Sem vendedor' selecionado."""
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return None
 
 logger = logging.getLogger(__name__)
 
@@ -85,6 +96,7 @@ def lanchonete_nova():
             bairro=request.form.get("bairro", "").strip(),
             cidade=request.form.get("cidade", "").strip() or "Londrina",
             ativa=ativa,
+            vendedor_id=_parse_vendedor_id(request.form.get("vendedor_id")),
         )
         db.session.add(lanchonete)
         db.session.commit()
@@ -97,7 +109,12 @@ def lanchonete_nova():
         flash(f"Lanchonete '{lanchonete.nome_fantasia}' cadastrada. Login: {email}", "success")
         return redirect(url_for("admin.lanchonetes"))
 
-    return render_template("admin/lanchonete_form.html", lanchonete=None, form_data={})
+    vendedores_ativos = db.session.scalars(
+        select(Vendedor).where(Vendedor.ativo.is_(True))
+        .order_by(Vendedor.nome)
+    ).all()
+    return render_template("admin/lanchonete_form.html", lanchonete=None,
+                           form_data={}, vendedores=vendedores_ativos)
 
 
 @admin_bp.route("/lanchonetes/<int:lanchonete_id>/editar", methods=["GET", "POST"])
@@ -112,6 +129,9 @@ def lanchonete_editar(lanchonete_id):
         lanchonete.bairro = request.form.get("bairro", "").strip()
         lanchonete.cidade = request.form.get("cidade", "").strip() or "Londrina"
         lanchonete.ativa = "ativa" in request.form
+        lanchonete.vendedor_id = _parse_vendedor_id(
+            request.form.get("vendedor_id")
+        )
         # Invariante: Usuario.ativo segue Lanchonete.ativa. Sem isso, lanchonete
         # "desativada" no admin continua conseguindo logar e criar pedidos.
         if lanchonete.responsavel:
@@ -120,7 +140,13 @@ def lanchonete_editar(lanchonete_id):
         cache.delete("kpi_total_lanchonetes")  # ativa muda count
         flash("Lanchonete atualizada!", "success")
         return redirect(url_for("admin.lanchonetes"))
-    return render_template("admin/lanchonete_form.html", lanchonete=lanchonete)
+    vendedores_ativos = db.session.scalars(
+        select(Vendedor).where(Vendedor.ativo.is_(True))
+        .order_by(Vendedor.nome)
+    ).all()
+    return render_template("admin/lanchonete_form.html",
+                           lanchonete=lanchonete,
+                           vendedores=vendedores_ativos)
 
 
 @admin_bp.route("/lanchonetes/exportar.csv")

@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from werkzeug.security import generate_password_hash
 from app import create_app, db
-from app.models import Usuario, Produto
+from app.models import Usuario, Produto, Vendedor
 
 app = create_app("development")
 
@@ -69,17 +69,50 @@ def seed():
     with app.app_context():
         db.create_all()
 
-        # Admin (vocês)
-        if not Usuario.query.filter_by(email="admin@aggron.com.br").first():
+        # Admin (vocês). Email canonico: adm@aggron.com.br.
+        # Migra automaticamente de admin@aggron.com.br se existir (legacy).
+        admin_legacy = Usuario.query.filter_by(email="admin@aggron.com.br").first()
+        if admin_legacy and not Usuario.query.filter_by(email="adm@aggron.com.br").first():
+            admin_legacy.email = "adm@aggron.com.br"
+            print("Admin migrado: admin@aggron.com.br -> adm@aggron.com.br")
+        elif not Usuario.query.filter_by(email="adm@aggron.com.br").first():
             admin = Usuario(
-                email="admin@aggron.com.br",
+                email="adm@aggron.com.br",
                 senha_hash=generate_password_hash("admin123"),
                 nome_responsavel="Admin Aggron",
                 telefone="(43) 99999-0000",
                 tipo="admin",
             )
             db.session.add(admin)
-            print("Admin criado: admin@aggron.com.br / admin123")
+            print("Admin criado: adm@aggron.com.br / admin123")
+
+        # Gabriel — primeiro SDR (vendas@aggron.com.br). Idempotente.
+        gabriel_user = Usuario.query.filter_by(email="vendas@aggron.com.br").first()
+        if not gabriel_user:
+            gabriel_user = Usuario(
+                email="vendas@aggron.com.br",
+                senha_hash=generate_password_hash("aggron2026"),
+                nome_responsavel="Gabriel",
+                telefone="",
+                tipo="vendedor",
+            )
+            db.session.add(gabriel_user)
+            db.session.flush()
+            db.session.add(Vendedor(
+                usuario_id=gabriel_user.id,
+                nome="Gabriel",
+                meta_mensal_clientes=10,
+                ativo=True,
+            ))
+            print("Vendedor criado: vendas@aggron.com.br / aggron2026 (Gabriel — meta 10)")
+        elif not Vendedor.query.filter_by(usuario_id=gabriel_user.id).first():
+            db.session.add(Vendedor(
+                usuario_id=gabriel_user.id,
+                nome=gabriel_user.nome_responsavel or "Gabriel",
+                meta_mensal_clientes=10,
+                ativo=True,
+            ))
+            print("Vendedor (Vendedor row) criado pra usuario existente.")
 
         # Produtos
         existentes = Produto.query.count()

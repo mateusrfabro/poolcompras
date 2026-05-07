@@ -46,6 +46,10 @@ class Usuario(UserMixin, db.Model):
         "Fornecedor", backref="responsavel", uselist=False,
         foreign_keys="Fornecedor.usuario_id", lazy="selectin",
     )
+    vendedor = db.relationship(
+        "Vendedor", backref="responsavel", uselist=False,
+        foreign_keys="Vendedor.usuario_id", lazy="selectin",
+    )
 
     @property
     def is_admin(self):
@@ -58,6 +62,10 @@ class Usuario(UserMixin, db.Model):
     @property
     def is_lanchonete(self):
         return self.tipo == "lanchonete"
+
+    @property
+    def is_vendedor(self):
+        return self.tipo == "vendedor"
 
 
 class Lanchonete(db.Model):
@@ -79,6 +87,11 @@ class Lanchonete(db.Model):
     # combinacoes, colisao desprezivel. Nullable=True pra preservar legacy
     # rows; servico gera lazy no primeiro acesso ao dashboard.
     codigo_indicacao = db.Column(db.String(8), unique=True, index=True, nullable=True)
+
+    # CRM: vendedor (SDR) responsavel pela conta. Nullable pra preservar
+    # cadastros antigos sem dono. Admin pode atribuir/reatribuir manualmente.
+    vendedor_id = db.Column(db.Integer, db.ForeignKey("vendedores.id"),
+                            nullable=True, index=True)
 
     pedidos = db.relationship("ItemPedido", backref="lanchonete")
 
@@ -200,6 +213,10 @@ class Fornecedor(db.Model):
     percentual_comissao = db.Column(
         Numeric(5, 2), nullable=False, default=0,
     )
+
+    # CRM: vendedor (SDR) responsavel. Nullable pra preservar cadastros antigos.
+    vendedor_id = db.Column(db.Integer, db.ForeignKey("vendedores.id"),
+                            nullable=True, index=True)
 
     cotacoes = db.relationship("Cotacao", backref="fornecedor")
 
@@ -549,6 +566,135 @@ class Fatura(db.Model):
         # (status='pendente' OR 'atrasada') AND vencimento <= hoje.
         db.Index("ix_fatura_status_vencimento", "status", "vencimento"),
     )
+
+
+class Vendedor(db.Model):
+    """SDR / vendedor da Aggron. 1-1 com Usuario tipo='vendedor'.
+
+    Mesmo padrao de Lanchonete e Fornecedor (Usuario detem auth, modelo
+    detem dados de negocio). Vendedor loga e ve apenas leads/clientes
+    sob sua responsabilidade. Admin vê todos.
+    """
+    __tablename__ = "vendedores"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"),
+                           nullable=False, unique=True)
+    nome = db.Column(db.String(100), nullable=False)
+    # Meta mensal de clientes fechados — referencia pro KPI no Kanban.
+    meta_mensal_clientes = db.Column(db.Integer, nullable=False, default=10)
+    ativo = db.Column(db.Boolean, default=True, nullable=False, index=True)
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    leads = db.relationship("Lead", backref="vendedor",
+                            order_by="Lead.atualizado_em.desc()")
+
+    __table_args__ = (
+        CheckConstraint("meta_mensal_clientes > 0",
+                        name="ck_vendedor_meta_positiva"),
+    )
+
+
+class Lead(db.Model):
+    """Lead / prospect no pipeline comercial.
+
+    Avanca pelas colunas do Kanban: frio (primeiro contato) -> morno
+    (em conversa) -> quente (minuta enviada) -> fechado (assinou) ou
+    cancelado (nao vai fechar, com motivo no log).
+    """
+    __tablename__ = "leads"
+
+    STATUS_FRIO       = "frio"
+    STATUS_MORNO      = "morno"
+    STATUS_QUENTE     = "quente"
+    STATUS_FECHADO    = "fechado"
+    STATUS_CANCELADO  = "cancelado"
+
+    STATUS_VALIDOS = (STATUS_FRIO, STATUS_MORNO, STATUS_QUENTE,
+                      STATUS_FECHADO, STATUS_CANCELADO)
+    STATUS_KANBAN_ORDEM = (STATUS_FRIO, STATUS_MORNO, STATUS_QUENTE,
+                           STATUS_FECHADO, STATUS_CANCELADO)
+
+    id = db.Column(db.Integer, primary_key=True)
+    nome_estabelecimento = db.Column(db.String(150), nullable=False)
+    nome_contato = db.Column(db.String(100))
+    telefone = db.Column(db.String(20))
+    email = db.Column(db.String(120))
+    cidade = db.Column(db.String(80))
+    cnpj = db.Column(db.String(18))  # opcional, ajuda na minuta
+    observacoes = db.Column(db.String(500))
+
+    vendedor_id = db.Column(db.Integer, db.ForeignKey("vendedores.id"),
+                            nullable=False, index=True)
+    status = db.Column(db.String(20), nullable=False,
+                       default=STATUS_FRIO, index=True)
+
+    # Quando lead vira "fechado" e SDR aciona "Converter em cliente",
+    # populamos lanchonete_id pra rastrear conversao.
+    lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"),
+                              nullable=True, unique=True, index=True)
+
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False, index=True,
+    )
+    # atualizado_em muda em cada mudanca de status — usado pra calcular
+    # "dias parado" no card do Kanban.
+    atualizado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    eventos = db.relationship("LeadEvento", backref="lead",
+                              order_by="LeadEvento.criado_em.desc()",
+                              cascade="all, delete-orphan")
+    lanchonete = db.relationship("Lanchonete", foreign_keys=[lanchonete_id])
+
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('frio','morno','quente','fechado','cancelado')",
+            name="ck_lead_status_valido",
+        ),
+        # Hot path do Kanban: filtra (vendedor, status) ordenado por
+        # atualizado_em pra mostrar coluna mais recente em cima.
+        db.Index("ix_lead_vendedor_status_atualizado",
+                 "vendedor_id", "status", "atualizado_em"),
+    )
+
+
+class LeadEvento(db.Model):
+    """Log append-only de acoes comerciais sobre um lead.
+
+    Cada visita, ligacao, reuniao, mudanca de status ou observacao
+    gera 1 linha. Renderiza a timeline do detalhe do lead.
+    """
+    __tablename__ = "lead_eventos"
+
+    TIPO_NOTA          = "nota"           # texto livre
+    TIPO_MUDANCA_STATUS = "mudanca_status" # mudou coluna do Kanban
+    TIPO_CONVERSAO     = "conversao"      # virou cliente
+
+    id = db.Column(db.Integer, primary_key=True)
+    lead_id = db.Column(db.Integer, db.ForeignKey("leads.id"),
+                        nullable=False, index=True)
+    autor_usuario_id = db.Column(db.Integer, db.ForeignKey("usuarios.id"),
+                                 nullable=False, index=True)
+    tipo = db.Column(db.String(30), nullable=False, default=TIPO_NOTA)
+    descricao = db.Column(db.String(1000), nullable=False)
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False, index=True,
+    )
+
+    autor = db.relationship("Usuario", foreign_keys=[autor_usuario_id])
 
 
 class EventoRodada(db.Model):

@@ -21,7 +21,7 @@ pip install -r requirements-dev.txt   # instala locust 2.32.4
 ```
 
 App alvo precisa ter os seeds de dev:
-- `admin@aggron.com.br` / `admin123`
+- `adm@aggron.com.br` / `admin123`
 - `smash@demo.com` / `demo123`
 - `vendas@dsulcarnes.demo` / `demo123`
 

@@ -36,7 +36,7 @@ Central de compras cooperativa para hamburguerias de Londrina. Lanchonetes fazem
 ## Logins de teste
 | Perfil | Email | Senha |
 |---|---|---|
-| Admin | admin@aggron.com.br | admin123 |
+| Admin | adm@aggron.com.br | admin123 |
 | Lanchonete principal | smash@demo.com | demo123 |
 | Fornecedor principal | vendas@dsulcarnes.demo | demo123 |
 

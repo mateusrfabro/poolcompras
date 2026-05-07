@@ -85,6 +85,20 @@
             <small class="muted">Ex: 3 = 3%. Use 0 para fornecedor sem comissão (legacy).</small>
         </div>
 
+        <div class="form-group">
+            <label for="vendedor_id">Vendedor responsável (SDR)</label>
+            <select id="vendedor_id" name="vendedor_id">
+                <option value="">— Sem vendedor atribuído —</option>
+                {% for v in (vendedores or []) %}
+                <option value="{{ v.id }}"
+                    {% if fornecedor and fornecedor.vendedor_id == v.id %}selected{% endif %}>
+                    {{ v.nome }}
+                </option>
+                {% endfor %}
+            </select>
+            <small class="muted">SDR que prospectou esse fornecedor. Pode trocar depois.</small>
+        </div>
+
         {% if fornecedor %}
         <div class="form-group">
             <label>

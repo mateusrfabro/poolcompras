@@ -55,6 +55,7 @@
                     <a href="{{ url_for('admin.produtos') }}">Produtos</a>
                     <a href="{{ url_for('admin.fornecedores') }}">Fornecedores</a>
                     <a href="{{ url_for('admin.lanchonetes') }}">Lanchonetes</a>
+                    <a href="{{ url_for('admin.vendedores') }}">Vendedores</a>
 
                 {% elif current_user.is_fornecedor %}
                     <a href="{{ url_for('fornecedor.dashboard') }}">Painel</a>

@@ -7,9 +7,19 @@ from flask_login import login_required, current_user
 from sqlalchemy import select
 
 from app import db, limiter
-from app.models import Fornecedor
+from app.models import Fornecedor, Vendedor
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
+
+
+def _parse_vendedor_id(raw: str):
+    raw = (raw or "").strip()
+    if not raw:
+        return None
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        return None
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +64,7 @@ def fornecedor_novo():
             agencia=request.form.get("agencia", "").strip() or None,
             conta=request.form.get("conta", "").strip() or None,
             percentual_comissao=_parse_pct(request.form.get("percentual_comissao", "0")),
+            vendedor_id=_parse_vendedor_id(request.form.get("vendedor_id")),
         )
         db.session.add(fornecedor)
         db.session.commit()
@@ -66,7 +77,12 @@ def fornecedor_novo():
         flash("Fornecedor cadastrado!", "success")
         return redirect(url_for("admin.fornecedores"))
 
-    return render_template("admin/fornecedor_form.html", fornecedor=None)
+    vendedores_ativos = db.session.scalars(
+        select(Vendedor).where(Vendedor.ativo.is_(True))
+        .order_by(Vendedor.nome)
+    ).all()
+    return render_template("admin/fornecedor_form.html", fornecedor=None,
+                           vendedores=vendedores_ativos)
 
 
 @admin_bp.route("/fornecedores/<int:fornecedor_id>/editar", methods=["GET", "POST"])
@@ -87,6 +103,9 @@ def fornecedor_editar(fornecedor_id):
         fornecedor.percentual_comissao = _parse_pct(
             request.form.get("percentual_comissao", "0"),
         )
+        fornecedor.vendedor_id = _parse_vendedor_id(
+            request.form.get("vendedor_id")
+        )
         fornecedor.ativo = "ativo" in request.form
         # Invariante: Usuario.ativo segue Fornecedor.ativo (mesma logica da
         # rota lanchonete_editar). Fornecedor "desativado" nao deve logar.
@@ -95,7 +114,12 @@ def fornecedor_editar(fornecedor_id):
         db.session.commit()
         flash("Fornecedor atualizado!", "success")
         return redirect(url_for("admin.fornecedores"))
-    return render_template("admin/fornecedor_form.html", fornecedor=fornecedor)
+    vendedores_ativos = db.session.scalars(
+        select(Vendedor).where(Vendedor.ativo.is_(True))
+        .order_by(Vendedor.nome)
+    ).all()
+    return render_template("admin/fornecedor_form.html", fornecedor=fornecedor,
+                           vendedores=vendedores_ativos)
 
 
 @admin_bp.route("/fornecedores/exportar.csv")

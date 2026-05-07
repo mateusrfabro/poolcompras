@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Vendedores — Aggron{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Vendedores (SDR / Comercial)</h2>
+        <div class="page-header-actions">
+            <a href="{{ url_for('admin.vendedor_novo') }}" class="btn btn-primary btn-sm">Novo vendedor</a>
+        </div>
+    </div>
+
+    {% if not vendedores %}
+        <div class="empty-state">Nenhum vendedor cadastrado ainda.</div>
+    {% else %}
+    <div class="table-wrapper"><table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Meta mensal</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for v in vendedores %}
+            <tr>
+                <td>{{ v.nome }}</td>
+                <td>{{ v.responsavel.email if v.responsavel else '—' }}</td>
+                <td>{{ v.meta_mensal_clientes }} clientes/mês</td>
+                <td>
+                    <span class="badge badge-{{ 'ativo' if v.ativo else 'inativo' }}">
+                        {{ 'Ativo' if v.ativo else 'Inativo' }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('admin.vendedor_editar', vendedor_id=v.id) }}"
+                       class="btn btn-sm btn-outline">Editar</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table></div>
+    {% endif %}
+</div>
+{% endblock %}

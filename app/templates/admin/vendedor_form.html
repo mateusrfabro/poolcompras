@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Editar' if vendedor else 'Novo' }} Vendedor — Aggron{% endblock %}
+
+{% block content %}
+{% set f = form_data or {} %}
+<div class="form-page">
+    <a href="{{ url_for('admin.vendedores') }}" class="btn-back">Voltar</a>
+    <h2>{{ 'Editar' if vendedor else 'Novo' }} Vendedor</h2>
+
+    <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label for="nome">Nome</label>
+            <input type="text" id="nome" name="nome" required
+                   value="{{ vendedor.nome if vendedor else f.get('nome', '') }}">
+        </div>
+
+        {% if not vendedor %}
+        <div class="form-row">
+            <div class="form-group">
+                <label for="email">Email de acesso</label>
+                <input type="email" id="email" name="email" required
+                       autocomplete="email"
+                       value="{{ f.get('email', '') }}">
+                <small class="muted">Vendedor usa este email pra logar. Senha temporária aparece após criação.</small>
+            </div>
+            <div class="form-group">
+                <label for="telefone">Telefone</label>
+                <input type="tel" id="telefone" name="telefone"
+                       autocomplete="tel" inputmode="tel"
+                       placeholder="(43) 99999-9999"
+                       value="{{ f.get('telefone', '') }}">
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="meta_mensal_clientes">Meta mensal de clientes fechados</label>
+            <input type="number" id="meta_mensal_clientes" name="meta_mensal_clientes"
+                   min="1" max="999"
+                   value="{{ vendedor.meta_mensal_clientes if vendedor else f.get('meta_mensal_clientes', '10') }}">
+            <small class="muted">Quantos contratos fechados por mês contam pra meta. Default 10.</small>
+        </div>
+
+        {% if vendedor %}
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="ativo" {{ 'checked' if vendedor.ativo }}>
+                Vendedor ativo (pode logar e atender leads)
+            </label>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary btn-block">Salvar</button>
+    </form>
+</div>
+{% endblock %}

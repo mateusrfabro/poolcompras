@@ -14,7 +14,7 @@ Pesos (entre cenarios):
 - AdminUser:      20% — caminho "admin modera + transita rodada"
 
 Setup esperado no banco-alvo:
-- 1 admin: admin@aggron.com.br / admin123
+- 1 admin: adm@aggron.com.br / admin123
 - N lanchonetes: smash@demo.com (etc) / demo123
 - M fornecedores: vendas@dsulcarnes.demo (etc) / demo123
 - Pelo menos 1 rodada aberta com catalogo
@@ -103,7 +103,7 @@ class FornecedorUser(_AuthBase):
 class AdminUser(_AuthBase):
     """20% do trafego: admin operando rodada (tela de moderacao + analytics)."""
     weight = 20
-    email = "admin@aggron.com.br"
+    email = "adm@aggron.com.br"
     senha = "admin123"
 
     @task(3)

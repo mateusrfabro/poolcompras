@@ -26,12 +26,15 @@ def role_required(role: str, check_cadastro: bool = False):
         "admin":      lambda u: u.is_admin,
         "lanchonete": lambda u: u.is_lanchonete and (not check_cadastro or u.lanchonete),
         "fornecedor": lambda u: u.is_fornecedor and (not check_cadastro or u.fornecedor),
+        "vendedor":   lambda u: (u.is_admin or u.is_vendedor) and
+                                (not check_cadastro or u.is_admin or u.vendedor),
     }[role]
 
     mensagem = {
         "admin":      "Acesso restrito a administradores.",
         "lanchonete": "Esta área é apenas para lanchonetes.",
         "fornecedor": "Acesso restrito a fornecedores.",
+        "vendedor":   "Esta área é apenas para vendedores e admin.",
     }[role]
 
     def decorator(f):
@@ -54,3 +57,5 @@ def role_required(role: str, check_cadastro: bool = False):
 admin_required      = role_required("admin")
 fornecedor_required = role_required("fornecedor")
 lanchonete_required = role_required("lanchonete", check_cadastro=True)
+# Admin OU Vendedor — usado nas rotas de CRM (admin ve tudo, vendedor seu).
+vendedor_ou_admin_required = role_required("vendedor")

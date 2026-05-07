@@ -105,6 +105,23 @@
         </div>
 
         <div class="form-group">
+            <label for="vendedor_id">Vendedor responsável (SDR)</label>
+            <select id="vendedor_id" name="vendedor_id">
+                <option value="">— Sem vendedor atribuído —</option>
+                {% for v in (vendedores or []) %}
+                <option value="{{ v.id }}"
+                    {% if (not criando and lanchonete.vendedor_id == v.id) or
+                          (criando and form_data.get('vendedor_id')|string == v.id|string) %}
+                        selected
+                    {% endif %}>
+                    {{ v.nome }}
+                </option>
+                {% endfor %}
+            </select>
+            <small class="muted">SDR que prospectou e fechou esse cliente. Pode trocar depois.</small>
+        </div>
+
+        <div class="form-group">
             <label>
                 <input type="checkbox" name="ativa"
                        {{ 'checked' if (criando or lanchonete.ativa) }}>

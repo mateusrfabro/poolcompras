@@ -30,7 +30,7 @@ docker compose logs -f app   # ver logs da app
 
 # 6. Acessar
 # http://IP_DA_VM:80 (via nginx)
-# Login admin: admin@aggron.com.br / admin123
+# Login admin: adm@aggron.com.br / admin123
 
 # 7. IMPORTANTE: depois do primeiro deploy, voltar RUN_SEED=false
 #    no .env para nao rodar seed de novo no proximo restart.
