@@ -47,6 +47,7 @@
 /* Cards destacados com borda lateral colorida — status do pedido. */
 .card-hl-primary { border-left: 4px solid var(--primary); background: #EDF2F7; }
 .card-hl-success { border-left: 4px solid var(--success, #2e7d32); }
+.card-hl-warning { border-left: 4px solid #f59e0b; background: #fff8e1; }
 .card-hl-only    { border-left: 4px solid var(--primary); }
 
 /* Botoes do rodape do form de catalogo (submit dual salvar/enviar). */
@@ -2188,6 +2189,47 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0.2rem 0 0 0;
     color: var(--gray-700);
     font-size: 0.9rem;
+}
+
+/* ===== Utilitarias e grids genericos (CRM, financeiro, comissoes) ===== */
+/* Grids responsivos: stack em mobile, repeat em desktop. */
+.grid {
+    display: grid;
+    gap: 1rem;
+}
+.grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-3 { grid-template-columns: repeat(3, 1fr); }
+.grid-2-1 { grid-template-columns: 2fr 1fr; }
+@media (max-width: 700px) {
+    .grid-2, .grid-3, .grid-2-1 { grid-template-columns: 1fr; }
+}
+
+/* KPI numero grande dentro de card. */
+.kpi-num {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--secondary, #1D3557);
+    margin: 0;
+    font-family: var(--font-heading, Inter, sans-serif);
+    line-height: 1.2;
+}
+
+/* Utils de alinhamento e espacos curtos usados em forms inline. */
+.text-right { text-align: right; }
+.mr-1 { margin-right: 0.5rem; }
+.ml-1 { margin-left: 0.5rem; }
+.input-sm { font-size: 0.85rem; padding: 0.25rem 0.4rem; max-width: 220px; }
+
+/* Badge atrasada — vermelho pra urgencia (era cinza antes, sinalizava errado). */
+.badge-atrasada {
+    background: #f8d7da;
+    color: #842029;
+}
+
+/* Foco visivel em cards do Kanban (a11y — usuario navegando por TAB). */
+.kanban-card:focus-visible {
+    outline: 2px solid var(--primary, #2A9D8F);
+    outline-offset: 2px;
 }
 
 /* ===== CRM Kanban ===== */

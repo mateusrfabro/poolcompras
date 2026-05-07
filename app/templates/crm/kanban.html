@@ -30,7 +30,7 @@
     {% if is_admin %}
     <form method="GET" class="card mt-2 form-inline">
         <label for="vendedor_id" class="muted mr-1">Filtrar por vendedor:</label>
-        <select id="vendedor_id" name="vendedor_id" onchange="this.form.submit()">
+        <select id="vendedor_id" name="vendedor_id" data-auto-submit>
             <option value="">Todos</option>
             {% for v in vendedores %}
             <option value="{{ v.id }}"
@@ -43,6 +43,7 @@
             <button type="submit" class="btn btn-sm btn-outline">Filtrar</button>
         </noscript>
     </form>
+    <script src="{{ url_for('static', filename='js/auto-submit-form.js') }}"></script>
     {% endif %}
 
     {# Kanban: 5 colunas lado a lado, scroll horizontal em mobile #}
