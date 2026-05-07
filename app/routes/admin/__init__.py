@@ -10,5 +10,5 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
 from . import (  # noqa: E402,F401
     produtos, fornecedores, lanchonetes, rodadas, moderacao, analytics,
-    financeiro, comissoes, vendedores,
+    financeiro, comissoes, vendedores, rodada_kanban,
 )

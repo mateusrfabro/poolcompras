@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Kanban de Rodadas — Aggron{% endblock %}
+
+{% block content %}
+<div class="page">
+    <div class="page-header">
+        <h2>Operação — Kanban de rodadas</h2>
+        <p class="page-sub muted">
+            Visão das rodadas por status. Click em uma rodada pra ver
+            quem já fez o quê e cobrar individualmente.
+        </p>
+    </div>
+
+    <div class="kanban mt-3">
+        {% for status in status_ordem %}
+        {% set cards = grupos[status] %}
+        <div class="kanban-coluna">
+            <div class="kanban-header">
+                <h3 class="mb-0">{{ status_labels[status] }}</h3>
+                <span class="kanban-count">{{ cards|length }}</span>
+            </div>
+            <div class="kanban-cards">
+                {% for c in cards %}
+                <a href="{{ url_for('admin.rodada_situacao', rodada_id=c.rodada.id) }}"
+                   class="kanban-card">
+                    <strong>{{ c.rodada.nome }}</strong>
+                    <p class="muted small mb-0">
+                        Fecha: {{ c.rodada.data_fechamento.strftime('%d/%m %H:%M') }}
+                    </p>
+                    {% if c.qtd_participantes > 0 %}
+                    <p class="muted small mt-1 mb-0">
+                        {{ c.qtd_aprovados }}/{{ c.qtd_participantes }} pedidos aprovados ·
+                        {{ c.qtd_aceites }} aceites ·
+                        {{ c.qtd_pagamentos }} pagos ·
+                        {{ c.qtd_entregas }} entregues
+                    </p>
+                    {% endif %}
+                </a>
+                {% else %}
+                <p class="muted small">Vazio.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

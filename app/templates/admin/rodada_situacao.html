@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}{{ rodada.nome }} — Situação{% endblock %}
+
+{% block content %}
+<div class="page">
+    <p class="muted">
+        <a href="{{ url_for('admin.rodadas_kanban') }}">← Voltar ao Kanban</a>
+    </p>
+
+    <div class="page-header">
+        <h2>{{ rodada.nome }}</h2>
+        <p class="page-sub muted">
+            Status: <strong>{{ rodada.status|capitalize }}</strong> ·
+            Fecha em {{ rodada.data_fechamento.strftime('%d/%m/%Y %H:%M') }}
+        </p>
+    </div>
+
+    {# Lanchonetes na rodada — quem ta em qual etapa #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Lanchonetes ({{ lanchonetes|length }})</h3>
+        {% if not lanchonetes %}
+            <div class="empty-state">
+                Nenhuma lanchonete entrou na rodada ainda.
+            </div>
+        {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Lanchonete</th>
+                    <th>Etapa atual</th>
+                    <th>Aceite</th>
+                    <th>Pagamento</th>
+                    <th>Entrega</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in lanchonetes %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('admin.lanchonete_editar', lanchonete_id=item.lanchonete.id) }}">
+                            {{ item.lanchonete.nome_fantasia }}
+                        </a>
+                    </td>
+                    <td>
+                        <span class="badge badge-fechada">{{ item.etapa }}</span>
+                    </td>
+                    <td>
+                        {% if item.participacao.aceite_proposta is none %}
+                            <span class="muted">—</span>
+                        {% elif item.participacao.aceite_proposta %}
+                            <span class="badge badge-ativo">Aceitou</span>
+                        {% else %}
+                            <span class="badge badge-inativo">Recusou</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.participacao.pagamento_confirmado_em %}
+                            <span class="badge badge-ativo">Pago</span>
+                            <small class="muted d-block">
+                                {{ item.participacao.pagamento_confirmado_em.strftime('%d/%m %H:%M') }}
+                            </small>
+                        {% elif item.participacao.comprovante_em %}
+                            <span class="badge badge-fechada">Comprovante enviado</span>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if item.participacao.recebimento_em %}
+                            <span class="badge badge-ativo">Recebido</span>
+                        {% elif item.participacao.entrega_informada_em %}
+                            <span class="badge badge-fechada">Entregue (a confirmar)</span>
+                        {% else %}
+                            <span class="muted">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+        {% endif %}
+    </div>
+
+    {# Fornecedores com cotacao na rodada #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Fornecedores ({{ fornecedores|length }})</h3>
+        {% if not fornecedores %}
+            <div class="empty-state">
+                Nenhum fornecedor cotou nesta rodada ainda.
+            </div>
+        {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Fornecedor</th>
+                    <th>Cotações</th>
+                    <th>Vencedoras</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for f in fornecedores %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('admin.fornecedor_editar', fornecedor_id=f.fornecedor_id) }}">
+                            {{ f.razao_social }}
+                        </a>
+                    </td>
+                    <td>{{ f.qtd_cotacoes }}</td>
+                    <td>{{ f.qtd_selecionadas }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
