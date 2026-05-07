@@ -86,6 +86,10 @@ def dashboard():
     if current_user.is_fornecedor:
         return redirect(url_for("fornecedor.dashboard"))
 
+    # Vendedor vai pro pipeline
+    if current_user.is_vendedor:
+        return redirect(url_for("crm.kanban"))
+
     # Admin
     if current_user.is_admin:
         # KPIs cacheados (TTL 30s) — antes 4 queries síncronas a cada hit.

@@ -51,11 +51,16 @@
                     <a href="{{ url_for('admin.historico_aprovacoes') }}">Aprovações</a>
                     <a href="{{ url_for('admin.financeiro') }}">Financeiro</a>
                     <a href="{{ url_for('admin.comissoes') }}">Comissões</a>
+                    <a href="{{ url_for('crm.kanban') }}">CRM</a>
                     <a href="{{ url_for('rodadas.listar') }}">Rodadas</a>
                     <a href="{{ url_for('admin.produtos') }}">Produtos</a>
                     <a href="{{ url_for('admin.fornecedores') }}">Fornecedores</a>
                     <a href="{{ url_for('admin.lanchonetes') }}">Lanchonetes</a>
                     <a href="{{ url_for('admin.vendedores') }}">Vendedores</a>
+
+                {% elif current_user.is_vendedor %}
+                    <a href="{{ url_for('crm.kanban') }}">Pipeline</a>
+                    <a href="{{ url_for('crm.lead_novo') }}">+ Novo lead</a>
 
                 {% elif current_user.is_fornecedor %}
                     <a href="{{ url_for('fornecedor.dashboard') }}">Painel</a>

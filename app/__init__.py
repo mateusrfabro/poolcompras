@@ -141,6 +141,7 @@ def create_app(config_name="default"):
     from app.routes.perfil import perfil_bp
     from app.routes.marketplace import marketplace_bp
     from app.routes.telegram_webhook import telegram_webhook_bp
+    from app.routes.crm import crm_bp
     from app.cli import cron_bp
     from app.cli_telegram import telegram_cli_bp
 
@@ -256,6 +257,7 @@ def create_app(config_name="default"):
     app.register_blueprint(fluxo_bp)
     app.register_blueprint(perfil_bp)
     app.register_blueprint(marketplace_bp)
+    app.register_blueprint(crm_bp)
     # Webhook do Telegram — POST externo, sem CSRF (seguranca via secret na URL)
     csrf.exempt(telegram_webhook_bp)
     app.register_blueprint(telegram_webhook_bp)

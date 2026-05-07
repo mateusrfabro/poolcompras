@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block title %}{{ lead.nome_estabelecimento }} — CRM{% endblock %}
+
+{% block content %}
+<div class="page crm-detalhe-page">
+    <p class="muted">
+        <a href="{{ url_for('crm.kanban') }}">← Voltar ao pipeline</a>
+    </p>
+
+    <div class="page-header">
+        <h2>{{ lead.nome_estabelecimento }}</h2>
+        <span class="badge badge-{{ 'ativo' if lead.status == 'fechado' else ('inativo' if lead.status == 'cancelado' else 'fechada') }}">
+            {{ status_labels[lead.status] }}
+        </span>
+    </div>
+
+    {# Dados de contato #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Dados</h3>
+        <dl class="dl-2col">
+            <dt>Contato</dt>
+            <dd>{{ lead.nome_contato or '—' }}</dd>
+            <dt>WhatsApp</dt>
+            <dd>{{ lead.telefone or '—' }}</dd>
+            <dt>E-mail</dt>
+            <dd>{{ lead.email or '—' }}</dd>
+            <dt>Cidade</dt>
+            <dd>{{ lead.cidade or '—' }}</dd>
+            <dt>CNPJ</dt>
+            <dd>{{ lead.cnpj or '—' }}</dd>
+            <dt>SDR responsável</dt>
+            <dd>{{ lead.vendedor.nome if lead.vendedor else '—' }}</dd>
+            <dt>Criado em</dt>
+            <dd>{{ lead.criado_em.strftime('%d/%m/%Y %H:%M') }}</dd>
+            {% if lead.observacoes %}
+            <dt>Observações</dt>
+            <dd>{{ lead.observacoes }}</dd>
+            {% endif %}
+            {% if lead.lanchonete_id %}
+            <dt>Cliente vinculado</dt>
+            <dd>
+                Lanchonete #{{ lead.lanchonete_id }}
+                ({{ lead.lanchonete.nome_fantasia if lead.lanchonete else '—' }})
+            </dd>
+            {% endif %}
+        </dl>
+    </div>
+
+    {# Acoes — mover de coluna + converter #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Mover no pipeline</h3>
+        <form method="POST" action="{{ url_for('crm.lead_mudar_status', lead_id=lead.id) }}"
+              class="form-inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <select name="status" required>
+                {% for s in status_ordem %}
+                <option value="{{ s }}" {% if s == lead.status %}selected{% endif %}>
+                    {{ status_labels[s] }}
+                </option>
+                {% endfor %}
+            </select>
+            <input type="text" name="motivo" placeholder="Motivo (opcional)"
+                   maxlength="500" class="ml-1">
+            <button type="submit" class="btn btn-outline btn-sm">Mover</button>
+        </form>
+
+        {% if not lead.lanchonete_id %}
+        <form method="POST" action="{{ url_for('crm.lead_converter', lead_id=lead.id) }}"
+              class="mt-2">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-primary"
+                    data-confirm="Converter '{{ lead.nome_estabelecimento }}' em cliente? Vai criar Lanchonete + Usuario + Assinatura de 12 parcelas. Não dá pra desfazer.">
+                Converter em cliente
+            </button>
+            <p class="muted mt-1 small">
+                Precisa ter e-mail e WhatsApp preenchidos. Sistema gera senha
+                temporária pra você passar pro cliente.
+            </p>
+        </form>
+        {% endif %}
+    </div>
+
+    {# Adicionar nota livre #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Nova anotação</h3>
+        <form method="POST" action="{{ url_for('crm.lead_evento_adicionar', lead_id=lead.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <div class="form-group">
+                <textarea name="descricao" rows="3" maxlength="1000" required
+                    placeholder="Ex: visitei hoje, dono pediu pra voltar segunda. Tem 2 unidades, fatura ~R$ 80k/mês."></textarea>
+            </div>
+            <button type="submit" class="btn btn-outline btn-sm">Salvar nota</button>
+        </form>
+    </div>
+
+    {# Timeline #}
+    <div class="card mt-3">
+        <h3 class="mb-2">Histórico</h3>
+        {% if not eventos %}
+        <p class="muted">Sem eventos ainda.</p>
+        {% else %}
+        <ul class="timeline">
+            {% for e in eventos %}
+            <li class="timeline-item">
+                <div class="timeline-meta">
+                    <strong>{{ e.criado_em.strftime('%d/%m/%Y %H:%M') }}</strong>
+                    <span class="muted"> · {{ e.autor.nome_responsavel if e.autor else '—' }}</span>
+                    {% if e.tipo == 'mudanca_status' %}
+                    <span class="badge badge-fechada">mudança</span>
+                    {% elif e.tipo == 'conversao' %}
+                    <span class="badge badge-ativo">conversão</span>
+                    {% endif %}
+                </div>
+                <p class="mb-0">{{ e.descricao }}</p>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

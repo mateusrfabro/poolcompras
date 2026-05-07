@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}CRM Pipeline — Aggron{% endblock %}
+
+{% block content %}
+<div class="page crm-page">
+    <div class="page-header">
+        <h2>Pipeline comercial</h2>
+        <div class="page-header-actions">
+            <a href="{{ url_for('crm.lead_novo') }}" class="btn btn-primary btn-sm">+ Novo lead</a>
+        </div>
+    </div>
+
+    {# KPIs: meta vs realizado por vendedor (admin ve todos, vendedor so o seu) #}
+    {% if kpis %}
+    <div class="card mt-2">
+        <h3 class="mb-2">Meta do mês</h3>
+        <div class="grid grid-3">
+            {% for k in kpis %}
+            <div class="card {{ 'card-hl-primary' if k.pct >= 100 else '' }}">
+                <h4 class="mb-1">{{ k.nome }}</h4>
+                <p class="kpi-num">{{ k.fechados_mes }} / {{ k.meta }}</p>
+                <small class="muted">{{ k.pct }}% atingido</small>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {# Filtros — so admin (vendedor ve so os seus) #}
+    {% if is_admin %}
+    <form method="GET" class="card mt-2 form-inline">
+        <label for="vendedor_id" class="muted mr-1">Filtrar por vendedor:</label>
+        <select id="vendedor_id" name="vendedor_id" onchange="this.form.submit()">
+            <option value="">Todos</option>
+            {% for v in vendedores %}
+            <option value="{{ v.id }}"
+                {% if vendedor_filtro_id == v.id %}selected{% endif %}>
+                {{ v.nome }}
+            </option>
+            {% endfor %}
+        </select>
+        <noscript>
+            <button type="submit" class="btn btn-sm btn-outline">Filtrar</button>
+        </noscript>
+    </form>
+    {% endif %}
+
+    {# Kanban: 5 colunas lado a lado, scroll horizontal em mobile #}
+    <div class="kanban mt-3">
+        {% for status in status_ordem %}
+        {% set cards = grupos[status] %}
+        <div class="kanban-coluna">
+            <div class="kanban-header">
+                <h3 class="mb-0">{{ status_labels[status] }}</h3>
+                <span class="kanban-count">{{ cards|length }}</span>
+            </div>
+            <p class="muted kanban-help">{{ status_descricoes[status] }}</p>
+            <div class="kanban-cards">
+                {% for lead in cards %}
+                <a href="{{ url_for('crm.lead_detalhe', lead_id=lead.id) }}"
+                   class="kanban-card">
+                    <strong>{{ lead.nome_estabelecimento }}</strong>
+                    {% if lead.nome_contato %}
+                    <p class="muted small mb-0">{{ lead.nome_contato }}</p>
+                    {% endif %}
+                    {% if lead.telefone %}
+                    <p class="muted small mb-0">{{ lead.telefone }}</p>
+                    {% endif %}
+                    <p class="muted small mt-1 mb-0">
+                        {% if is_admin %}
+                        SDR: {{ lead.vendedor.nome if lead.vendedor else '—' }} ·
+                        {% endif %}
+                        atualizado {{ lead.atualizado_em.strftime('%d/%m') }}
+                    </p>
+                </a>
+                {% else %}
+                <p class="muted small">Vazio.</p>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Novo Lead — CRM{% endblock %}
+
+{% block content %}
+{% set f = form_data or {} %}
+<div class="form-page">
+    <a href="{{ url_for('crm.kanban') }}" class="btn-back">← Voltar ao pipeline</a>
+    <h2>Novo lead</h2>
+    <p class="subtitle">
+        Preenche o que tiver. Lead começa no status <strong>frio</strong>.
+        Você adiciona contexto depois pelo detalhe (visitas, conversas, etc).
+    </p>
+
+    <form method="POST" class="form-card">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="form-group">
+            <label for="nome_estabelecimento">Nome do estabelecimento *</label>
+            <input type="text" id="nome_estabelecimento" name="nome_estabelecimento"
+                   required maxlength="150"
+                   value="{{ f.get('nome_estabelecimento', '') }}">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="nome_contato">Nome do contato</label>
+                <input type="text" id="nome_contato" name="nome_contato"
+                       maxlength="100"
+                       value="{{ f.get('nome_contato', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="telefone">WhatsApp</label>
+                <input type="tel" id="telefone" name="telefone"
+                       inputmode="tel"
+                       placeholder="(43) 99999-9999"
+                       value="{{ f.get('telefone', '') }}">
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="email">E-mail</label>
+                <input type="email" id="email" name="email"
+                       value="{{ f.get('email', '') }}">
+            </div>
+            <div class="form-group">
+                <label for="cidade">Cidade</label>
+                <input type="text" id="cidade" name="cidade"
+                       value="{{ f.get('cidade', 'Londrina') }}">
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="cnpj">CNPJ (opcional)</label>
+            <input type="text" id="cnpj" name="cnpj"
+                   inputmode="numeric" maxlength="18"
+                   placeholder="00.000.000/0000-00"
+                   value="{{ f.get('cnpj', '') }}">
+            <small class="muted">Pré-preenche a minuta quando o lead for fechado.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="observacoes">Observações iniciais</label>
+            <textarea id="observacoes" name="observacoes" rows="3" maxlength="500">{{ f.get('observacoes', '') }}</textarea>
+            <small class="muted">Como conheceu, situação atual, oposições — tudo que ajudar.</small>
+        </div>
+
+        {% if vendedores and vendedores|length > 0 and current_user.is_admin %}
+        <div class="form-group">
+            <label for="vendedor_id">Vendedor responsável *</label>
+            <select id="vendedor_id" name="vendedor_id" required>
+                <option value="">— Selecione —</option>
+                {% for v in vendedores %}
+                <option value="{{ v.id }}"
+                    {% if f.get('vendedor_id')|string == v.id|string %}selected{% endif %}>
+                    {{ v.nome }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        {% endif %}
+
+        <button type="submit" class="btn btn-primary btn-block">Criar lead</button>
+    </form>
+</div>
+{% endblock %}

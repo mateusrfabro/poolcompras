@@ -2189,3 +2189,121 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--gray-700);
     font-size: 0.9rem;
 }
+
+/* ===== CRM Kanban ===== */
+.kanban {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(220px, 1fr));
+    gap: 0.75rem;
+    overflow-x: auto;
+    padding-bottom: 0.5rem;
+}
+@media (max-width: 1100px) {
+    .kanban {
+        grid-template-columns: repeat(5, 260px);
+    }
+}
+.kanban-coluna {
+    background: var(--gray-50, #f8f9fa);
+    border-radius: 0.5rem;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-200, #e9ecef);
+    min-height: 240px;
+}
+.kanban-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.25rem;
+}
+.kanban-header h3 {
+    font-size: 0.95rem;
+    font-family: var(--font-heading);
+    color: var(--secondary, #1d3557);
+}
+.kanban-count {
+    background: var(--secondary, #1d3557);
+    color: #fff;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+.kanban-help {
+    font-size: 0.75rem;
+    margin: 0 0 0.5rem 0;
+}
+.kanban-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.kanban-card {
+    display: block;
+    background: #fff;
+    border: 1px solid var(--gray-200, #e9ecef);
+    border-radius: 0.4rem;
+    padding: 0.6rem 0.75rem;
+    text-decoration: none;
+    color: inherit;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+.kanban-card:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    border-color: var(--primary, #2a9d8f);
+}
+.kanban-card strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--secondary, #1d3557);
+}
+.kanban-card .small {
+    font-size: 0.78rem;
+}
+
+/* Timeline do detalhe do lead */
+.timeline {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 2px solid var(--gray-200, #e9ecef);
+}
+.timeline-item {
+    padding: 0.5rem 0 0.75rem 1rem;
+    position: relative;
+}
+.timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -5px;
+    top: 0.85rem;
+    width: 8px; height: 8px;
+    border-radius: 999px;
+    background: var(--primary, #2a9d8f);
+}
+.timeline-meta {
+    font-size: 0.85rem;
+    margin-bottom: 0.15rem;
+}
+
+/* Detalhe do lead — definicao em 2 colunas */
+.dl-2col {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    gap: 0.4rem 1rem;
+    margin: 0;
+}
+.dl-2col dt {
+    font-weight: 600;
+    color: var(--gray-700);
+}
+.dl-2col dd {
+    margin: 0;
+}
+@media (max-width: 700px) {
+    .dl-2col {
+        grid-template-columns: 1fr;
+    }
+    .dl-2col dt { margin-top: 0.4rem; }
+}
