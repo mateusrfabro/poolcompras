@@ -41,55 +41,55 @@ STATUS_LABELS = {
 def rodadas_por_status() -> dict[str, list[dict]]:
     """Agrupa rodadas por status com contagens pro card.
 
+    1 query agregada com SUM(CASE WHEN ...) por bucket — antes eram 5
+    SELECT COUNT por rodada (5N queries). Com 30 rodadas: 150 → 1.
+
     Returns:
         OrderedDict {status: [{rodada, qtd_participantes, qtd_aprovados,
                                 qtd_aceites, qtd_pagamentos, qtd_entregas}, ...]}
     """
-    rodadas = db.session.scalars(
-        select(Rodada).order_by(Rodada.data_fechamento.desc())
-    ).all()
-
     grupos: dict[str, list[dict]] = OrderedDict(
         (s, []) for s in STATUS_KANBAN_RODADAS
     )
 
-    for r in rodadas:
-        # Subquery agregadas — uma por rodada eh OK no MVP. Em escala,
-        # vira 1 query agregada com GROUP BY status. Hoje rodadas sao
-        # ~1/dia, custo desprezivel.
-        participantes = db.session.scalar(
-            select(func.count(ParticipacaoRodada.id))
-            .where(ParticipacaoRodada.rodada_id == r.id)
-        ) or 0
-        aprovados = db.session.scalar(
-            select(func.count(ParticipacaoRodada.id))
-            .where(ParticipacaoRodada.rodada_id == r.id)
-            .where(ParticipacaoRodada.pedido_aprovado_em.isnot(None))
-        ) or 0
-        aceites = db.session.scalar(
-            select(func.count(ParticipacaoRodada.id))
-            .where(ParticipacaoRodada.rodada_id == r.id)
-            .where(ParticipacaoRodada.aceite_proposta.is_(True))
-        ) or 0
-        pagamentos = db.session.scalar(
-            select(func.count(ParticipacaoRodada.id))
-            .where(ParticipacaoRodada.rodada_id == r.id)
-            .where(ParticipacaoRodada.pagamento_confirmado_em.isnot(None))
-        ) or 0
-        entregas = db.session.scalar(
-            select(func.count(ParticipacaoRodada.id))
-            .where(ParticipacaoRodada.rodada_id == r.id)
-            .where(ParticipacaoRodada.entrega_informada_em.isnot(None))
-        ) or 0
+    # SUM(CASE WHEN ...) eh portavel SQLite + Postgres (FILTER do PG seria
+    # mais legivel, mas nao funciona em SQLite). count() nullable retorna 0
+    # via outerjoin pra rodadas sem participantes.
+    def _count_if(condition):
+        return func.coalesce(
+            func.sum(db.case((condition, 1), else_=0)), 0
+        )
 
-        grupo = grupos.setdefault(r.status, [])
-        grupo.append({
-            "rodada": r,
-            "qtd_participantes": participantes,
-            "qtd_aprovados": aprovados,
-            "qtd_aceites": aceites,
-            "qtd_pagamentos": pagamentos,
-            "qtd_entregas": entregas,
+    q = (
+        select(
+            Rodada.id, Rodada.nome, Rodada.status, Rodada.data_fechamento,
+            func.count(ParticipacaoRodada.id).label("qtd_participantes"),
+            _count_if(ParticipacaoRodada.pedido_aprovado_em.isnot(None))
+                .label("qtd_aprovados"),
+            _count_if(ParticipacaoRodada.aceite_proposta.is_(True))
+                .label("qtd_aceites"),
+            _count_if(ParticipacaoRodada.pagamento_confirmado_em.isnot(None))
+                .label("qtd_pagamentos"),
+            _count_if(ParticipacaoRodada.entrega_informada_em.isnot(None))
+                .label("qtd_entregas"),
+        )
+        .outerjoin(ParticipacaoRodada,
+                   ParticipacaoRodada.rodada_id == Rodada.id)
+        .group_by(Rodada.id, Rodada.nome, Rodada.status, Rodada.data_fechamento)
+        .order_by(Rodada.data_fechamento.desc())
+    )
+
+    # Mapeia row -> dict + carrega Rodada por id (cheap: rodadas ja
+    # estao no identity map se chamados anteriormente).
+    for row in db.session.execute(q).all():
+        rodada = db.session.get(Rodada, row.id)
+        grupos.setdefault(row.status, []).append({
+            "rodada": rodada,
+            "qtd_participantes": row.qtd_participantes or 0,
+            "qtd_aprovados": row.qtd_aprovados or 0,
+            "qtd_aceites": row.qtd_aceites or 0,
+            "qtd_pagamentos": row.qtd_pagamentos or 0,
+            "qtd_entregas": row.qtd_entregas or 0,
         })
     return grupos
 

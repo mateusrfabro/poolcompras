@@ -1,9 +1,11 @@
 """Visao admin: tabela de comissao de todos os fornecedores."""
 import logging
 
-from flask import render_template
+from flask import render_template, abort
 from flask_login import login_required
 
+from app import db
+from app.models import Fornecedor
 from app.services.comissao_fornecedor import (
     calcular_comissao_fornecedor, calcular_comissoes_todos_fornecedores,
 )
@@ -33,11 +35,8 @@ def comissoes():
 @admin_required
 def comissoes_detalhe(fornecedor_id):
     """Detalhe por fornecedor: por rodada + por dia."""
-    from app import db
-    from app.models import Fornecedor
     fornecedor = db.session.get(Fornecedor, fornecedor_id)
     if fornecedor is None:
-        from flask import abort
         abort(404)
     dados = calcular_comissao_fornecedor(fornecedor.id)
     return render_template(

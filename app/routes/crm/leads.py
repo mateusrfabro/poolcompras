@@ -1,12 +1,19 @@
 """CRUD de Leads — criar, ver detalhe, mover de coluna, converter em cliente."""
 import logging
 from datetime import datetime, timezone
+from io import BytesIO
 
-from flask import render_template, request, redirect, url_for, flash, abort
+from flask import render_template, request, redirect, url_for, flash, abort, send_file
 from flask_login import login_required, current_user
 
 from app import db, limiter
-from app.models import Lead, LeadEvento, Vendedor
+from app.models import (
+    Lead, LeadEvento, Vendedor, Lanchonete, Usuario,
+)
+from app.services.passwords import hash_senha
+from app.services.assinatura import criar_assinatura_inicial
+from app.services.minuta_pdf import gerar_minuta_pdf
+from app.routes.admin.vendedores import _gerar_senha_temporaria
 from . import crm_bp, vendedor_ou_admin_required
 
 logger = logging.getLogger(__name__)
@@ -45,8 +52,16 @@ def lead_novo():
                 return render_template("crm/lead_form.html", lead=None,
                                        form_data=request.form,
                                        vendedores=_vendedores_form())
-            if not db.session.get(Vendedor, vendedor_id):
-                flash("Vendedor inválido.", "error")
+            # Forca vendedor ativo — atribuir lead a vendedor inativo
+            # gera lead orfao (vendedor nao loga, ninguem mais ve).
+            vend = db.session.execute(
+                db.select(Vendedor).where(
+                    Vendedor.id == vendedor_id,
+                    Vendedor.ativo.is_(True),
+                )
+            ).scalar_one_or_none()
+            if vend is None:
+                flash("Vendedor inválido ou inativo.", "error")
                 return render_template("crm/lead_form.html", lead=None,
                                        form_data=request.form,
                                        vendedores=_vendedores_form())
@@ -186,10 +201,6 @@ def lead_mudar_status(lead_id):
 @limiter.limit("60 per hour")
 def lead_minuta(lead_id):
     """Gera PDF da minuta on-the-fly. Vendedor manda pelo WhatsApp."""
-    from io import BytesIO
-    from flask import send_file
-    from app.services.minuta_pdf import gerar_minuta_pdf
-
     lead = db.session.get(Lead, lead_id)
     if lead is None:
         abort(404)
@@ -225,19 +236,26 @@ def lead_converter(lead_id):
     - lead.email (login do cliente)
     - lead.telefone (canal de notificacao Aggron)
     Gera senha temporaria + retorna no flash pra vendedor passar via WhatsApp.
-    """
-    from app.models import Lanchonete, Usuario
-    from app.services.passwords import hash_senha
-    from app.services.assinatura import criar_assinatura_inicial
-    from app.routes.admin.vendedores import _gerar_senha_temporaria
 
-    lead = db.session.get(Lead, lead_id)
+    Race protection: SELECT FOR UPDATE no Lead bloqueia 2 vendedores
+    convertendo simultaneamente — sem isso, o guard `lanchonete_id` le
+    stale e ambos passam, criando 2 Usuarios com mesmo email (UNIQUE
+    estoura em 500 no segundo, deixando estado parcial). UNIQUE em
+    Lead.lanchonete_id eh defesa em profundidade no DB.
+    """
+    lead = db.session.execute(
+        db.select(Lead).where(Lead.id == lead_id).with_for_update()
+    ).scalar_one_or_none()
     if lead is None:
         abort(404)
     if not _vendedor_pode_ver(lead):
         abort(403)
     if lead.lanchonete_id:
         flash("Lead já foi convertido em cliente.", "warning")
+        return redirect(url_for("crm.lead_detalhe", lead_id=lead.id))
+    if lead.status == Lead.STATUS_CANCELADO:
+        flash("Lead cancelado não pode ser convertido. Reabra antes (mover de coluna).",
+              "error")
         return redirect(url_for("crm.lead_detalhe", lead_id=lead.id))
 
     email = (lead.email or "").strip().lower()

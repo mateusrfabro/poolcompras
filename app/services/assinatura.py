@@ -55,6 +55,10 @@ def criar_assinatura_inicial(
     existente sem criar duplicada (defensivo — caller pode tropecar em
     chamadas duplas durante reentrada do signup).
 
+    Para callers que precisam saber se criaram agora ou retornaram
+    existente (ex: flash diferente em /admin/financeiro/.../gerar), use
+    `criar_assinatura_inicial_idempotente()` que retorna tupla.
+
     Args:
         lanchonete: dona do contrato.
         valor_mensal: valor de cada parcela (R$500 default).
@@ -64,13 +68,29 @@ def criar_assinatura_inicial(
     Returns:
         Assinatura ja persistida e com `parcelas` Faturas associadas.
     """
-    existente = (
-        Assinatura.query
-        .filter_by(lanchonete_id=lanchonete.id, status=Assinatura.STATUS_ATIVA)
-        .first()
+    assinatura, _ = criar_assinatura_inicial_idempotente(
+        lanchonete, valor_mensal=valor_mensal,
+        parcelas=parcelas, inicio=inicio,
     )
+    return assinatura
+
+
+def criar_assinatura_inicial_idempotente(
+    lanchonete: Lanchonete,
+    valor_mensal: Decimal = VALOR_MENSAL_PADRAO,
+    parcelas: int = PARCELAS_PADRAO,
+    inicio: date | None = None,
+) -> tuple[Assinatura, bool]:
+    """Mesma logica de criar_assinatura_inicial mas devolve tupla
+    `(assinatura, criada_agora)` pro caller distinguir caminho."""
+    existente = db.session.execute(
+        db.select(Assinatura).where(
+            Assinatura.lanchonete_id == lanchonete.id,
+            Assinatura.status == Assinatura.STATUS_ATIVA,
+        )
+    ).scalar_one_or_none()
     if existente:
-        return existente
+        return existente, False
 
     inicio = inicio or date.today()
     dia_vencimento = min(inicio.day, DIA_VENCIMENTO_MAX)
@@ -111,4 +131,4 @@ def criar_assinatura_inicial(
         "ASSINATURA_CRIADA lanchonete=%s assinatura=%s parcelas=%s valor=%s",
         lanchonete.id, assinatura.id, parcelas, valor_mensal,
     )
-    return assinatura
+    return assinatura, True

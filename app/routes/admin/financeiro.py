@@ -21,11 +21,13 @@ from flask import (
 )
 from flask_login import login_required, current_user
 from sqlalchemy import select, func
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
-from app import db
+from app import db, limiter
 from app.models import Assinatura, Fatura, Lanchonete
-from app.services.assinatura import criar_assinatura_inicial
+from app.services.assinatura import (
+    criar_assinatura_inicial, criar_assinatura_inicial_idempotente,
+)
 from app.services.storage import get_storage
 from . import admin_bp, admin_required
 
@@ -38,34 +40,47 @@ NF_MIME_PERMITIDO = {"application/pdf"}
 NF_TAMANHO_MAX_BYTES = 5 * 1024 * 1024  # 5MB — NFS-e e leve
 
 
+def _bordas_do_mes_atual():
+    """Retorna (inicio_mes, proximo_mes) tz-aware UTC pra range sargable."""
+    agora = datetime.now(timezone.utc)
+    inicio = datetime(agora.year, agora.month, 1, tzinfo=timezone.utc)
+    if agora.month == 12:
+        proximo = datetime(agora.year + 1, 1, 1, tzinfo=timezone.utc)
+    else:
+        proximo = datetime(agora.year, agora.month + 1, 1, tzinfo=timezone.utc)
+    return inicio, proximo
+
+
 @admin_bp.route("/financeiro")
 @login_required
 @admin_required
 def financeiro():
     """Lista assinaturas + visao geral de inadimplencia."""
-    # Todas assinaturas com lanchonete + faturas (carregamento em selectin
-    # pra evitar N+1 ao iterar no template).
+    # joinedload na lanchonete (M:1, OK) + selectinload nas faturas (1:M;
+    # joinedload aqui causaria cartesian N×12 mascarado por unique()).
     assinaturas = db.session.scalars(
         select(Assinatura)
-        .options(joinedload(Assinatura.lanchonete), joinedload(Assinatura.faturas))
+        .options(
+            joinedload(Assinatura.lanchonete),
+            selectinload(Assinatura.faturas),
+        )
         .order_by(Assinatura.criado_em.desc())
     ).unique().all()
 
-    # KPIs agregados
+    # KPIs agregados. Range puro [inicio_mes, proximo_mes) eh sargable
+    # (usa indice em pago_em) e portavel SQLite/Postgres — antes usava
+    # strftime/to_char com branch por dialeto (acoplamento ruim) e o
+    # filtro era nao-sargable.
     total_pendente = db.session.scalar(
         select(func.coalesce(func.sum(Fatura.valor), 0))
         .where(Fatura.status == Fatura.STATUS_PENDENTE)
     )
+    inicio_mes, proximo_mes = _bordas_do_mes_atual()
     total_pago_mes = db.session.scalar(
         select(func.coalesce(func.sum(Fatura.valor), 0))
         .where(Fatura.status == Fatura.STATUS_PAGA)
-        .where(func.strftime("%Y-%m", Fatura.pago_em) ==
-               datetime.now(timezone.utc).strftime("%Y-%m"))
-    ) if db.engine.dialect.name == "sqlite" else db.session.scalar(
-        select(func.coalesce(func.sum(Fatura.valor), 0))
-        .where(Fatura.status == Fatura.STATUS_PAGA)
-        .where(func.to_char(Fatura.pago_em, "YYYY-MM") ==
-               datetime.now(timezone.utc).strftime("%Y-%m"))
+        .where(Fatura.pago_em >= inicio_mes)
+        .where(Fatura.pago_em < proximo_mes)
     )
 
     # Lanchonetes sem assinatura (legacy ou criadas antes do deploy)
@@ -127,6 +142,7 @@ def fatura_marcar_paga(fatura_id):
 @admin_bp.route("/financeiro/fatura/<int:fatura_id>/marcar-pendente", methods=["POST"])
 @login_required
 @admin_required
+@limiter.limit("60 per hour", error_message="Muitas operacoes em sequencia.")
 def fatura_marcar_pendente(fatura_id):
     """Desfaz a baixa (admin clicou errado). Limpa pago_em + pago_por."""
     fatura = db.session.get(Fatura, fatura_id)
@@ -151,6 +167,7 @@ def fatura_marcar_pendente(fatura_id):
 @admin_bp.route("/financeiro/fatura/<int:fatura_id>/nf", methods=["POST"])
 @login_required
 @admin_required
+@limiter.limit("60 per hour", error_message="Muitos uploads em sequencia.")
 def fatura_upload_nf(fatura_id):
     """Admin sobe PDF da NFS-e. Substitui anterior se existir."""
     fatura = db.session.get(Fatura, fatura_id)
@@ -168,6 +185,16 @@ def fatura_upload_nf(fatura_id):
         flash("Tipo MIME invalido. Envie PDF.", "error")
         return redirect(url_for("admin.financeiro_detalhe", assinatura_id=fatura.assinatura_id))
 
+    # Magic bytes check — extension/mime sao controlados pelo cliente,
+    # so bytes confirmam que eh PDF de verdade. Bloqueia HTML/JS/PNG
+    # renomeado pra .pdf que poderia explorar viewers ou browsers.
+    arquivo.seek(0)
+    inicio = arquivo.read(5)
+    arquivo.seek(0)
+    if not inicio.startswith(b"%PDF-"):
+        flash("Arquivo nao e um PDF valido.", "error")
+        return redirect(url_for("admin.financeiro_detalhe", assinatura_id=fatura.assinatura_id))
+
     # Tamanho via seek (file-like) — antes de salvar pra nao gravar inutil.
     arquivo.seek(0, 2)  # SEEK_END
     tamanho = arquivo.tell()
@@ -175,6 +202,9 @@ def fatura_upload_nf(fatura_id):
     if tamanho > NF_TAMANHO_MAX_BYTES:
         flash(f"Arquivo muito grande (max {NF_TAMANHO_MAX_BYTES // 1024 // 1024}MB).",
               "error")
+        return redirect(url_for("admin.financeiro_detalhe", assinatura_id=fatura.assinatura_id))
+    if tamanho == 0:
+        flash("Arquivo vazio.", "error")
         return redirect(url_for("admin.financeiro_detalhe", assinatura_id=fatura.assinatura_id))
 
     storage = get_storage()
@@ -204,11 +234,15 @@ def gerar_contrato_retroativo(lanchonete_id):
     lanch = db.session.get(Lanchonete, lanchonete_id)
     if lanch is None:
         abort(404)
-    a = criar_assinatura_inicial(lanch)
-    logger.info(
-        "ADMIN_CONTRATO_RETROATIVO admin=%s lanchonete=%s assinatura=%s",
-        current_user.id, lanch.id, a.id,
-    )
-    flash(f"Contrato gerado pra {lanch.nome_fantasia} (12 parcelas R$500).",
-          "success")
+    a, criada = criar_assinatura_inicial_idempotente(lanch)
+    if criada:
+        logger.info(
+            "ADMIN_CONTRATO_RETROATIVO admin=%s lanchonete=%s assinatura=%s",
+            current_user.id, lanch.id, a.id,
+        )
+        flash(f"Contrato gerado para {lanch.nome_fantasia} (12 parcelas R$ 500,00).",
+              "success")
+    else:
+        flash(f"{lanch.nome_fantasia} já tinha contrato ativo — abrindo o existente.",
+              "warning")
     return redirect(url_for("admin.financeiro_detalhe", assinatura_id=a.id))
