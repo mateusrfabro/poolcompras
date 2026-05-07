@@ -52,14 +52,17 @@
         <form method="POST" action="{{ url_for('crm.lead_mudar_status', lead_id=lead.id) }}"
               class="form-inline">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-            <select name="status" required>
+            <label for="lead-status" class="sr-only">Novo status</label>
+            <select id="lead-status" name="status" required>
                 {% for s in status_ordem %}
                 <option value="{{ s }}" {% if s == lead.status %}selected{% endif %}>
                     {{ status_labels[s] }}
                 </option>
                 {% endfor %}
             </select>
-            <input type="text" name="motivo" placeholder="Motivo (opcional)"
+            <label for="lead-motivo" class="sr-only">Motivo</label>
+            <input id="lead-motivo" type="text" name="motivo"
+                   placeholder="Motivo (opcional)"
                    maxlength="500" class="ml-1">
             <button type="submit" class="btn btn-outline btn-sm">Mover</button>
         </form>
@@ -69,10 +72,10 @@
             Baixar minuta de contrato (PDF)
         </a>
         <p class="muted mt-1 small">
-            PDF preenchido com os dados do lead. Mande pelo WhatsApp pro
-            cliente assinar e devolver. Quando voltar assinado, suba em
-            "Converter em cliente" e <em>/admin/financeiro</em> guarda
-            cópia junto da NF.
+            PDF preenchido com os dados do lead. Mande pelo WhatsApp para o
+            cliente assinar e devolver. Quando voltar assinado, use
+            "Converter em cliente" e a Aggron guarda a cópia junto à NF
+            em <em>/admin/financeiro</em>.
         </p>
 
         {% if not lead.lanchonete_id %}

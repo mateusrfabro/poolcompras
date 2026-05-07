@@ -6,8 +6,8 @@
     <div class="page-header">
         <h2>Financeiro</h2>
         <p class="page-sub muted">
-            Acompanhe assinaturas, mensalidades e baixas. Pagamento eh marcado
-            manualmente apos confirmar PIX/boleto.
+            Acompanhe assinaturas, mensalidades e baixas. Pagamento é marcado
+            manualmente após a Aggron confirmar PIX/boleto.
         </p>
     </div>
 
@@ -18,7 +18,7 @@
             <p class="kpi-num">R$ {{ "%.2f"|format(total_pendente)|replace(".", ",") }}</p>
         </div>
         <div class="card">
-            <h4 class="muted mb-1">Pago no mes</h4>
+            <h4 class="muted mb-1">Pago no mês</h4>
             <p class="kpi-num">R$ {{ "%.2f"|format(total_pago_mes)|replace(".", ",") }}</p>
         </div>
         <div class="card">
@@ -32,7 +32,7 @@
     <div class="card card-hl-warning mt-3">
         <h3 class="mb-2">Lanchonetes sem contrato ({{ sem_contrato|length }})</h3>
         <p class="muted mb-2">
-            Cadastros antigos (antes do modulo financeiro). Gerar contrato
+            Cadastros antigos (antes do módulo financeiro). Gerar contrato
             cria 1 assinatura ativa + 12 parcelas de R$ 500,00.
         </p>
         <div class="table-wrapper"><table class="table">
@@ -48,7 +48,7 @@
                           class="form-inline">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-sm btn-outline"
-                                data-confirm="Gerar contrato de 12x R$ 500,00 pra {{ l.nome_fantasia }}?">
+                                data-confirm="Gerar contrato de 12x R$ 500,00 para {{ l.nome_fantasia }}?">
                             Gerar contrato
                         </button>
                     </form>

@@ -26,6 +26,17 @@
     </div>
     {% endif %}
 
+    {# Empty state global quando nao ha NENHUM lead — vendedor recem-criado vai cair aqui #}
+    {% set total_leads = grupos.values()|map('length')|sum %}
+    {% if total_leads == 0 %}
+    <div class="empty-state mt-3">
+        <p>
+            Nenhum lead cadastrado ainda. Comece pelo botão
+            <strong>+ Novo lead</strong> acima.
+        </p>
+    </div>
+    {% endif %}
+
     {# Filtros — so admin (vendedor ve so os seus) #}
     {% if is_admin %}
     <form method="GET" class="card mt-2 form-inline">

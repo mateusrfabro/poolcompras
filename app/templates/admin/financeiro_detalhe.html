@@ -44,7 +44,7 @@
                             <small class="muted d-block">{{ f.pago_em.strftime('%d/%m/%Y') }}</small>
                             {% endif %}
                         {% elif f.status == 'atrasada' %}
-                            <span class="badge badge-inativo">Atrasada</span>
+                            <span class="badge badge-atrasada">Atrasada</span>
                         {% elif f.status == 'cancelada' %}
                             <span class="badge badge-fechada">Cancelada</span>
                         {% else %}
@@ -54,7 +54,7 @@
                     <td>
                         {% if f.nf_pdf_key %}
                             <a href="{{ url_for('uploads.servir', key=f.nf_pdf_key) }}"
-                               class="btn-link">Baixar</a>
+                               class="btn-link" download>Baixar</a>
                         {% else %}
                             <span class="muted">—</span>
                         {% endif %}

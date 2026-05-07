@@ -40,7 +40,7 @@
             <input type="number" id="meta_mensal_clientes" name="meta_mensal_clientes"
                    min="1" max="999"
                    value="{{ vendedor.meta_mensal_clientes if vendedor else f.get('meta_mensal_clientes', '10') }}">
-            <small class="muted">Quantos contratos fechados por mês contam pra meta. Default 10.</small>
+            <small class="muted">Quantos contratos fechados por mês contam para a meta. Default 10.</small>
         </div>
 
         {% if vendedor %}
