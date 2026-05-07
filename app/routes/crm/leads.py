@@ -180,6 +180,40 @@ def lead_mudar_status(lead_id):
     return redirect(url_for("crm.lead_detalhe", lead_id=lead.id))
 
 
+@crm_bp.route("/leads/<int:lead_id>/minuta")
+@login_required
+@vendedor_ou_admin_required
+@limiter.limit("60 per hour")
+def lead_minuta(lead_id):
+    """Gera PDF da minuta on-the-fly. Vendedor manda pelo WhatsApp."""
+    from io import BytesIO
+    from flask import send_file
+    from app.services.minuta_pdf import gerar_minuta_pdf
+
+    lead = db.session.get(Lead, lead_id)
+    if lead is None:
+        abort(404)
+    if not _vendedor_pode_ver(lead):
+        abort(403)
+
+    pdf_bytes = gerar_minuta_pdf(lead)
+    nome_arquivo = (
+        f"minuta_aggron_{lead.id}_{lead.nome_estabelecimento[:30]}.pdf"
+        .replace(" ", "_").replace("/", "_")
+    )
+    # Log de auditoria — ajuda investigar quem gerou minuta de quem.
+    logger.info(
+        "CRM_MINUTA_GERADA lead=%s autor=%s tamanho_bytes=%s",
+        lead.id, current_user.id, len(pdf_bytes),
+    )
+    return send_file(
+        BytesIO(pdf_bytes),
+        mimetype="application/pdf",
+        as_attachment=True,
+        download_name=nome_arquivo,
+    )
+
+
 @crm_bp.route("/leads/<int:lead_id>/converter", methods=["POST"])
 @login_required
 @vendedor_ou_admin_required

@@ -64,6 +64,17 @@
             <button type="submit" class="btn btn-outline btn-sm">Mover</button>
         </form>
 
+        <a href="{{ url_for('crm.lead_minuta', lead_id=lead.id) }}"
+           class="btn btn-outline mt-2" download>
+            Baixar minuta de contrato (PDF)
+        </a>
+        <p class="muted mt-1 small">
+            PDF preenchido com os dados do lead. Mande pelo WhatsApp pro
+            cliente assinar e devolver. Quando voltar assinado, suba em
+            "Converter em cliente" e <em>/admin/financeiro</em> guarda
+            cópia junto da NF.
+        </p>
+
         {% if not lead.lanchonete_id %}
         <form method="POST" action="{{ url_for('crm.lead_converter', lead_id=lead.id) }}"
               class="mt-2">
