@@ -180,6 +180,19 @@ input, select, textarea {
 }
 input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
+/* Bloqueia o autofill amarelo do Chrome em fundo dark — sem isso o
+   campo de email/senha pisca amarelo flagrante depois que o navegador
+   preenche. Aplicar mesmo background-fill que o input no estado normal. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 1000px var(--bg-elevated-2) inset !important;
+    -webkit-text-fill-color: var(--text-primary) !important;
+    caret-color: var(--text-primary);
+    transition: background-color 5000s ease-in-out 0s;
+}
+
 h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
     color: var(--text-primary);
@@ -473,7 +486,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .faq-secao details[open] {
     border-color: var(--primary);
-    box-shadow: 0 1px 4px rgba(29, 53, 87, 0.06);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 .faq-secao summary {
     cursor: pointer;
@@ -540,7 +553,7 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: var(--radius);
     padding: var(--space-5) var(--space-4);
     text-align: center;
-    box-shadow: 0 2px 12px rgba(29, 53, 87, 0.06);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 .preco-header {
     display: flex;
@@ -622,7 +635,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 .diferencial-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--glow-verde);
+    border-color: var(--brand-verde-claro);
 }
 .diferencial-card h3 {
     color: var(--primary-text);
@@ -643,8 +657,8 @@ h1, h2, h3, h4, h5, h6 {
     width: 48px;
     height: 48px;
     border-radius: 12px;
-    background: var(--accent);
-    color: var(--white);
+    background: var(--brand-ouro);
+    color: var(--brand-grafite);
 }
 .diferencial-icon svg {
     width: 26px;
@@ -698,8 +712,8 @@ h1, h2, h3, h4, h5, h6 {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: var(--primary);
-    color: var(--white);
+    background: var(--brand-verde-claro);
+    color: var(--brand-cinza-claro);
     font-family: var(--font-heading);
     font-size: 1.2rem;
     font-weight: 700;
@@ -717,10 +731,14 @@ h1, h2, h3, h4, h5, h6 {
     line-height: 1.5;
 }
 
+/* Bloco premium em verde Aggron — destaca prova social no fluxo da home. */
 .prova-social {
-    margin-top: var(--space-7);  /* 80px entre secoes */
+    margin-top: var(--space-7);
     padding: var(--space-5) var(--space-3);
-    background: var(--bg-light, #F8F9FA);
+    background:
+        radial-gradient(ellipse 50% 100% at 50% 0%, rgba(212, 175, 55, 0.10), transparent 60%),
+        var(--brand-verde);
+    border: 1px solid rgba(212, 175, 55, 0.18);
     border-radius: var(--radius);
     text-align: center;
 }
@@ -732,11 +750,11 @@ h1, h2, h3, h4, h5, h6 {
     max-width: 700px;
     margin-left: auto;
     margin-right: auto;
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
 }
 .prova-social-grid {
     display: grid;
-    /* auto-fit: layout se adapta a 1/2/3 cards sem desbalancear quando
-       algum numero for zero. min 220px evita esmagamento em mobile. */
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: var(--space-2);
 }
@@ -747,14 +765,14 @@ h1, h2, h3, h4, h5, h6 {
 }
 .prova-social-num {
     font-family: var(--font-heading);
-    font-size: 2.8rem;
+    font-size: 3rem;
     font-weight: 700;
-    color: var(--accent);  /* verde alimento — destaque sem competir com botoes */
+    color: var(--brand-ouro);   /* numero em ouro — destaque premium */
     line-height: 1;
 }
 .prova-social-label {
     font-size: 0.95rem;
-    color: var(--gray-700);
+    color: rgba(230, 230, 230, 0.75);
     font-weight: 500;
 }
 @media (max-width: 700px) {
@@ -885,7 +903,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .btn-logout:hover {
     background: rgba(255, 255, 255, 0.1);
-    color: var(--white) !important;
+    color: var(--text-primary) !important;
     border-color: rgba(255, 255, 255, 0.5);
 }
 /* Form do logout fica inline (parece um botao no nav). */
@@ -951,8 +969,8 @@ h1, h2, h3, h4, h5, h6 {
 .tag-urgent {
     display: inline-block;
     padding: 2px 8px;
-    background: #e53935;
-    color: #fff;
+    background: var(--danger);
+    color: var(--brand-cinza-claro);
     border-radius: 12px;
     font-size: 0.7rem;
     font-weight: 700;
@@ -996,7 +1014,7 @@ h1, h2, h3, h4, h5, h6 {
     display: flex;
     align-items: center;
     padding: 0 0.8rem;
-    color: var(--white);
+    color: var(--brand-cinza-claro);
     font-weight: 600;
     transition: width 0.4s ease;
 }
@@ -1017,7 +1035,7 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: var(--radius);
 }
 .nota-item.nota-admin { border-left-color: var(--primary); }
-.nota-item.nota-fornecedor { border-left-color: #2196f3; }
+.nota-item.nota-fornecedor { border-left-color: var(--info); }
 .nota-head {
     font-size: 0.85em;
     margin-bottom: 0.3rem;
@@ -1062,10 +1080,12 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
     font-size: 2rem;
     font-weight: 700;
-    color: var(--accent);  /* verde alimento — destaque visual sem competir com botoes/links em --primary */
-    white-space: nowrap;  /* evita R$ quebrar em 2 linhas */
+    color: var(--brand-ouro);  /* numero em ouro — alinhado com .kpi-num pra consistencia */
+    font-family: var(--font-heading);
+    letter-spacing: -0.01em;
+    white-space: nowrap;
     line-height: 1.2;
-    overflow-wrap: anywhere;  /* valores enormes podem quebrar se extrapolar */
+    overflow-wrap: anywhere;
     max-width: 100%;
 }
 @media (max-width: 480px) {
@@ -1206,7 +1226,8 @@ h1, h2, h3, h4, h5, h6 {
     margin-top: 1rem;
     font-size: 0.9rem;
 }
-.form-footer a { color: var(--primary); }
+.form-footer a { color: var(--brand-ouro); }
+.form-footer a:hover { color: #e6c356; }
 /* Page header */
 .page-header {
     display: flex;
@@ -1432,7 +1453,8 @@ h1, h2, h3, h4, h5, h6 {
     flex-wrap: wrap;
     align-items: center;
     padding: 1rem;
-    background: var(--gray-100);
+    background: var(--bg-page);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 1.5rem;
 }
@@ -1473,7 +1495,8 @@ h1, h2, h3, h4, h5, h6 {
 /* === Catalogo da rodada (admin monta) === */
 .catalogo-stats {
     padding: 0.8rem 1rem;
-    background: var(--gray-100);
+    background: var(--bg-page);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     margin-bottom: 1rem;
     font-size: 0.9rem;
@@ -1527,8 +1550,8 @@ h1, h2, h3, h4, h5, h6 {
     transition: all 0.1s;
 }
 .catalogo-produto:hover {
-    border-color: var(--primary);
-    background: var(--gray-100);
+    border-color: var(--brand-verde-claro);
+    background: rgba(22, 107, 61, 0.08);
 }
 .catalogo-produto input[type="checkbox"] {
     width: 18px;
@@ -1555,9 +1578,9 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
 }
 .ultima-rodada-card:hover {
-    border-color: var(--primary);
+    border-color: var(--brand-verde-claro);
     transform: translateY(-2px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--glow-verde);
 }
 .ultima-rodada-nome {
     font-weight: 600;
@@ -1598,9 +1621,10 @@ h1, h2, h3, h4, h5, h6 {
 }
 .pagamento-dados {
     font-size: 0.85rem;
-    color: var(--gray-700);
-    padding: 0.4rem 0.6rem;
-    background: var(--gray-100);
+    color: var(--text-secondary);
+    padding: 0.5rem 0.75rem;
+    background: var(--bg-page);
+    border: 1px solid var(--border);
     border-radius: 4px;
     margin-bottom: 0.5rem;
 }
@@ -1821,8 +1845,9 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
     font-size: 1rem;
     font-weight: 700;
-    color: var(--white);
-    background: var(--gray-300);
+    color: var(--brand-cinza-claro);
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-strong);
     z-index: 1;
 }
 
@@ -1857,7 +1882,7 @@ h1, h2, h3, h4, h5, h6 {
     display: none;  /* Escondido em desktop */
     cursor: pointer;
     padding: 0.5rem;
-    color: var(--white);
+    color: var(--text-primary);
     user-select: none;
 }
 .nav-toggle-icon,
@@ -1866,7 +1891,7 @@ h1, h2, h3, h4, h5, h6 {
     display: block;
     width: 24px;
     height: 2px;
-    background: var(--white);
+    background: var(--text-primary);
     transition: transform 0.2s, top 0.2s, opacity 0.2s;
     position: relative;
 }
@@ -1894,9 +1919,11 @@ h1, h2, h3, h4, h5, h6 {
 
 /* === Acessibilidade === */
 
-/* Foco visivel para navegacao por teclado (WCAG 2.4.7) */
+/* Foco visivel para navegacao por teclado (WCAG 2.4.7) — ouro garante
+   3:1 sobre qualquer surface dark (verde/grafite/elevado) e mantem o
+   padrao de "foco = ouro" usado nos cards do Kanban. */
 *:focus-visible {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--brand-ouro);
     outline-offset: 2px;
     border-radius: 2px;
 }
@@ -1980,29 +2007,29 @@ h1, h2, h3, h4, h5, h6 {
     align-items: center;
     gap: 0.4rem;
     padding: 0.45rem 0.9rem;
-    background: var(--white);
-    border: 1px solid var(--gray-300);
+    background: var(--bg-elevated-2);
+    border: 1px solid var(--border-strong);
     border-radius: 20px;
     text-decoration: none;
-    color: var(--gray-700);
+    color: var(--text-secondary);
     font-size: 0.85rem;
     transition: all 0.15s;
 }
-.chip:hover { border-color: var(--primary); color: var(--primary); }
+.chip:hover { border-color: var(--brand-verde-claro); color: var(--primary-text); }
 .chip-active {
-    background: var(--primary);
-    color: var(--white);
-    border-color: var(--primary);
+    background: var(--brand-verde-claro);
+    color: var(--brand-cinza-claro);
+    border-color: var(--brand-verde-claro);
 }
-.chip-active:hover { color: var(--white); }
+.chip-active:hover { color: var(--brand-cinza-claro); }
 .chip-count {
-    background: rgba(0, 0, 0, 0.08);
+    background: rgba(255, 255, 255, 0.10);
     padding: 0 0.45rem;
     border-radius: 10px;
     font-size: 0.75rem;
     font-weight: 600;
 }
-.chip-active .chip-count { background: rgba(255, 255, 255, 0.25); }
+.chip-active .chip-count { background: rgba(255, 255, 255, 0.18); color: var(--brand-cinza-claro); }
 
 /* Badges adicionais — paleta dark com tinta sutil + texto saturado pra contraste. */
 .badge-cancelada           { background: rgba(239, 68, 68, 0.15);  color: #f87171; }
@@ -2111,7 +2138,7 @@ h1, h2, h3, h4, h5, h6 {
 .form-group.is-invalid select:focus,
 .form-group.is-invalid textarea:focus {
     border-color: var(--danger);
-    outline: 2px solid rgba(214, 40, 40, 0.15);
+    outline: 2px solid rgba(239, 68, 68, 0.25);
     outline-offset: 0;
 }
 .field-error {
@@ -2173,7 +2200,7 @@ h1, h2, h3, h4, h5, h6 {
     list-style: none;
     padding: 0;
     margin: 0.5rem 0 0 0;
-    border-left: 2px solid var(--cor-borda, #e5e7eb);
+    border-left: 2px solid var(--border);
 }
 .timeline-item {
     position: relative;
@@ -2267,7 +2294,7 @@ h1, h2, h3, h4, h5, h6 {
     color: #fff;
 }
 .whatsapp-flutuante:focus-visible {
-    outline: 3px solid #1D3557;
+    outline: 3px solid var(--brand-ouro);
     outline-offset: 3px;
 }
 @media (max-width: 480px) {
@@ -2377,12 +2404,13 @@ h1, h2, h3, h4, h5, h6 {
 
 /* KPI numero grande dentro de card. */
 .kpi-num {
-    font-size: 1.6rem;
+    font-size: 1.7rem;
     font-weight: 700;
-    color: var(--secondary, #1D3557);
+    color: var(--brand-ouro);  /* destaque premium pra numeros em dark */
     margin: 0;
-    font-family: var(--font-heading, Inter, sans-serif);
+    font-family: var(--font-heading);
     line-height: 1.2;
+    letter-spacing: -0.01em;
 }
 
 /* Utils de alinhamento e espacos curtos usados em forms inline. */
@@ -2399,7 +2427,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Foco visivel em cards do Kanban (a11y — usuario navegando por TAB). */
 .kanban-card:focus-visible {
-    outline: 2px solid var(--primary, #2A9D8F);
+    outline: 2px solid var(--brand-ouro);
     outline-offset: 2px;
 }
 
@@ -2417,34 +2445,40 @@ h1, h2, h3, h4, h5, h6 {
     }
 }
 .kanban-coluna {
-    background: var(--gray-50, #f8f9fa);
+    background: var(--bg-elevated);
     border-radius: 0.5rem;
     padding: 0.75rem;
-    border: 1px solid var(--gray-200, #e9ecef);
+    border: 1px solid var(--border);
     min-height: 240px;
 }
 .kanban-header {
     display: flex;
     align-items: baseline;
     justify-content: space-between;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
 }
 .kanban-header h3 {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     font-family: var(--font-heading);
-    color: var(--secondary, #1d3557);
+    color: var(--text-primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
 }
 .kanban-count {
-    background: var(--secondary, #1d3557);
-    color: #fff;
-    font-size: 0.75rem;
+    background: var(--brand-ouro);
+    color: var(--brand-grafite);
+    font-size: 0.7rem;
     padding: 0.1rem 0.5rem;
     border-radius: 999px;
-    font-weight: 600;
+    font-weight: 700;
 }
 .kanban-help {
     font-size: 0.75rem;
     margin: 0 0 0.5rem 0;
+    color: var(--text-muted);
 }
 .kanban-cards {
     display: flex;
@@ -2453,23 +2487,24 @@ h1, h2, h3, h4, h5, h6 {
 }
 .kanban-card {
     display: block;
-    background: var(--bg-elevated);
+    background: var(--bg-elevated-2);
     border: 1px solid var(--border);
     border-radius: 0.4rem;
-    padding: 0.6rem 0.75rem;
+    padding: 0.7rem 0.85rem;
     text-decoration: none;
-    color: inherit;
-    transition: transform 0.1s, box-shadow 0.1s;
+    color: var(--text-primary);
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
 }
 .kanban-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    border-color: var(--primary, #2a9d8f);
+    box-shadow: var(--glow-verde);
+    border-color: var(--brand-verde-claro);
 }
 .kanban-card strong {
     display: block;
     font-size: 0.95rem;
-    color: var(--secondary, #1d3557);
+    color: var(--text-primary);
+    font-weight: 600;
 }
 .kanban-card .small {
     font-size: 0.78rem;
@@ -2480,7 +2515,7 @@ h1, h2, h3, h4, h5, h6 {
     list-style: none;
     margin: 0;
     padding: 0;
-    border-left: 2px solid var(--gray-200, #e9ecef);
+    border-left: 2px solid var(--border);
 }
 .timeline-item {
     padding: 0.5rem 0 0.75rem 1rem;
@@ -2493,7 +2528,7 @@ h1, h2, h3, h4, h5, h6 {
     top: 0.85rem;
     width: 8px; height: 8px;
     border-radius: 999px;
-    background: var(--primary, #2a9d8f);
+    background: var(--brand-verde-claro);
 }
 .timeline-meta {
     font-size: 0.85rem;
