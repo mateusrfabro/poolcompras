@@ -110,6 +110,7 @@
     /* Compat: tokens antigos do projeto continuam mapeados pros novos. */
     --primary:        var(--brand-verde-claro);
     --primary-dark:   #0e4d2b;
+    --primary-text:   #4ade80;     /* verde saturado pra texto sobre dark (WCAG AA) */
     --secondary:      var(--brand-verde);
     --accent:         var(--brand-ouro);
     --info:           #4ea8de;
@@ -303,7 +304,7 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
 }
 .feature-card h3 {
-    color: var(--primary);
+    color: var(--primary-text);
     margin-bottom: var(--space-1);
 }
 
@@ -357,7 +358,7 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.9rem;
 }
 .precos-fornecedor-link a {
-    color: var(--primary);
+    color: var(--primary-text);
     font-weight: 500;
 }
 
@@ -366,8 +367,8 @@ h1, h2, h3, h4, h5, h6 {
     position: absolute;
     top: -40px;
     left: 0;
-    background: var(--primary);
-    color: var(--white);
+    background: var(--brand-ouro);
+    color: var(--brand-grafite);
     padding: 0.5rem 1rem;
     text-decoration: none;
     font-weight: 600;
@@ -378,7 +379,7 @@ h1, h2, h3, h4, h5, h6 {
 .skip-link:focus,
 .skip-link:focus-visible {
     top: 0;
-    outline: 2px solid var(--white);
+    outline: 2px solid var(--brand-grafite);
     outline-offset: -4px;
 }
 
@@ -431,7 +432,7 @@ h1, h2, h3, h4, h5, h6 {
     margin: 0 auto;
 }
 .legal-page h2 {
-    color: var(--secondary);
+    color: var(--text-primary);
     margin-bottom: var(--space-1);
 }
 .legal-page .page-sub {
@@ -443,7 +444,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: var(--space-5);
 }
 .legal-secao h3 {
-    color: var(--primary);
+    color: var(--primary-text);
     font-family: var(--font-heading);
     font-size: 1.15rem;
     margin-bottom: var(--space-2);
@@ -476,7 +477,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .faq-secao summary {
     cursor: pointer;
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1rem;
     list-style: none;
     padding-right: var(--space-3);
@@ -487,7 +488,7 @@ h1, h2, h3, h4, h5, h6 {
     position: absolute;
     right: 0;
     top: 0;
-    color: var(--primary);
+    color: var(--primary-text);
     font-size: 1.4rem;
     line-height: 1;
     font-weight: 600;
@@ -551,13 +552,13 @@ h1, h2, h3, h4, h5, h6 {
 .preco-moeda {
     font-family: var(--font-heading);
     font-size: 1.6rem;
-    color: var(--secondary);
+    color: var(--text-primary);
     font-weight: 600;
 }
 .preco-valor {
     font-family: var(--font-heading);
     font-size: 4rem;
-    color: var(--primary);
+    color: var(--primary-text);
     font-weight: 700;
     line-height: 1;
 }
@@ -624,7 +625,7 @@ h1, h2, h3, h4, h5, h6 {
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 .diferencial-card h3 {
-    color: var(--primary);
+    color: var(--primary-text);
     font-size: 1.05rem;
     margin: var(--space-2) 0 var(--space-1);
     font-family: var(--font-heading);
@@ -705,7 +706,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: var(--space-2);
 }
 .processo-etapa h3 {
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1rem;
     margin-bottom: var(--space-1);
     font-family: var(--font-heading);
@@ -724,7 +725,7 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
 }
 .prova-social-titulo {
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1.4rem;
     font-weight: 600;
     margin-bottom: var(--space-4);
@@ -760,25 +761,29 @@ h1, h2, h3, h4, h5, h6 {
     .prova-social { grid-template-columns: 1fr; }
 }
 
-/* === CTA final em fundo azul (padrao B2B pos-conteudo) === */
+/* === CTA final premium — bloco em verde Aggron + glow + acento ouro. === */
 .cta-final {
     margin-top: var(--space-7);
     margin-bottom: var(--space-5);
     padding: var(--space-6) var(--space-4);
-    background: var(--primary);
-    color: var(--white);
+    background:
+        radial-gradient(ellipse 60% 100% at 50% 0%, rgba(212, 175, 55, 0.15), transparent 60%),
+        var(--brand-verde);
+    color: var(--text-primary);
     border-radius: var(--radius);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+    box-shadow: var(--glow-verde);
     text-align: center;
 }
 .cta-final h2 {
-    color: var(--white);
+    color: var(--text-primary);
     font-size: 1.8rem;
     margin-bottom: var(--space-2);
 }
 .cta-final p {
     max-width: 600px;
     margin: 0 auto var(--space-3);
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(230, 230, 230, 0.85);
 }
 .cta-final-actions {
     display: flex;
@@ -786,26 +791,25 @@ h1, h2, h3, h4, h5, h6 {
     justify-content: center;
     flex-wrap: wrap;
 }
-/* Botoes especificos pra fundo escuro — outline branco e solido invertido.
-   !important pra vencer o `.btn { border: 2px solid transparent }` global. */
+/* Botoes especificos pra CTA escuro — solido ouro + outline ouro. */
 .btn.btn-cta-on-dark {
-    background: var(--white);
-    color: var(--primary);
-    border: 2px solid var(--white);
-    padding: 12px 20px;  /* exato do guia: padding 12px 20px */
+    background: var(--brand-ouro);
+    color: var(--brand-grafite);
+    border: 2px solid var(--brand-ouro);
+    padding: 12px 20px;
     border-radius: var(--radius);
     font-weight: 600;
     text-decoration: none;
     transition: all 0.2s;
 }
 .btn.btn-cta-on-dark:hover {
-    background: var(--gray-200);
-    color: var(--primary);
+    background: #e6c356;
+    border-color: #e6c356;
 }
 .btn.btn-cta-outline-on-dark {
     background: transparent;
-    color: var(--white);
-    border: 2px solid var(--white);
+    color: var(--brand-ouro);
+    border: 2px solid var(--brand-ouro);
     padding: 12px 20px;
     border-radius: var(--radius);
     font-weight: 600;
@@ -906,7 +910,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-back::before { content: "←"; font-size: 1rem; line-height: 1; }
 .btn-back:hover {
     background: var(--gray-300);
-    color: var(--secondary);
+    color: var(--text-primary);
     border-color: var(--gray-500);
 }
 
@@ -928,7 +932,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* === Urgencia visual (deadline hoje/amanha) === */
 .countdown-text {
-    color: var(--primary);
+    color: var(--primary-text);
     font-weight: 600;
 }
 .card-urgent {
@@ -1244,7 +1248,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .error-page h1 {
     font-size: 5rem;
-    color: var(--primary);
+    color: var(--primary-text);
     line-height: 1;
     margin-bottom: 0.5rem;
     letter-spacing: -2px;
@@ -1285,7 +1289,7 @@ h1, h2, h3, h4, h5, h6 {
     padding: 0.5rem 1rem;
     border: 1px solid var(--gray-300);
     border-radius: 6px;
-    color: var(--primary);
+    color: var(--primary-text);
     text-decoration: none;
     font-size: 0.9rem;
     transition: background 0.15s;
@@ -1417,7 +1421,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .analytics-card h3 {
     font-size: 1rem;
-    color: var(--secondary);
+    color: var(--text-primary);
     margin-bottom: 0.8rem;
 }
 
@@ -1454,7 +1458,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 1.5rem;
 }
 .cliente-categoria h3 {
-    color: var(--primary);
+    color: var(--primary-text);
     border-bottom: 2px solid var(--gray-200);
     padding-bottom: 0.4rem;
     margin-bottom: 1rem;
@@ -1487,7 +1491,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.6rem;
 }
 .catalogo-categoria-head h3 {
-    color: var(--primary);
+    color: var(--primary-text);
     font-size: 1rem;
     margin: 0;
 }
@@ -1608,7 +1612,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 .pagamento-itens summary {
     cursor: pointer;
-    color: var(--primary);
+    color: var(--primary-text);
 }
 .pagamento-itens ul {
     margin-top: 0.4rem;
@@ -1689,7 +1693,7 @@ h1, h2, h3, h4, h5, h6 {
 .avaliacao-fornecedor:first-of-type { border-top: none; }
 .avaliacao-fornecedor h3 {
     margin-bottom: 0.5rem;
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1rem;
 }
 
@@ -1753,7 +1757,7 @@ h1, h2, h3, h4, h5, h6 {
     margin: 1.5rem 0;
 }
 .action-card-title {
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1.05rem;
     margin-bottom: 0.5rem;
 }
@@ -1830,7 +1834,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .timeline-title {
     font-weight: 600;
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 0.95rem;
     margin-bottom: 0.15rem;
 }
@@ -1948,7 +1952,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .section-title {
     margin: var(--space-5) 0 var(--space-2);
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1.2rem;
 }
 
@@ -2070,7 +2074,7 @@ h1, h2, h3, h4, h5, h6 {
     text-align: center;
 }
 .marketplace-cta h3 {
-    color: var(--secondary);
+    color: var(--text-primary);
     margin-bottom: var(--space-2);
     font-family: var(--font-heading);
 }
@@ -2204,7 +2208,7 @@ h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
     font-size: 2.4rem;
     font-weight: 700;
-    color: var(--primary);
+    color: var(--primary-text);
     margin-right: var(--space-2);
     line-height: 1;
 }
@@ -2236,7 +2240,7 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 4px;
     font-family: monospace;
     font-weight: 600;
-    color: var(--primary);
+    color: var(--primary-text);
 }
 
 /* Botao flutuante WhatsApp pra contato pre-cadastro */
@@ -2303,7 +2307,7 @@ h1, h2, h3, h4, h5, h6 {
     background: none;
     border: none;
     padding: 0;
-    color: var(--primary);
+    color: var(--primary-text);
     text-decoration: underline;
     font-size: 0.85rem;
     cursor: pointer;
@@ -2326,7 +2330,7 @@ h1, h2, h3, h4, h5, h6 {
     cursor: pointer;
     padding: var(--space-2) 0;
     font-size: 1rem;
-    color: var(--secondary);
+    color: var(--text-primary);
 }
 .indicacao-faq[open] summary { margin-bottom: var(--space-2); }
 .indicacao-faq ul { padding-left: var(--space-4); }
@@ -2334,9 +2338,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Card-CTA "Indique e ganhe" no painel da lanchonete */
 .indicacao-cta {
-    background: linear-gradient(135deg, #EDF2F7 0%, #ffffff 100%);
-    border: 1px solid var(--gray-200);
-    border-left: 4px solid var(--accent);
+    background: linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg-elevated-2) 100%);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--brand-ouro);
     border-radius: var(--radius);
     padding: var(--space-3) var(--space-4);
     margin-top: var(--space-3);
@@ -2349,7 +2353,7 @@ h1, h2, h3, h4, h5, h6 {
 .indicacao-cta-texto h4 {
     margin: 0;
     font-family: var(--font-heading);
-    color: var(--secondary);
+    color: var(--text-primary);
     font-size: 1.05rem;
 }
 .indicacao-cta-texto p {
