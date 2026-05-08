@@ -6,7 +6,7 @@
     <title>{% block title %}Aggron{% endblock %}</title>
     {# Meta description default — paginas internas podem sobrescrever via {% block meta_description %} #}
     <meta name="description" content="{% block meta_description %}Aggron — central de compras cooperativa para hamburguerias de Londrina. Volume agregado, preço menor, sem comissão para lanchonete.{% endblock %}">
-    <meta name="theme-color" content="#1D3557">
+    <meta name="theme-color" content="#0F2A1F">
     {# Open Graph (preview ao colar link no WhatsApp/Slack/etc) #}
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Aggron">
@@ -15,24 +15,29 @@
     <meta property="og:description" content="{{ self.meta_description() }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta name="twitter:card" content="summary">
+    {# Favicon SVG (logo monograma Aggron). PNG fallback fica pra v2. #}
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700&display=swap">
+    {# Tipografia oficial Aggron: Sora (titulos/branding) + Inter (corpo). #}
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <a class="skip-link" href="#conteudo-principal">Pular para o conteúdo</a>
     <nav class="navbar" aria-label="Navegação principal">
         <div class="nav-brand">
+            {% set brand_href = url_for('main.index') %}
             {% if current_user.is_authenticated %}
-                {% if current_user.is_fornecedor %}
-                    <a href="{{ url_for('fornecedor.dashboard') }}">Aggron</a>
-                {% else %}
-                    <a href="{{ url_for('main.dashboard') }}">Aggron</a>
-                {% endif %}
-            {% else %}
-                <a href="{{ url_for('main.index') }}">Aggron</a>
+                {% set brand_href = url_for('fornecedor.dashboard') if current_user.is_fornecedor else url_for('main.dashboard') %}
             {% endif %}
+            <a href="{{ brand_href }}" aria-label="Aggron — voltar ao painel">
+                <img class="logo-img"
+                     src="{{ url_for('static', filename='images/logo-aggron-symbol.svg') }}"
+                     alt=""
+                     width="36" height="36">
+                <span class="logo-text">AGGRON</span>
+            </a>
         </div>
 
         {# Toggle do menu mobile (CSS-only via :checked) #}
