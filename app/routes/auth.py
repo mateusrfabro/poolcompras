@@ -10,6 +10,7 @@ from app.services.passwords import (
 )
 from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
+from app.services.assinatura import criar_assinatura_inicial
 from app.services.notificacoes import enviar_link_recuperacao
 
 
@@ -227,7 +228,6 @@ def registro():
         # Admin marca pagamento manualmente depois em /admin/financeiro.
         # Falha aqui nao bloqueia signup — log + admin gera retroativo.
         try:
-            from app.services.assinatura import criar_assinatura_inicial
             criar_assinatura_inicial(lanchonete)
         except Exception:
             logger.exception(

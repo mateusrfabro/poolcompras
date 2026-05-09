@@ -1,18 +1,19 @@
 """Rotas admin do ciclo de vida de Rodadas + exports."""
 import logging
 from datetime import datetime, timezone
-from flask import render_template, redirect, url_for, flash, request
+from flask import render_template, redirect, url_for, flash, request, abort
 from flask_login import login_required, current_user
 from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 from werkzeug.utils import secure_filename
 
-from app import db
+from app import db, cache
 from app.models import (
     Produto, Rodada, RodadaProduto, Cotacao,
     ItemPedido, ParticipacaoRodada, EventoRodada,
 )
 from app.services.csv_export import csv_response
+from app.services.kpis_fornecedor import total_cotacoes, cotacoes_vencedoras
 from app.services.notificacoes import (
     notificar_fornecedores_nova_rodada,
     notificar_lanchonetes_rodada_aberta,
@@ -160,7 +161,6 @@ def rodada_finalizar(rodada_id):
         db.select(Rodada).where(Rodada.id == rodada_id).with_for_update()
     ).scalar_one_or_none()
     if rodada is None:
-        from flask import abort
         abort(404)
     if rodada.status != Rodada.STATUS_EM_NEGOCIACAO:
         flash("Só é possível finalizar rodadas em negociação.", "warning")
@@ -196,10 +196,6 @@ def rodada_finalizar(rodada_id):
     db.session.commit()
     # Invalida KPIs cacheados dos fornecedores que ganharam Cotacao(selecionada=True).
     if fornecedores_afetados:
-        from app import cache
-        from app.services.kpis_fornecedor import (
-            total_cotacoes, cotacoes_vencedoras,
-        )
         for fid in fornecedores_afetados:
             cache.delete_memoized(total_cotacoes, fid)
             cache.delete_memoized(cotacoes_vencedoras, fid)

@@ -21,9 +21,15 @@ logger = logging.getLogger(__name__)
 @admin_required
 def analytics():
     """Dashboard de KPIs do Aggron para o admin."""
-    total_lanchonetes = Lanchonete.query.filter_by(ativa=True).count()
-    total_fornecedores = Fornecedor.query.filter_by(ativo=True).count()
-    total_produtos = Produto.query.filter_by(ativo=True).count()
+    # Consolida 3 COUNTs em 1 round-trip via subqueries escalares.
+    contagens = db.session.execute(db.select(
+        db.select(func.count()).select_from(Lanchonete).where(Lanchonete.ativa.is_(True)).scalar_subquery().label("lanchonetes"),
+        db.select(func.count()).select_from(Fornecedor).where(Fornecedor.ativo.is_(True)).scalar_subquery().label("fornecedores"),
+        db.select(func.count()).select_from(Produto).where(Produto.ativo.is_(True)).scalar_subquery().label("produtos"),
+    )).one()
+    total_lanchonetes = contagens.lanchonetes
+    total_fornecedores = contagens.fornecedores
+    total_produtos = contagens.produtos
 
     # Consolida 2 queries em 1: total + finalizadas de Rodada.
     rodada_stats = db.session.query(

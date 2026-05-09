@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload, contains_eager
 from app import db, limiter
+from app.auth_decorators import lanchonete_required
 from app.models import Produto, Rodada, ItemPedido, RodadaProduto, ParticipacaoRodada
 from app.services.csv_export import csv_response
 from app.services.rodada_corrente import rodada_corrente_aberta
@@ -11,13 +12,9 @@ pedidos_bp = Blueprint("pedidos", __name__, url_prefix="/pedidos")
 
 
 @pedidos_bp.route("/")
-@login_required
+@lanchonete_required
 def listar():
     lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro primeiro.", "error")
-        return redirect(url_for("main.dashboard"))
-
     rodada_aberta = rodada_corrente_aberta()
     meus_pedidos = []
     if rodada_aberta:
@@ -35,13 +32,10 @@ def listar():
 
 
 @pedidos_bp.route("/exportar.csv")
-@login_required
+@lanchonete_required
 def exportar():
     """Exporta os pedidos da lanchonete na rodada aberta."""
     lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro primeiro.", "error")
-        return redirect(url_for("pedidos.listar"))
     rodada = rodada_corrente_aberta()
     if not rodada:
         flash("Nenhuma rodada aberta.", "warning")
@@ -64,15 +58,11 @@ def exportar():
 
 
 @pedidos_bp.route("/catalogo", methods=["GET", "POST"])
-@login_required
+@lanchonete_required
 def catalogo():
     """Tela nova: lista o catalogo da rodada aberta com preco de partida,
     lanchonete marca quantidade de cada item (pode ser 0)."""
     lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro.", "error")
-        return redirect(url_for("main.dashboard"))
-
     rodada = rodada_corrente_aberta()
     if not rodada:
         flash("Nenhuma rodada aberta no momento.", "warning")
@@ -235,9 +225,9 @@ def catalogo_auto_save():
 
     Bloqueado quando pedido ja foi moderado (aprovado/reprovado).
     """
+    if not current_user.is_lanchonete or not current_user.lanchonete:
+        return jsonify({"ok": False, "erro": "Acesso restrito a lanchonetes."}), 403
     lanchonete = current_user.lanchonete
-    if not lanchonete:
-        return jsonify({"ok": False, "erro": "Complete seu cadastro."}), 400
 
     rodada = rodada_corrente_aberta()
     if not rodada:
@@ -297,15 +287,11 @@ def catalogo_auto_save():
 
 
 @pedidos_bp.route("/repetir-ultimo-pedido", methods=["POST"])
-@login_required
+@lanchonete_required
 def repetir_ultimo_pedido():
     """Copia itens da ultima rodada participada pra rodada aberta atual.
     Nao duplica: se produto ja existe na rodada atual, ignora (nao sobrescreve)."""
     lanchonete = current_user.lanchonete
-    if not lanchonete:
-        flash("Complete seu cadastro.", "error")
-        return redirect(url_for("main.dashboard"))
-
     rodada = rodada_corrente_aberta()
     if not rodada:
         flash("Nenhuma rodada aberta.", "warning")
@@ -389,7 +375,7 @@ def novo():
 
 
 @pedidos_bp.route("/remover/<int:item_id>", methods=["POST"])
-@login_required
+@lanchonete_required
 def remover(item_id):
     item = db.session.get(ItemPedido, item_id)
     if item is None:

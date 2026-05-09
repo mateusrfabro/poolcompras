@@ -106,7 +106,7 @@ class Produto(db.Model):
     categoria = db.Column(db.String(50), nullable=False, index=True)
     subcategoria = db.Column(db.String(50), index=True)
     unidade = db.Column(db.String(20), nullable=False)
-    ativo = db.Column(db.Boolean, default=True)
+    ativo = db.Column(db.Boolean, default=True, index=True)
     criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
 
@@ -135,7 +135,7 @@ class Rodada(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
-    data_abertura = db.Column(db.DateTime(timezone=True), nullable=False)
+    data_abertura = db.Column(db.DateTime(timezone=True), nullable=False, index=True)
     data_fechamento = db.Column(db.DateTime(timezone=True), nullable=False)
     status = db.Column(db.String(20), default=STATUS_ABERTA, index=True)
     criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
@@ -769,7 +769,7 @@ class RodadaProduto(db.Model):
 
     # Aprovacao: None = aprovado automaticamente (admin adicionou); True = admin aprovou; False = admin recusou
     aprovado = db.Column(db.Boolean, default=None)
-    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    criado_em = db.Column(db.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True)
 
     produto    = db.relationship("Produto")
     rodada     = db.relationship("Rodada", backref="catalogo")

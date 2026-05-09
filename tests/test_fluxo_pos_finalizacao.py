@@ -112,21 +112,25 @@ def test_fornecedor_nao_aceita_proposta(app, client_forn):
     assert r.status_code == 302  # decorator redireciona pro dashboard
 
 
-def test_lanchonete_B_nao_afeta_participacao_de_A(app, client_lanchB):
-    """Lanchonete B faz aceite — afeta apenas a propria participacao, nunca a de A."""
+def test_lanchonete_B_nao_aceita_rodada_em_que_nao_pediu(app, client_lanchB):
+    """Lanchonete B tenta aceitar rodada em que nao cadastrou pedido -> 403.
+
+    _so_dona_lanchonete exige existencia de ItemPedido(rodada, lanchonete)
+    pra prevenir ParticipacaoRodada fantasma + notificacao espuria a
+    fornecedor (IDOR/poluicao de historico).
+    """
     rodada_id, lanchA_id, _ = _prepara_rodada_finalizada()
     lanchB_id = Lanchonete.query.filter_by(nome_fantasia="Lanch B").first().id
 
-    csrf = _get_csrf(client_lanchB, f"/minhas-rodadas/{rodada_id}")
-    client_lanchB.post(f"/fluxo/rodada/{rodada_id}/aceitar",
-                       data={"csrf_token": csrf}, follow_redirects=False)
+    r = client_lanchB.post(f"/fluxo/rodada/{rodada_id}/aceitar",
+                           follow_redirects=False)
+    assert r.status_code == 403
 
-    # Participacao de B criada
+    # Nenhuma ParticipacaoRodada fantasma — nem pra B (que tentou) nem pra A (que nao agiu)
     pB = ParticipacaoRodada.query.filter_by(
         rodada_id=rodada_id, lanchonete_id=lanchB_id,
     ).first()
-    assert pB.aceite_proposta is True
-    # Participacao de A NAO existe (ela nao fez aceite)
+    assert pB is None
     pA = ParticipacaoRodada.query.filter_by(
         rodada_id=rodada_id, lanchonete_id=lanchA_id,
     ).first()

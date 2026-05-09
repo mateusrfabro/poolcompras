@@ -129,10 +129,10 @@ def gerar_minuta_pdf(lead, valor_mensal: Decimal | None = None,
 
     styles = getSampleStyleSheet()
     h1 = ParagraphStyle("h1", parent=styles["Heading1"],
-                        textColor=colors.HexColor("#1D3557"),
+                        textColor=colors.HexColor("#0F2A1F"),
                         fontSize=18, spaceAfter=8)
     h2 = ParagraphStyle("h2", parent=styles["Heading2"],
-                        textColor=colors.HexColor("#1D3557"),
+                        textColor=colors.HexColor("#0F2A1F"),
                         fontSize=12, spaceAfter=4, spaceBefore=10)
     body = ParagraphStyle("body", parent=styles["BodyText"],
                           fontSize=10, leading=14, alignment=4)  # justify

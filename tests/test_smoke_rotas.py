@@ -85,3 +85,32 @@ def test_smoke_admin(app, client_admin, rota):
     assert r.status_code in (200, 302), (
         f"GET {rota} (admin) retornou {r.status_code}"
     )
+
+
+def test_smoke_detalhe_rodada(app, client_lanchA):
+    """GET /minhas-rodadas/<id> renderiza pra lanchonete que participou.
+
+    Detalhe nao esta no parametrize ROTAS_LANCHONETE porque exige rodada_id
+    concreta + ItemPedido cadastrado. Aqui usamos seed minimo + 1 ItemPedido.
+    """
+    from app import db
+    from app.models import ItemPedido, Produto, Rodada, Usuario
+
+    with app.app_context():
+        rodada = Rodada.query.first()
+        produto = Produto.query.first()
+        lanchA = Usuario.query.filter_by(email="lancha@test.com").first().lanchonete
+        if not ItemPedido.query.filter_by(
+            rodada_id=rodada.id, lanchonete_id=lanchA.id,
+        ).first():
+            db.session.add(ItemPedido(
+                rodada_id=rodada.id, lanchonete_id=lanchA.id,
+                produto_id=produto.id, quantidade=5,
+            ))
+            db.session.commit()
+        rid = rodada.id
+
+    r = client_lanchA.get(f"/minhas-rodadas/{rid}", follow_redirects=False)
+    assert r.status_code in (200, 302), (
+        f"GET /minhas-rodadas/{rid} retornou {r.status_code}"
+    )

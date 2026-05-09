@@ -105,11 +105,22 @@ def _notificar_fornecedores_comprovante(rodada, lanchonete):
 
 
 def _so_dona_lanchonete(rodada_id):
-    """Garante que current_user e a dona da lanchonete participante. Retorna (rodada, lanchonete)."""
+    """Garante que current_user e dona de uma lanchonete que efetivamente
+    PARTICIPOU da rodada (cadastrou pelo menos 1 ItemPedido). Sem essa
+    checagem, lanchonete A poderia disparar acoes (aceitar/recusar/comprovante)
+    em rodadas em que nunca pediu, criando ParticipacaoRodada fantasma e
+    notificando fornecedores indevidamente. Retorna (rodada, lanchonete).
+    """
     if not current_user.is_lanchonete or not current_user.lanchonete:
         abort(403)
     rodada = db.get_or_404(Rodada, rodada_id)
-    return rodada, current_user.lanchonete
+    lanchonete = current_user.lanchonete
+    participou = db.session.query(
+        ItemPedido.id
+    ).filter_by(rodada_id=rodada_id, lanchonete_id=lanchonete.id).first()
+    if not participou:
+        abort(403)
+    return rodada, lanchonete
 
 
 def _so_fornecedor_da_rodada(rodada_id):

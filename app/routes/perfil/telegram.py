@@ -14,7 +14,7 @@ import secrets
 from datetime import datetime, timedelta, timezone
 
 import requests
-from flask import render_template, redirect, url_for, flash, request, session, current_app
+from flask import render_template, redirect, url_for, flash, request, session, current_app, jsonify
 from flask_login import login_required, current_user
 from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 
@@ -126,7 +126,6 @@ def telegram_status():
     Rate-limit dedicado 300/min: polling 3s = 20 req/min por usuario, com
     margem pra abas duplicadas. O default 200/h estouraria em 10 minutos.
     """
-    from flask import jsonify
     db.session.refresh(current_user)
     return jsonify({"conectado": bool(current_user.telegram_chat_id)})
 

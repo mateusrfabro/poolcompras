@@ -79,13 +79,13 @@ def _servir_comprovante(key, storage):
              "jpg": "image/jpeg", "jpeg": "image/jpeg"}
     mime = mimes.get(ext, "application/octet-stream")
 
-    # PDFs forcam download — PDFs maliciosos podem conter JS que executa inline.
-    # Imagens mantem inline pra preview funcionar.
-    forcar_download = ext == "pdf"
+    # Forca download em todos os tipos: PDFs podem conter JS que executa inline,
+    # e imagens (png/jpg) servidas inline no mesmo origin abrem vetor de
+    # HTML smuggling em browsers antigos. Defesa em profundidade.
     return send_file(
         BytesIO(conteudo),
         mimetype=mime,
-        as_attachment=forcar_download,
+        as_attachment=True,
         download_name=f"comprovante_{participacao.rodada_id}_{participacao.lanchonete_id}.{ext}",
     )
 

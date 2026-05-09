@@ -982,6 +982,11 @@ h1, h2, h3, h4, h5, h6 {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.05); opacity: 0.85; }
 }
+@media (prefers-reduced-motion: reduce) {
+    .tag-urgent,
+    .badge-aberta,
+    .badge-em_negociacao { animation: none; }
+}
 .ultima-rodada-preview {
     font-size: 0.85rem;
     margin: 0.3rem 0;
@@ -1615,7 +1620,7 @@ h1, h2, h3, h4, h5, h6 {
     margin-bottom: 0.5rem;
 }
 .pagamento-total {
-    color: var(--success);
+    color: var(--success-text);
     font-weight: 700;
     font-size: 1rem;
 }
@@ -1705,7 +1710,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 /* Foco do teclado visivel no label adjacente */
 .star-rating input[type="radio"]:focus-visible + label {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--brand-ouro);
     outline-offset: 2px;
 }
 
@@ -1975,7 +1980,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--gray-700);
     text-decoration: none;
 }
-.breadcrumb a:hover { color: var(--primary); }
+.breadcrumb a:hover { color: var(--brand-ouro); }
 
 .section-title {
     margin: var(--space-5) 0 var(--space-2);
@@ -2119,8 +2124,8 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.85rem;
     transition: color 0.15s;
 }
-.auto-save-status.auto-save-ok { color: var(--success); }
-.auto-save-status.auto-save-erro { color: var(--danger); }
+.auto-save-status.auto-save-ok { color: var(--success-text); }
+.auto-save-status.auto-save-erro { color: var(--danger-text, var(--danger)); }
 
 /* === Field-errors visuais (forms) ===
    Padrao pra qualquer form: <div class="form-group is-invalid"> destaca o
@@ -2258,7 +2263,7 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--gray-900);
 }
 .indicacao-link-input:focus {
-    outline: 2px solid var(--primary);
+    outline: 2px solid var(--brand-ouro);
     outline-offset: 2px;
 }
 .indicacao-codigo {
@@ -2478,7 +2483,7 @@ h1, h2, h3, h4, h5, h6 {
 .kanban-help {
     font-size: 0.75rem;
     margin: 0 0 0.5rem 0;
-    color: var(--text-muted);
+    color: var(--text-secondary);
 }
 .kanban-cards {
     display: flex;
