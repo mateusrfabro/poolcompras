@@ -2,13 +2,16 @@
 
 Uso (LOCAL DEV):
     python scripts/seed_credenciais.py
+    python scripts/seed_credenciais.py --com-demos    # cria smash + dsulcarnes em prod
 
 Uso (SERVIDOR Yggdrasil):
     docker exec -it aggron-app python scripts/seed_credenciais.py
+    docker exec -it aggron-app python scripts/seed_credenciais.py --com-demos
 
 Idempotente — pode rodar varias vezes. CRIA admin/Gabriel se nao
-existirem (em servidor recem-deployado, por exemplo). Senhas usam Argon2
-via app.services.passwords.hash_senha.
+existirem (em servidor recem-deployado). Com --com-demos cria tambem
+1 lanchonete demo + 1 fornecedor demo pra Mateus testar como esses
+perfis no site oficial. Senhas usam Argon2 via app.services.passwords.hash_senha.
 
 Padrao de credenciais documentado:
     adm@aggron.com.br        admin123    (admin — Mateus + Ademar)
@@ -17,6 +20,7 @@ Padrao de credenciais documentado:
     vendas@dsulcarnes.demo   demo123     (fornecedor principal)
     @demo.com                demo123     (todos os demais lanchonetes/fornecedores)
 """
+import argparse
 import os
 import sys
 from datetime import datetime, timezone
@@ -24,11 +28,85 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app import create_app, db
-from app.models import Usuario, Vendedor
+from app.models import Usuario, Vendedor, Lanchonete, Fornecedor
 from app.services.passwords import hash_senha
 
 
+def _garantir_lanchonete_demo(agora):
+    """Cria smash@demo.com (lanchonete demo) se nao existir. Idempotente."""
+    email = "smash@demo.com"
+    u = Usuario.query.filter_by(email=email).first()
+    criado = False
+    if not u:
+        u = Usuario(
+            email=email,
+            senha_hash=hash_senha("demo123"),
+            nome_responsavel="Smash Burger (demo)",
+            telefone="(43) 99999-0001",
+            tipo="lanchonete",
+            senha_atualizada_em=agora,
+        )
+        db.session.add(u)
+        db.session.flush()
+        criado = True
+        print(f"  CRIADO {email} senha=demo123 (lanchonete demo)")
+    else:
+        u.senha_hash = hash_senha("demo123")
+        u.senha_atualizada_em = agora
+        print(f"  RESET  {email} senha=demo123 (lanchonete)")
+
+    lanch = Lanchonete.query.filter_by(usuario_id=u.id).first()
+    if not lanch:
+        db.session.add(Lanchonete(
+            usuario_id=u.id,
+            nome_fantasia="Smash Burger Demo",
+            cnpj="00.000.000/0001-00",
+        ))
+        print(f"  + Lanchonete record criado p/ {email}")
+    return criado
+
+
+def _garantir_fornecedor_demo(agora):
+    """Cria vendas@dsulcarnes.demo (fornecedor demo) se nao existir."""
+    email = "vendas@dsulcarnes.demo"
+    u = Usuario.query.filter_by(email=email).first()
+    criado = False
+    if not u:
+        u = Usuario(
+            email=email,
+            senha_hash=hash_senha("demo123"),
+            nome_responsavel="D-Sul Carnes (demo)",
+            telefone="(43) 99999-0002",
+            tipo="fornecedor",
+            senha_atualizada_em=agora,
+        )
+        db.session.add(u)
+        db.session.flush()
+        criado = True
+        print(f"  CRIADO {email} senha=demo123 (fornecedor demo)")
+    else:
+        u.senha_hash = hash_senha("demo123")
+        u.senha_atualizada_em = agora
+        print(f"  RESET  {email} senha=demo123 (fornecedor)")
+
+    forn = Fornecedor.query.filter_by(usuario_id=u.id).first()
+    if not forn:
+        db.session.add(Fornecedor(
+            usuario_id=u.id,
+            razao_social="D-Sul Carnes Demo Ltda",
+        ))
+        print(f"  + Fornecedor record criado p/ {email}")
+    return criado
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--com-demos", action="store_true",
+                        help="Cria 1 lanchonete demo (smash@demo.com) + 1 fornecedor "
+                             "demo (vendas@dsulcarnes.demo) se nao existirem. Util "
+                             "pra Mateus testar todos os perfis no servidor.")
+    args = parser.parse_args()
+
     app = create_app(os.environ.get("FLASK_CONFIG", "default"))
     with app.app_context():
         agora = datetime.now(timezone.utc)
@@ -46,11 +124,9 @@ def main():
             admin.senha_hash = hash_senha("admin123")
             admin.senha_atualizada_em = agora
             admin.tipo = "admin"  # garantia (defesa em profundidade)
-            print(f"  RESET adm@aggron.com.br senha=admin123")
+            print(f"  RESET  adm@aggron.com.br senha=admin123")
             mudancas += 1
         else:
-            # Servidor recem-deployado: cria admin do zero pra Mateus + Ademar
-            # nao ficarem sem acesso. Email + senha conforme docstring.
             admin = Usuario(
                 email="adm@aggron.com.br",
                 senha_hash=hash_senha("admin123"),
@@ -83,7 +159,7 @@ def main():
             gabriel.senha_hash = hash_senha("demo123")
             gabriel.senha_atualizada_em = agora
             gabriel.tipo = "vendedor"
-            print("  RESET gabriel@aggron.com.br senha=demo123")
+            print("  RESET  gabriel@aggron.com.br senha=demo123")
             mudancas += 1
 
         v = Vendedor.query.filter_by(usuario_id=gabriel.id).first()
@@ -94,22 +170,31 @@ def main():
                 meta_mensal_clientes=10,
                 ativo=True,
             ))
-            print("  CRIADO Vendedor record p/ Gabriel")
+            print("  + Vendedor record criado p/ Gabriel")
         elif not v.ativo:
             v.ativo = True
-            print("  REATIVADO Vendedor record p/ Gabriel")
+            print("  + Vendedor record reativado p/ Gabriel")
 
         # 3) Reseta senha de todos lanchonetes/fornecedores pra demo123
         for tipo in ("lanchonete", "fornecedor"):
             for u in Usuario.query.filter_by(tipo=tipo).all():
                 u.senha_hash = hash_senha("demo123")
                 u.senha_atualizada_em = agora
-                print(f"  RESET {u.email:<35} ({tipo})")
+                print(f"  RESET  {u.email:<35} ({tipo})")
+                mudancas += 1
+
+        # 4) Opcional: cria perfis demo lanchonete + fornecedor (--com-demos)
+        if args.com_demos:
+            print()
+            print("--- Garantindo perfis demo (--com-demos) ---")
+            if _garantir_lanchonete_demo(agora):
+                mudancas += 1
+            if _garantir_fornecedor_demo(agora):
                 mudancas += 1
 
         db.session.commit()
         print()
-        print(f"OK — {mudancas} usuarios atualizados. Logins documentados no docstring deste script.")
+        print(f"OK — {mudancas} usuarios atualizados. Logins documentados no docstring.")
 
 
 if __name__ == "__main__":
