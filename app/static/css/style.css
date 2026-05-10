@@ -258,14 +258,13 @@ h1, h2, h3, h4, h5, h6 {
     display: inline-flex;
     align-items: center;
     gap: 0.7rem;
-    gap: 0.5rem;
 }
 .nav-brand img.logo-img {
     height: 48px;
     width: 48px;
     display: block;
-    /* Glow ouro mais presente — feedback do Ademar (logo "ficou pequena"). */
-    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.4));
+    /* Glow ouro sutil pra dar destaque sobre o navbar dark. */
+    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.35));
 }
 .nav-brand .logo-text {
     color: var(--brand-cinza-claro);

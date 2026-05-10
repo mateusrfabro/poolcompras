@@ -15,8 +15,11 @@
     <meta property="og:description" content="{{ self.meta_description() }}">
     <meta property="og:url" content="{{ request.url }}">
     <meta name="twitter:card" content="summary">
-    {# Favicon SVG (logo monograma Aggron). PNG fallback fica pra v2. #}
-    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/favicon.svg') }}">
+    {# Favicon: PNG extraido do briefing oficial do designer (fonte da verdade). #}
+    <link rel="icon" type="image/png" sizes="32x32"
+          href="{{ url_for('static', filename='images/favicon-32.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180"
+          href="{{ url_for('static', filename='images/apple-touch-icon.png') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     {# Tipografia oficial Aggron: Sora (titulos/branding) + Inter (corpo). #}
@@ -33,7 +36,8 @@
             {% endif %}
             <a href="{{ brand_href }}" aria-label="Aggron — voltar ao painel">
                 <img class="logo-img"
-                     src="{{ url_for('static', filename='images/logo-aggron-symbol.svg') }}"
+                     src="{{ url_for('static', filename='images/logo-aggron-symbol.png') }}"
+                     srcset="{{ url_for('static', filename='images/logo-aggron-symbol@2x.png') }} 1x, {{ url_for('static', filename='images/logo-aggron-symbol.png') }} 2x"
                      alt=""
                      width="48" height="48">
                 <span class="logo-text">AGGRON</span>
