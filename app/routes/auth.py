@@ -11,6 +11,7 @@ from app.services.passwords import (
 from app import db, limiter
 from app.models import Usuario, Lanchonete, Fornecedor
 from app.services.assinatura import criar_assinatura_inicial
+from app.services.indicacao import registrar_indicacao
 from app.services.notificacoes import enviar_link_recuperacao
 
 
@@ -239,7 +240,6 @@ def registro():
         # Falha silenciosa (codigo invalido / auto-indicacao) — anti-enumeration.
         codigo_indicacao = request.form.get("ind", "").strip()
         if codigo_indicacao:
-            from app.services.indicacao import registrar_indicacao
             registrar_indicacao(codigo_indicacao, lanchonete)
 
         session.clear()
@@ -410,9 +410,17 @@ def redefinir_senha(token):
 
     # Token one-use: se o usuario ja trocou senha DEPOIS deste token ser
     # emitido, recusar. Invalida link reusado (log, historico, proxy).
+    # Compara tudo em UTC tz-aware — itsdangerous emite token_emitido_em
+    # como datetime aware UTC; se senha_atualizada_em vier naive (legado
+    # SQLite ou seed antigo), normalizamos pra UTC pra evitar TypeError.
     if usuario.senha_atualizada_em:
-        emitido_naive = token_emitido_em.replace(tzinfo=None)
-        if usuario.senha_atualizada_em >= emitido_naive:
+        senha_atualizada = usuario.senha_atualizada_em
+        if senha_atualizada.tzinfo is None:
+            senha_atualizada = senha_atualizada.replace(tzinfo=timezone.utc)
+        emitido = token_emitido_em
+        if emitido.tzinfo is None:
+            emitido = emitido.replace(tzinfo=timezone.utc)
+        if senha_atualizada >= emitido:
             flash("Este link já foi utilizado. Gere um novo se precisar.", "error")
             return redirect(url_for("auth.esqueci_senha"))
 

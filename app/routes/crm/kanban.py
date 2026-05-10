@@ -1,7 +1,7 @@
 """Kanban do CRM — view principal."""
 import logging
 
-from flask import render_template, request
+from flask import abort, render_template, request
 from flask_login import login_required, current_user
 
 from app import db
@@ -35,7 +35,6 @@ def kanban():
         # Vendedor logado: filtro forcado pro proprio id (anti-IDOR).
         if not current_user.vendedor:
             # Caso edge: usuario tipo='vendedor' sem registro Vendedor (legacy).
-            from flask import abort
             abort(403)
         vendedor_filtro_id = current_user.vendedor.id
         vendedores_lista = []

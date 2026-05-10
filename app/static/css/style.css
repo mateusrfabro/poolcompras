@@ -236,8 +236,8 @@ h1, h2, h3, h4, h5, h6 {
 
 .nav-brand a {
     color: var(--text-primary);
-    font-size: 1.3rem;
-    font-weight: 700;
+    font-size: 1.15rem;
+    font-weight: 600;
     text-decoration: none;
     letter-spacing: 0.5px;
     font-family: var(--font-heading);
@@ -246,15 +246,18 @@ h1, h2, h3, h4, h5, h6 {
     gap: 0.5rem;
 }
 .nav-brand img.logo-img {
-    height: 36px;
-    width: auto;
+    height: 40px;
+    width: 40px;
     display: block;
+    /* Glow sutil no monograma — separa do fundo dark sem precisar de borda */
+    filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.25));
 }
 .nav-brand .logo-text {
     color: var(--text-primary);
     font-family: var(--font-heading);
-    font-weight: 700;
-    letter-spacing: 2px;
+    font-weight: 600;
+    letter-spacing: 3px;
+    font-size: 1.05rem;
 }
 .nav-brand a:hover { opacity: 0.85; }
 @media (max-width: 480px) {
@@ -982,10 +985,16 @@ h1, h2, h3, h4, h5, h6 {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.05); opacity: 0.85; }
 }
+/* WCAG 2.3.3 — corta TODA animacao/transicao quando o user pediu reduce.
+   Pega regras presentes (.tag-urgent, .badge-aberta, .badge-em_negociacao)
+   e qualquer animacao futura sem precisar manter lista. */
 @media (prefers-reduced-motion: reduce) {
-    .tag-urgent,
-    .badge-aberta,
-    .badge-em_negociacao { animation: none; }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
 }
 .ultima-rodada-preview {
     font-size: 0.85rem;

@@ -3,7 +3,7 @@
 Centraliza as regras de 'o que esta pendente pra cada lanchonete/fornecedor'
 pra evitar duplicacao entre dashboard, historico e notificacoes.
 """
-from sqlalchemy import func
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 from app import db
 from app.models import ParticipacaoRodada, Rodada, Cotacao, ItemPedido
@@ -13,12 +13,31 @@ def pendencias_lanchonete(lanchonete_id):
     """Retorna lista de pendencias da lanchonete (rodadas finalizadas aguardando acao).
 
     Cada item: {'rodada': Rodada, 'acao': str, 'urgencia': 'alta'|'media'|'baixa'}
+
+    Perf: filtro SQL com OR/AND traz so participacoes com alguma pendencia.
+    Sem isso, lanchonete com 50+ rodadas finalizadas trazia 50 rows pra
+    classificar em Python — agora so vem o que de fato exige acao.
     """
     participacoes = (
         ParticipacaoRodada.query
         .filter_by(lanchonete_id=lanchonete_id)
         .join(Rodada, ParticipacaoRodada.rodada_id == Rodada.id)
         .filter(Rodada.status == Rodada.STATUS_FINALIZADA)
+        .filter(or_(
+            ParticipacaoRodada.aceite_proposta.is_(None),
+            and_(
+                ParticipacaoRodada.aceite_proposta.is_(True),
+                ParticipacaoRodada.comprovante_key.is_(None),
+            ),
+            and_(
+                ParticipacaoRodada.entrega_informada_em.isnot(None),
+                ParticipacaoRodada.recebimento_ok.is_(None),
+            ),
+            and_(
+                ParticipacaoRodada.recebimento_ok.is_(True),
+                ParticipacaoRodada.avaliacao_geral.is_(None),
+            ),
+        ))
         .options(joinedload(ParticipacaoRodada.rodada))
         .all()
     )

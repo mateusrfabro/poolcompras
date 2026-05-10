@@ -345,6 +345,10 @@ class ParticipacaoRodada(db.Model):
                 "AND pedido_reprovado_em IS NULL"
             ),
         ),
+        # Pendencias do fornecedor + funil de aceite filtram por
+        # (rodada_id, aceite_proposta) — index composto evita seq scan.
+        db.Index("ix_participacao_rodada_aceite",
+                 "rodada_id", "aceite_proposta"),
         CheckConstraint(
             "avaliacao_geral IS NULL OR avaliacao_geral BETWEEN 1 AND 5",
             name="ck_participacao_avaliacao_1a5",
@@ -774,6 +778,11 @@ class RodadaProduto(db.Model):
     produto    = db.relationship("Produto")
     rodada     = db.relationship("Rodada", backref="catalogo")
     fornecedor_sugeriu = db.relationship("Fornecedor")
+
+    __table_args__ = (
+        db.Index("ix_rodada_produtos_rodada_aprovado",
+                 "rodada_id", "aprovado"),
+    )
 
     __table_args__ = (
         UniqueConstraint("rodada_id", "produto_id",

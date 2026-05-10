@@ -1,3 +1,5 @@
+import logging
+
 from flask import Blueprint, render_template, redirect, url_for, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import func, select, text
@@ -24,7 +26,6 @@ def health():
     nao precisa saber se DB caiu por timeout, auth ou driver. Loga
     internamente pra debug.
     """
-    import logging
     try:
         db.session.execute(text("SELECT 1"))
         return jsonify({"status": "ok", "db": "ok"}), 200
