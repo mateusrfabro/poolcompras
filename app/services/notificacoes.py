@@ -131,16 +131,55 @@ def _logar_fallback(usuario, texto: str, sensitive: bool = False):
 
 
 def enviar_link_recuperacao(usuario, link: str) -> bool:
-    """Envia link de recuperacao de senha. Canal preferencial: Telegram.
-    Marcado sensitive: o link contem token assinado — nunca cair em log."""
-    texto = (
-        f"Olá, {_escape(usuario.nome_responsavel)}.\n\n"
+    """Envia link de recuperacao de senha via 2 canais em sequencia:
+
+    1. Telegram (se chat_id linkado) — UX preferencial, instantaneo.
+    2. E-mail (se SMTP configurado) — fallback universal, todo usuario
+       cadastra e-mail no signup.
+
+    O link contem token assinado e tem TTL de 1h (config em auth.py).
+    Funcao retorna True se ALGUM canal entregou. Nao loga conteudo do
+    e-mail nem do telegram (sensitive=True) — so metadados (canal +
+    email mascarado).
+    """
+    nome = _escape(usuario.nome_responsavel)
+    texto_plain = (
+        f"Olá, {nome}.\n\n"
         f"Recebemos uma solicitação para redefinir sua senha no Aggron.\n"
         f"Clique no link abaixo (válido por 1 hora):\n\n"
         f"{link}\n\n"
         f"Se você não solicitou, ignore esta mensagem."
     )
-    return enviar_telegram(usuario, texto, sensitive=True)
+
+    # 1) Telegram (se vinculado)
+    enviado = enviar_telegram(usuario, texto_plain, sensitive=True)
+    if enviado:
+        return True
+
+    # 2) E-mail (se SMTP configurado)
+    from app.services.email import enviar_email, smtp_configurado
+    if smtp_configurado() and usuario.email:
+        corpo_html = (
+            f"<p>Olá, <strong>{nome}</strong>.</p>"
+            f"<p>Recebemos uma solicitação para redefinir sua senha no Aggron. "
+            f"Clique no botão abaixo (válido por 1 hora):</p>"
+            f'<p><a href="{link}" '
+            f'style="display:inline-block;padding:12px 20px;'
+            f'background:#0F2A1F;color:#D4AF37;border-radius:8px;'
+            f'text-decoration:none;font-weight:600">'
+            f"Redefinir senha</a></p>"
+            f"<p>Se o botão não funcionar, copie este link no navegador:<br>"
+            f"<small>{link}</small></p>"
+            f"<p>Se você não solicitou, ignore esta mensagem.</p>"
+            f"<p>— Aggron</p>"
+        )
+        if enviar_email(usuario.email, "Redefinir senha — Aggron",
+                        texto_plain, corpo_html):
+            return True
+
+    # Nenhum canal funcionou. enviar_telegram ja logou NOTIF_FALLBACK_SENSITIVE
+    # quando nao havia chat_id — nao duplicar aqui.
+    return False
 
 
 def notificar_evento(usuario, titulo: str, detalhes: str = "") -> bool:

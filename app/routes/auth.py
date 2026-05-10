@@ -376,7 +376,9 @@ def esqueci_senha():
             enviar_link_recuperacao(usuario, link)
 
         flash(
-            "Se o e-mail existir no sistema, enviaremos as instruções em instantes.",
+            "Se o e-mail existir no sistema, enviamos o link de redefinição "
+            "via Telegram. Se você ainda não vinculou o Telegram (em /perfil), "
+            "entre em contato pelo WhatsApp da Aggron pra reset administrativo.",
             "success",
         )
         return redirect(url_for("auth.login"))

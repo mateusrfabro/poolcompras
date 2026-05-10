@@ -1,13 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Aggron">
   <!--
-    Monograma A geometrico Aggron — versao simplificada (3 camadas) pra
-    legibilidade em escala pequena (favicon, navbar 40px). Mantém conceito
-    do briefing: triangulo verde + barra dourada + vazio escuro.
+    Monograma A geometrico Aggron — fiel ao manual de identidade oficial.
+    5 camadas concentricas que geram profundidade:
+      1. Triangulo verde claro externo (silhueta principal do A)
+      2. Linha cinza-claro luminosa (delineamento)
+      3. Vazio interno verde escuro (cria forma do A)
+      4. Corpo interno verde claro (preenche o A)
+      5. Faixa dourada angular (assinatura visual — nao eh barra horizontal)
   -->
-  <!-- Silhueta principal: triangulo verde Aggron claro (forma do A) -->
+  <!-- 1. Silhueta verde claro Aggron -->
   <path d="M32 4 L60 60 L4 60 Z" fill="#166B3D"/>
-  <!-- "Vazio" interno do A — verde escuro Aggron (sem retangulo de fundo) -->
-  <path d="M32 20 L50 54 L14 54 Z" fill="#0F2A1F"/>
-  <!-- Travessa horizontal (barra do A) — dourado Aggron -->
-  <rect x="18" y="42" width="28" height="5" fill="#D4AF37"/>
+  <!-- 2. Bordinha luminosa cinza claro — destaca contorno -->
+  <path d="M32 11 L54 58 L10 58 Z" fill="#E6E6E6"/>
+  <!-- 3. Vazio interno verde escuro — cria "perna" do A -->
+  <path d="M32 16 L51 56 L13 56 Z" fill="#0F2A1F"/>
+  <!-- 4. Corpo verde claro interno -->
+  <path d="M32 26 L46 54 L18 54 Z" fill="#166B3D"/>
+  <!-- 5. Faixa dourada angular — assinatura visual Aggron -->
+  <path d="M22 44 L40 32 L42 37 L24 49 Z" fill="#D4AF37"/>
 </svg>
