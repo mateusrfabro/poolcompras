@@ -36,7 +36,21 @@
 .flex-row-gap { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 
 .text-sm      { font-size: 0.85em; }
+.text-xxs     { font-size: 0.75em; }
 .cursor-pointer { cursor: pointer; }
+.float-right  { float: right; }
+.grid-full    { grid-column: 1 / -1; }
+.d-flex-end-row { display: flex; align-items: flex-end; gap: 0.5rem; }
+.inline-ml-2 { display: inline-block; margin-left: 0.5rem; }
+.form-inline-mt-1 { display: inline; margin-top: 0.25rem; }
+.flex-form-row-actions { align-items: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.page-header-tight { margin: 0 0 0.75rem 0; }
+.form-group-grow { flex: 1; }
+.input-w-160 { width: 160px; }
+.h3-mt-5 { margin-top: 1.5rem; }
+/* Barras dinamicas: width vem de [data-w-pct] via JS pra nao precisar de
+   style="..." inline (e poder remover 'unsafe-inline' do CSP style-src). */
+.bar-fill-dyn { width: 0%; }
 
 .w-narrow     { max-width: 760px; }  /* forms centralizados */
 .w-input-num  { width: 100px; }  /* inputs numericos compactos */

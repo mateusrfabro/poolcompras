@@ -126,11 +126,11 @@
             {% if participacao.aceite_proposta is none %}
                 <p>Você recebeu a proposta final consolidada desta rodada. Aceita?</p>
                 <div class="action-card-buttons">
-                    <form method="POST" action="{{ url_for('fluxo.aceitar_proposta', rodada_id=rodada.id) }}" style="display:inline">
+                    <form method="POST" action="{{ url_for('fluxo.aceitar_proposta', rodada_id=rodada.id) }}" class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary">Aceitar proposta</button>
                     </form>
-                    <form method="POST" action="{{ url_for('fluxo.recusar_proposta', rodada_id=rodada.id) }}" style="display:inline">
+                    <form method="POST" action="{{ url_for('fluxo.recusar_proposta', rodada_id=rodada.id) }}" class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-outline" data-confirm="Recusar a proposta? Você ficará de fora desta rodada.">Recusar</button>
                     </form>
@@ -180,7 +180,7 @@
                     </div>
                 {% endif %}
 
-                <p style="margin-top: 1rem;">Após pagar, envie o comprovante (PDF, JPG ou PNG, até 5 MB):</p>
+                <p class="mt-4">Após pagar, envie o comprovante (PDF, JPG ou PNG, até 5 MB):</p>
                 <form method="POST" action="{{ url_for('fluxo.enviar_comprovante', rodada_id=rodada.id) }}"
                       enctype="multipart/form-data" class="action-card-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -226,7 +226,7 @@
                                    aria-label="{{ n }} estrela{{ 's' if n > 1 else '' }}">★</label>
                         {% endfor %}
                     </fieldset>
-                    <p class="muted" style="font-size: 0.8rem; margin-top: 0.4rem;">
+                    <p class="muted text-xs mt-1">
                         Se der nota 3 ou menor, vamos pedir para detalhar por fornecedor.
                     </p>
                     <button type="submit" class="btn btn-primary">Enviar avaliação</button>

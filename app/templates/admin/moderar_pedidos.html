@@ -26,7 +26,7 @@
         <div class="empty-state"><p>Nenhum pedido aguardando moderação no momento.</p></div>
     {% else %}
         {% for p in enviados %}
-            <div class="card" style="margin-bottom: 1rem;">
+            <div class="card mb-4">
                 <div class="page-header">
                     <div>
                         <strong>{{ p.lanchonete.nome_fantasia if p.lanchonete else 'Lanchonete #' + p.lanchonete_id|string }}</strong>
@@ -55,11 +55,11 @@
                     <p class="muted">Sem itens registrados.</p>
                 {% endif %}
 
-                <form method="POST" class="form-row" style="align-items: flex-end; gap: 0.5rem; margin-top: 1rem;">
+                <form method="POST" class="form-row flex-form-row-actions">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="participacao_id" value="{{ p.id }}">
 
-                    <div class="form-group" style="flex: 1;">
+                    <div class="form-group form-group-grow">
                         <label for="motivo_{{ p.id }}">Motivo (opcional — para devolver)</label>
                         <input type="text" id="motivo_{{ p.id }}" name="motivo" placeholder="Ex: volume muito alto, produto X indisponivel...">
                     </div>
@@ -75,7 +75,7 @@
 
     {# Aprovados #}
     {% if aprovados %}
-        <h3 class="section-title" style="margin-top: 2rem;">
+        <h3 class="section-title section-title-mt">
             Aprovados <span class="tag">{{ aprovados|length }}</span>
         </h3>
         <div class="table-wrapper"><table class="table">
@@ -89,7 +89,7 @@
                     <td>{{ p.pedido_aprovado_em|datetime_br }}</td>
                     <td>{{ (itens_por_participacao.get(p.id) or [])|length }}</td>
                     <td>
-                        <form method="POST" style="display: inline;">
+                        <form method="POST" class="inline-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="participacao_id" value="{{ p.id }}">
                             <button type="submit" name="acao" value="reverter" class="btn btn-outline btn-sm"
@@ -106,7 +106,7 @@
 
     {# Reprovados #}
     {% if reprovados %}
-        <h3 class="section-title" style="margin-top: 2rem;">
+        <h3 class="section-title section-title-mt">
             Reprovados <span class="tag">{{ reprovados|length }}</span>
         </h3>
         <div class="table-wrapper"><table class="table">

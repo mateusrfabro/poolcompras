@@ -25,8 +25,8 @@
         <div class="empty-state"><p>Nenhuma cotação aguardando aprovação.</p></div>
     {% else %}
         {% for s in enviadas %}
-            <div class="card" style="margin-bottom: 1rem;">
-                <div class="page-header" style="margin: 0 0 0.8rem 0;">
+            <div class="card mb-4">
+                <div class="page-header page-header-tight">
                     <div>
                         <strong>{{ s.fornecedor.razao_social if s.fornecedor else 'Fornecedor #' + s.fornecedor_id|string }}</strong>
                         <br><span class="muted">Enviado em {{ s.enviada_em|datetime_br }}</span>
@@ -54,7 +54,7 @@
                 {# Historico de negociacao #}
                 {% set notas = notas_por_sub.get(s.id, []) %}
                 {% if notas or s.devolvida_em %}
-                    <h4 style="margin-top: 1rem;">Negociação</h4>
+                    <h4 class="mt-4">Negociação</h4>
                     {% if notas %}
                         <div class="notas-historico">
                             {% for n in notas %}
@@ -62,14 +62,14 @@
                                     <div class="nota-head">
                                         <strong>{{ 'Admin' if n.autor_tipo == 'admin' else 'Fornecedor' }}</strong>
                                         <span class="muted">— {{ n.autor_usuario.email if n.autor_usuario else '' }}</span>
-                                        <span class="muted" style="float: right;">{{ n.criado_em|datetime_br }}</span>
+                                        <span class="muted float-right">{{ n.criado_em|datetime_br }}</span>
                                     </div>
                                     <div class="nota-texto">{{ n.texto }}</div>
                                 </div>
                             {% endfor %}
                         </div>
                     {% endif %}
-                    <form method="POST" action="{{ url_for('admin.adicionar_nota_negociacao_admin', submissao_id=s.id) }}" style="margin-top: 0.8rem;">
+                    <form method="POST" action="{{ url_for('admin.adicionar_nota_negociacao_admin', submissao_id=s.id) }}" class="mt-3">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <div class="form-group">
                             <textarea name="texto" rows="2" maxlength="1000"
@@ -80,7 +80,7 @@
                     </form>
                 {% endif %}
 
-                <form method="POST" class="form-row" style="align-items: flex-end; gap: 0.5rem; margin-top: 1rem;">
+                <form method="POST" class="form-row flex-form-row-actions">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <input type="hidden" name="submissao_id" value="{{ s.id }}">
                     <button type="submit" name="acao" value="aprovar" class="btn btn-primary">Aprovar</button>
@@ -94,7 +94,7 @@
     {% endif %}
 
     {% if aprovadas %}
-        <h3 class="section-title" style="margin-top: 2rem;">
+        <h3 class="section-title section-title-mt">
             Aprovadas <span class="tag">{{ aprovadas|length }}</span>
         </h3>
         <div class="table-wrapper"><table class="table">
@@ -108,7 +108,7 @@
                     <td>{{ s.aprovada_em|datetime_br }}</td>
                     <td>{{ (resumo_por_sub.get(s.id) or [])|length }}</td>
                     <td>
-                        <form method="POST" style="display: inline;">
+                        <form method="POST" class="inline-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <input type="hidden" name="submissao_id" value="{{ s.id }}">
                             <button type="submit" name="acao" value="reverter" class="btn btn-outline btn-sm"

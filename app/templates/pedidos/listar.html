@@ -41,7 +41,7 @@
                     <td>{{ item.observacao or '—' }}</td>
                     <td>
                         {% if rodada.status == 'aberta' %}
-                        <form method="POST" action="{{ url_for('pedidos.remover', item_id=item.id) }}" style="display:inline">
+                        <form method="POST" action="{{ url_for('pedidos.remover', item_id=item.id) }}" class="inline-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <button type="submit" class="btn btn-sm btn-danger" data-confirm="Remover este item?">Remover</button>
                         </form>

@@ -27,7 +27,7 @@
                  aria-valuenow="{{ status.elegiveis }}"
                  aria-valuemin="0" aria-valuemax="{{ necessarias }}"
                  aria-label="Progresso pra recompensa">
-                <div class="indicacao-barra-fill" style="width: {{ pct|round }}%"></div>
+                <div class="indicacao-barra-fill bar-fill-dyn" data-w-pct="{{ pct|round }}"></div>
             </div>
             {% if status.aguardando_30d %}
             <p class="muted mt-2">

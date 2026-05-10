@@ -26,7 +26,7 @@
                         Moderar pedidos{% if pedidos_pendentes_moderacao %} ({{ pedidos_pendentes_moderacao }}){% endif %}
                     </a>
                     <form method="POST" action="{{ url_for('admin.rodada_encerrar_coleta', rodada_id=rodada.id) }}"
-                          style="display:inline">
+                          class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary btn-sm"
                                 data-confirm="Encerrar coleta e iniciar negociação?">
@@ -40,7 +40,7 @@
                         Aprovar cotações{% if cotacoes_pendentes_aprovacao %} ({{ cotacoes_pendentes_aprovacao }}){% endif %}
                     </a>
                     <form method="POST" action="{{ url_for('admin.rodada_finalizar', rodada_id=rodada.id) }}"
-                          style="display:inline">
+                          class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-primary btn-sm"
                                 data-confirm="Finalizar a rodada? Lanchonetes poderão aceitar a proposta.">
@@ -54,7 +54,7 @@
                    class="btn btn-outline btn-sm">Exportar CSV</a>
                 {% if rodada.status != 'cancelada' %}
                     <form method="POST" action="{{ url_for('admin.rodada_cancelar', rodada_id=rodada.id) }}"
-                          style="display:inline">
+                          class="inline-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                         <button type="submit" class="btn btn-danger btn-sm"
                                 data-confirm="Cancelar esta rodada? Essa ação não pode ser desfeita.">

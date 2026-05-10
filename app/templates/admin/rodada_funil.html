@@ -18,10 +18,10 @@
             <div class="funil-etapa">
                 <div class="funil-etapa-head">
                     <strong>{{ e.nome }}</strong>
-                    <span class="muted" style="font-size: 0.85em;">{{ e.dica }}</span>
+                    <span class="muted text-sm">{{ e.dica }}</span>
                 </div>
                 <div class="funil-bar-wrap">
-                    <div class="funil-bar" style="width: {{ e.pct_topo }}%;">
+                    <div class="funil-bar bar-fill-dyn" data-w-pct="{{ e.pct_topo }}">
                         <span class="funil-n">{{ e.n }}</span>
                     </div>
                 </div>

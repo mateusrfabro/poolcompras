@@ -75,7 +75,7 @@
                                     — <a href="{{ url_for('uploads.servir', key=p.comprovante_key) }}" target="_blank" rel="noopener noreferrer">Ver comprovante</a>
                                     <form method="POST"
                                           action="{{ url_for('fluxo.confirmar_pagamento', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
-                                          style="display:inline; margin-left: 0.5rem;">
+                                          class="inline-ml-2">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-primary btn-sm">Confirmar pagamento</button>
                                     </form>
@@ -85,7 +85,7 @@
                     {% endif %}
 
                     {% if bloco.aguardando_entrega %}
-                        <p style="margin-top: 0.8rem;">
+                        <p class="mt-3">
                             <strong>{{ bloco.aguardando_entrega|length }}</strong> lanchonete(s)
                             com pagamento confirmado aguardando data de entrega:
                         </p>
@@ -98,7 +98,7 @@
                                     {% endif %}
                                     <form method="POST"
                                           action="{{ url_for('fluxo.informar_entrega', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
-                                          class="pendencia-form" style="margin-top: 0.3rem;">
+                                          class="pendencia-form mt-1">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <input type="date" name="entrega_data" required>
                                         <button type="submit" class="btn btn-primary btn-sm">Informar entrega</button>
@@ -129,7 +129,7 @@
                     <td>{{ r.nome }}</td>
                     <td>
                         <strong>{{ r.data_fechamento|countdown }}</strong>
-                        <br><span class="muted" style="font-size: 0.8em;">Encerra em: {{ r.data_fechamento|datetime_br }}</span>
+                        <br><span class="muted text-xs">Encerra em: {{ r.data_fechamento|datetime_br }}</span>
                     </td>
                     <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
                     <td>

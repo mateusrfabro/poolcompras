@@ -14,6 +14,7 @@ Docs da API: https://core.telegram.org/bots/api#sendmessage
 """
 import logging
 import os
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
 import requests
@@ -172,7 +173,7 @@ def _escape(txt: str) -> str:
 # =============================================================================
 
 
-def _dispatch_em_lote(usuarios, titulo: str, detalhes: str) -> int:
+def _dispatch_em_lote(usuarios, titulo: str, detalhes: str, *, wait: bool = True) -> int:
     """Dispara notificacao pra varios usuarios em paralelo.
 
     Sem isso, 50 destinatarios x 5s timeout = ate 250s travando o request
@@ -180,6 +181,14 @@ def _dispatch_em_lote(usuarios, titulo: str, detalhes: str) -> int:
 
     Cada worker abre seu proprio app_context (ThreadPoolExecutor nao
     propaga current_app — Flask context eh per-thread).
+
+    `wait=True` (default): bloqueia ate todas mensagens irem; retorna
+        contagem real de enviadas. Usado em testes e em callers que
+        querem confirmar entrega.
+    `wait=False`: fire-and-forget — dispara numa thread daemon e retorna
+        IMEDIATAMENTE com `len(usuarios)` como estimativa. Usado em
+        transicoes massivas (envio de catalogo, abertura de rodada, etc)
+        pra nao prender o request do admin por 25s no pior caso.
     """
     if not usuarios:
         return 0
@@ -202,6 +211,20 @@ def _dispatch_em_lote(usuarios, titulo: str, detalhes: str) -> int:
                 # per-thread. Se algum helper futuro tocar DB, a conexao
                 # fica retida no pool ate GC. Remover libera explicito.
                 db.session.remove()
+
+    def _executar_pool():
+        with ThreadPoolExecutor(max_workers=_DISPATCH_MAX_WORKERS) as executor:
+            list(executor.map(_send_one, usuarios))
+
+    # Em modo TESTING forcamos sincrono — thread daemon executa sem
+    # determinismo no pytest e os asserts de count/log ficam flaky.
+    forcar_sync = app.config.get("TESTING", False)
+    if not wait and not forcar_sync:
+        # Fire-and-forget: thread daemon nao bloqueia shutdown do gunicorn,
+        # nao prende o request do admin. Estimativa otimista pro log.
+        threading.Thread(target=_executar_pool, daemon=True).start()
+        logger.info("DISPATCH_ASYNC iniciado dest=%s", len(usuarios))
+        return len(usuarios)
 
     enviadas = 0
     with ThreadPoolExecutor(max_workers=_DISPATCH_MAX_WORKERS) as executor:
@@ -230,7 +253,8 @@ def notificar_fornecedores_nova_rodada(rodada) -> int:
         .all()
     )
     usuarios = [f.responsavel for f in fornecedores if f.responsavel]
-    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
+    # wait=False: admin nao espera 25s por dispatch a 50 fornecedores.
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes, wait=False)
     logger.info("NOTIF_RODADA_NOVA rodada=%s enviadas=%s", rodada.id, enviadas)
     return enviadas
 
@@ -249,7 +273,8 @@ def notificar_lanchonetes_rodada_aberta(rodada) -> int:
         .all()
     )
     usuarios = [l.responsavel for l in lanchonetes if l.responsavel]
-    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
+    # wait=False: dispatch massivo as lanchonetes ativas em background.
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes, wait=False)
     logger.info("NOTIF_RODADA_ABERTA rodada=%s enviadas=%s", rodada.id, enviadas)
     return enviadas
 
@@ -278,7 +303,7 @@ def notificar_fornecedores_cotacao_final(rodada) -> int:
         .all()
     )
     usuarios = [f.responsavel for f in fornecedores if f.responsavel]
-    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes, wait=False)
     logger.info("NOTIF_COTACAO_FINAL rodada=%s enviadas=%s", rodada.id, enviadas)
     return enviadas
 
@@ -305,7 +330,7 @@ def notificar_lanchonetes_cotacao_aprovada(rodada, fornecedor) -> int:
         .all()
     )
     usuarios = [l.responsavel for l in lanchonetes if l.responsavel]
-    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes, wait=False)
     logger.info("NOTIF_PROPOSTA_DISPONIVEL rodada=%s fornecedor=%s enviadas=%s",
                 rodada.id, fornecedor.id, enviadas)
     return enviadas
@@ -341,7 +366,7 @@ def notificar_cancelamento(rodada) -> int:
             .all()
         )
         usuarios.extend(f.responsavel for f in fornecedores if f.responsavel)
-    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes)
+    enviadas = _dispatch_em_lote(usuarios, titulo, detalhes, wait=False)
     logger.info("NOTIF_RODADA_CANCELADA rodada=%s enviadas=%s",
                 rodada.id, enviadas)
     return enviadas

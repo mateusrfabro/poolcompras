@@ -44,7 +44,7 @@
                                            class="money-input"
                                            placeholder="R$ 0,00"
                                            value="{{ rp.preco_partida|float if rp.preco_partida is not none else '' }}"
-                                           style="width: 160px;">
+                                           class="money-input input-w-160">
                                     {% if rp.adicionado_por_fornecedor_id and rp.aprovado is none %}
                                         <span class="badge badge-aguardando_aprovacao">Aguardando aprovação</span>
                                     {% endif %}
@@ -58,7 +58,7 @@
         {% endfor %}
 
         <h3 class="section-title">Sugerir produto novo (opcional)</h3>
-        <p class="muted" style="font-size: 0.85rem;">
+        <p class="muted text-sm">
             Se você tem um produto que não está na lista, sugira aqui. A
             Aggron avaliará antes de disponibilizar para as lanchonetes.
         </p>
@@ -107,7 +107,7 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1rem;">
+        <button type="submit" class="btn btn-primary btn-block mt-4">
             Salvar cotação
         </button>
     </form>

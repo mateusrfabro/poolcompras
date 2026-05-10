@@ -13,7 +13,7 @@
         <a href="{{ url_for('admin.relatorio') }}" class="sub-nav-item sub-nav-active" aria-current="page">Relatório</a>
     </nav>
 
-    <form method="GET" class="form-card" style="margin-bottom: 2rem;">
+    <form method="GET" class="form-card mb-5">
         <div class="form-row">
             <div class="form-group">
                 <label for="de">De</label>
@@ -23,7 +23,7 @@
                 <label for="ate">Até</label>
                 <input type="date" id="ate" name="ate" required value="{{ ate or '' }}">
             </div>
-            <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+            <div class="form-group d-flex-end-row">
                 <button type="submit" class="btn btn-primary">Gerar</button>
                 {% if dados %}
                     <a href="{{ url_for('admin.relatorio', de=de, ate=ate, exportar='csv') }}"
