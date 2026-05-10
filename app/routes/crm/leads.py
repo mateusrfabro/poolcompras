@@ -8,8 +8,9 @@ from flask_login import login_required, current_user
 
 from app import db, limiter
 from app.models import (
-    Lead, LeadEvento, Vendedor, Lanchonete, Usuario,
+    Lead, LeadEvento, Vendedor, Lanchonete, Usuario, AuditLog,
 )
+from app.services.audit import audit
 from app.services.passwords import hash_senha
 from app.services.assinatura import criar_assinatura_inicial
 from app.services.minuta_pdf import gerar_minuta_pdf
@@ -94,6 +95,8 @@ def lead_novo():
             "CRM_LEAD_CRIADO autor=%s lead=%s vendedor=%s",
             current_user.id, lead.id, vendedor_id,
         )
+        audit(AuditLog.ACAO_LEAD_CRIADO, recurso_tipo="lead", recurso_id=lead.id,
+              detalhes=f"estab={nome_estab[:120]} vendedor={vendedor_id}")
         flash(f"Lead '{nome_estab}' criado.", "success")
         return redirect(url_for("crm.lead_detalhe", lead_id=lead.id))
 
@@ -191,6 +194,8 @@ def lead_mudar_status(lead_id):
         "CRM_LEAD_STATUS lead=%s autor=%s %s -> %s",
         lead.id, current_user.id, anterior, novo_status,
     )
+    audit(AuditLog.ACAO_LEAD_STATUS_ALTERADO, recurso_tipo="lead",
+          recurso_id=lead.id, detalhes=f"{anterior} -> {novo_status}")
     flash(f"Lead movido pra '{novo_status}'.", "success")
     return redirect(url_for("crm.lead_detalhe", lead_id=lead.id))
 
@@ -319,6 +324,9 @@ def lead_converter(lead_id):
         "CRM_LEAD_CONVERTIDO lead=%s autor=%s lanchonete=%s",
         lead.id, current_user.id, lanchonete.id,
     )
+    audit(AuditLog.ACAO_LEAD_CONVERTIDO, recurso_tipo="lead",
+          recurso_id=lead.id,
+          detalhes=f"lanchonete_id={lanchonete.id} estab={lead.nome_estabelecimento[:80]}")
     flash(
         f"Cliente '{lead.nome_estabelecimento}' criado. Login: {email} / "
         f"Senha temporária: {senha} — copie e mande pelo WhatsApp pro cliente.",

@@ -9,8 +9,9 @@ from app.services.passwords import (
     hash_senha, check_senha, check_dummy,
 )
 from app import db, limiter
-from app.models import Usuario, Lanchonete, Fornecedor
+from app.models import Usuario, Lanchonete, Fornecedor, AuditLog
 from app.services.assinatura import criar_assinatura_inicial
+from app.services.audit import audit
 from app.services.indicacao import registrar_indicacao
 from app.services.notificacoes import enviar_link_recuperacao
 
@@ -120,6 +121,8 @@ def login():
             login_user(usuario)
             logger.info("LOGIN_OK usuario=%s email=%s tipo=%s ip=%s",
                         usuario.id, _mask_email(email), usuario.tipo, _client_ip())
+            audit(AuditLog.ACAO_LOGIN_OK, usuario_id=usuario.id,
+                  detalhes=f"tipo={usuario.tipo}")
             # Validacao anti open-redirect: so aceita next apontando pro proprio host.
             proximo = _proximo_url_seguro(request.args.get("next"))
             return redirect(proximo or url_for("main.dashboard"))
@@ -127,6 +130,8 @@ def login():
         # Nao revela se o email existe ou nao (timing ja equalizado acima)
         logger.warning("LOGIN_FAIL email=%s ip=%s usuario_existe=%s",
                        _mask_email(email), _client_ip(), bool(usuario))
+        audit(AuditLog.ACAO_LOGIN_FAIL,
+              detalhes=f"email_mascarado={_mask_email(email)} existe={bool(usuario)}")
         flash("E-mail ou senha incorretos.", "error")
         # erro_login=True faz o template marcar campos com is-invalid +
         # mostrar field-error embaixo. email_anterior preserva o que digitou.
@@ -354,6 +359,7 @@ def logout():
     logout_user()
     session.clear()
     logger.info("LOGOUT usuario=%s email=%s ip=%s", uid, _mask_email(email), _client_ip())
+    audit(AuditLog.ACAO_LOGOUT, usuario_id=uid)
     return redirect(url_for("auth.login"))
 
 

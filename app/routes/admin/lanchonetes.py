@@ -4,7 +4,8 @@ from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy import select
 from app import db, cache, limiter
-from app.models import Lanchonete, Usuario, Vendedor
+from app.models import Lanchonete, Usuario, Vendedor, AuditLog
+from app.services.audit import audit
 from app.services.passwords import hash_senha
 from app.services.csv_export import csv_response
 from app.services.pii import mask_email
@@ -106,6 +107,9 @@ def lanchonete_nova():
             "ADMIN_USUARIO_CRIADO admin=%s tipo=lanchonete usuario=%s email=%s",
             current_user.id, lanchonete.usuario_id, mask_email(email),
         )
+        audit(AuditLog.ACAO_LANCHONETE_CRIADA, recurso_tipo="lanchonete",
+              recurso_id=lanchonete.id,
+              detalhes=f"nome={lanchonete.nome_fantasia[:80]} email={mask_email(email)}")
         flash(f"Lanchonete '{lanchonete.nome_fantasia}' cadastrada. Login: {email}", "success")
         return redirect(url_for("admin.lanchonetes"))
 

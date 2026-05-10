@@ -7,7 +7,8 @@ from flask_login import login_required, current_user
 from sqlalchemy import select
 
 from app import db, limiter
-from app.models import Fornecedor, Vendedor
+from app.models import Fornecedor, Vendedor, AuditLog
+from app.services.audit import audit
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
 
@@ -74,6 +75,9 @@ def fornecedor_novo():
             "ADMIN_FORNECEDOR_CRIADO admin=%s fornecedor=%s",
             current_user.id, fornecedor.id,
         )
+        audit(AuditLog.ACAO_FORNECEDOR_CRIADO, recurso_tipo="fornecedor",
+              recurso_id=fornecedor.id,
+              detalhes=f"razao={fornecedor.razao_social[:80]}")
         flash("Fornecedor cadastrado!", "success")
         return redirect(url_for("admin.fornecedores"))
 

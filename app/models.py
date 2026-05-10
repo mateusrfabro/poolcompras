@@ -860,3 +860,71 @@ class NotaNegociacao(db.Model):
 
     submissao    = db.relationship("SubmissaoCotacao", backref="notas")
     autor_usuario = db.relationship("Usuario")
+
+
+class AuditLog(db.Model):
+    """Log estruturado de acoes do usuario pra rastreabilidade administrativa.
+
+    Pega o que `EventoRodada` nao cobre: login/logout, CRUD de leads,
+    produtos, lanchonetes, fornecedores, vendedores, mudancas de status
+    fora do fluxo de rodada.
+
+    Filosofia:
+    - "acao" eh um codigo CURTO em snake_case (ex: 'login_ok', 'lead_criado',
+      'lead_status_alterado'). Permite agregar/filtrar sem parsear texto livre.
+    - "recurso_tipo" + "recurso_id" identificam o objeto afetado (opcional —
+      acoes globais como 'login_ok' nao tem recurso).
+    - "detalhes" guarda contexto adicional em texto curto (max 500 chars).
+      Nunca salvar PII (senha, token, CPF) — usar mask_email/etc se preciso.
+    - "ip" + "user_agent" pra forensics. Nullable (CLI/cron tem ambos null).
+
+    Insert-only — auditoria nao se altera depois (idempotencia legal).
+    """
+    __tablename__ = "audit_log"
+
+    # Acoes de auth
+    ACAO_LOGIN_OK              = "login_ok"
+    ACAO_LOGIN_FAIL            = "login_fail"
+    ACAO_LOGOUT                = "logout"
+    ACAO_SENHA_REDEFINIDA      = "senha_redefinida"
+    # Acoes de CRM
+    ACAO_LEAD_CRIADO           = "lead_criado"
+    ACAO_LEAD_STATUS_ALTERADO  = "lead_status_alterado"
+    ACAO_LEAD_CONVERTIDO       = "lead_convertido"
+    ACAO_LEAD_EVENTO           = "lead_evento_adicionado"
+    # Acoes admin de cadastro
+    ACAO_PRODUTO_CRIADO        = "produto_criado"
+    ACAO_PRODUTO_EDITADO       = "produto_editado"
+    ACAO_LANCHONETE_CRIADA     = "lanchonete_criada"
+    ACAO_FORNECEDOR_CRIADO     = "fornecedor_criado"
+    ACAO_VENDEDOR_CRIADO       = "vendedor_criado"
+    # Acoes admin de rodada (alem do EventoRodada)
+    ACAO_RODADA_CRIADA         = "rodada_criada"
+    ACAO_RODADA_CANCELADA      = "rodada_cancelada"
+    ACAO_RODADA_FINALIZADA     = "rodada_finalizada"
+    # Acoes admin de financeiro
+    ACAO_FATURA_PAGA           = "fatura_paga"
+    ACAO_FATURA_PENDENTE       = "fatura_pendente"
+
+    id = db.Column(db.Integer, primary_key=True)
+    usuario_id = db.Column(db.Integer,
+        db.ForeignKey("usuarios.id", name="fk_audit_usuario"),
+        nullable=True, index=True)  # null = anonimo (login_fail sem user)
+    acao = db.Column(db.String(50), nullable=False, index=True)
+    recurso_tipo = db.Column(db.String(40), index=True)  # ex: 'lead', 'produto'
+    recurso_id   = db.Column(db.Integer)
+    detalhes  = db.Column(db.String(500))
+    ip        = db.Column(db.String(45))  # IPv6 max
+    user_agent = db.Column(db.String(255))
+    criado_em = db.Column(
+        db.DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False, index=True,
+    )
+
+    usuario = db.relationship("Usuario")
+
+    __table_args__ = (
+        # Filtro mais comum: por usuario + ordem cronologica.
+        db.Index("ix_audit_usuario_data", "usuario_id", "criado_em"),
+    )

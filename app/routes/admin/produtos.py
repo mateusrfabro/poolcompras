@@ -5,7 +5,8 @@ from flask_login import login_required, current_user
 from sqlalchemy import select
 
 from app import db, cache
-from app.models import Produto, Rodada, RodadaProduto, Cotacao, Fornecedor
+from app.models import Produto, Rodada, RodadaProduto, Cotacao, Fornecedor, AuditLog
+from app.services.audit import audit
 from app.services.csv_export import csv_response
 from . import admin_bp, admin_required
 
@@ -67,6 +68,9 @@ def produto_novo():
         db.session.add(produto)
         db.session.commit()
         cache.delete("kpi_total_produtos")  # admin ve count atualizado na hora
+        audit(AuditLog.ACAO_PRODUTO_CRIADO, recurso_tipo="produto",
+              recurso_id=produto.id,
+              detalhes=f"nome={nome[:80]} cat={categoria}/{subcategoria}")
         flash("Produto cadastrado!", "success")
         return redirect(url_for("admin.produtos"))
 
@@ -99,6 +103,9 @@ def produto_editar(produto_id):
         produto.unidade = request.form["unidade"].strip()
         produto.ativo = "ativo" in request.form
         db.session.commit()
+        audit(AuditLog.ACAO_PRODUTO_EDITADO, recurso_tipo="produto",
+              recurso_id=produto.id,
+              detalhes=f"nome={produto.nome[:80]} ativo={produto.ativo}")
         flash("Produto atualizado!", "success")
         return redirect(url_for("admin.produtos"))
 

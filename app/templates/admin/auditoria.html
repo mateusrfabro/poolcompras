@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Auditoria — Aggron{% endblock %}
+
+{% block content %}
+<div class="page">
+    <a href="{{ url_for('main.dashboard') }}" class="btn-back">Voltar ao painel</a>
+
+    <div class="page-header">
+        <div>
+            <h2>Auditoria</h2>
+            <p class="page-sub">Rastro de quem fez o quê: logins, cadastros, mudanças de status. Útil pra acompanhar produtividade do time e investigar incidentes.</p>
+        </div>
+        <a href="{{ url_for('admin.auditoria_exportar') }}{% if request.query_string %}?{{ request.query_string.decode() }}{% endif %}"
+           class="btn btn-outline btn-sm">Exportar CSV</a>
+    </div>
+
+    {# === Filtros === #}
+    <form method="GET" class="form-card mb-5">
+        <div class="form-row">
+            <div class="form-group">
+                <label for="usuario_id">Usuário</label>
+                <select name="usuario_id" id="usuario_id">
+                    <option value="">— Todos —</option>
+                    {% for u in usuarios_filtro %}
+                        <option value="{{ u.id }}"
+                                {% if filtros.usuario_id == u.id|string %}selected{% endif %}>
+                            {{ u.nome_responsavel or u.email }} ({{ u.tipo }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="acao">Ação</label>
+                <select name="acao" id="acao">
+                    <option value="">— Todas —</option>
+                    {% for a in acoes_disponiveis %}
+                        <option value="{{ a }}"
+                                {% if filtros.acao == a %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="recurso_tipo">Recurso</label>
+                <input type="text" name="recurso_tipo" id="recurso_tipo"
+                       value="{{ filtros.recurso_tipo or '' }}"
+                       placeholder="Ex: lead, rodada, produto">
+            </div>
+            <div class="form-group">
+                <label for="de">De</label>
+                <input type="date" name="de" id="de" value="{{ filtros.de or '' }}">
+            </div>
+            <div class="form-group">
+                <label for="ate">Até</label>
+                <input type="date" name="ate" id="ate" value="{{ filtros.ate or '' }}">
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <a href="{{ url_for('admin.auditoria') }}" class="btn btn-outline btn-sm">Limpar</a>
+    </form>
+
+    <p class="muted text-sm">{{ total }} eventos encontrados.</p>
+
+    {% if not eventos %}
+        <div class="card">
+            <p>Nenhum evento de auditoria registrado ainda{% if filtros.usuario_id or filtros.acao or filtros.de or filtros.ate %} com os filtros aplicados{% endif %}.</p>
+        </div>
+    {% else %}
+        <div class="table-wrapper"><table class="table">
+            <thead>
+                <tr>
+                    <th>Data (UTC)</th>
+                    <th>Usuário</th>
+                    <th>Ação</th>
+                    <th>Recurso</th>
+                    <th>Detalhes</th>
+                    <th>IP</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for e in eventos %}
+                {% set u = users.get(e.usuario_id) %}
+                <tr>
+                    <td><span class="muted text-sm">{{ e.criado_em|datetime_br }}</span></td>
+                    <td>
+                        {% if u %}
+                            <strong>{{ u.nome_responsavel or u.email }}</strong>
+                            <br><span class="muted text-xs">{{ u.tipo }}</span>
+                        {% else %}
+                            <span class="muted">— anônimo —</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="tag">{{ e.acao }}</span></td>
+                    <td>
+                        {% if e.recurso_tipo %}
+                            {{ e.recurso_tipo }}{% if e.recurso_id %}#{{ e.recurso_id }}{% endif %}
+                        {% else %}—{% endif %}
+                    </td>
+                    <td><span class="text-sm">{{ e.detalhes or '—' }}</span></td>
+                    <td><span class="muted text-xs">{{ e.ip or '—' }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table></div>
+
+        {# Paginacao simples #}
+        <div class="form-row mt-4">
+            {% if pagina > 1 %}
+                <a class="btn btn-outline btn-sm"
+                   href="?{{ request.query_string.decode()|replace('p=' + pagina|string, 'p=' + (pagina-1)|string) if 'p=' in request.query_string.decode() else (request.query_string.decode() ~ '&p=' ~ (pagina-1)) }}">← Anterior</a>
+            {% endif %}
+            <span class="muted text-sm">Página {{ pagina }} ({{ eventos|length }} de {{ total }} eventos)</span>
+            {% if tem_proxima %}
+                <a class="btn btn-outline btn-sm"
+                   href="?{{ request.query_string.decode()|replace('p=' + pagina|string, 'p=' + (pagina+1)|string) if 'p=' in request.query_string.decode() else (request.query_string.decode() ~ '&p=' ~ (pagina+1)) }}">Próxima →</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

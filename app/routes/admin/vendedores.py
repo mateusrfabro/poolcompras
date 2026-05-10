@@ -13,7 +13,8 @@ from flask_login import login_required, current_user
 from sqlalchemy import select
 
 from app import db, limiter
-from app.models import Usuario, Vendedor
+from app.models import Usuario, Vendedor, AuditLog
+from app.services.audit import audit
 from app.services.passwords import hash_senha
 from app.services.pii import mask_email
 from . import admin_bp, admin_required
@@ -88,6 +89,9 @@ def vendedor_novo():
             "ADMIN_VENDEDOR_CRIADO admin=%s vendedor=%s email=%s",
             current_user.id, vendedor.id, mask_email(email),
         )
+        audit(AuditLog.ACAO_VENDEDOR_CRIADO, recurso_tipo="vendedor",
+              recurso_id=vendedor.id,
+              detalhes=f"nome={nome[:80]} email={mask_email(email)}")
         # Senha temporaria fica no flash apenas pra o admin que criou —
         # nao persistimos em log/db. Admin copia e manda pro vendedor.
         flash(

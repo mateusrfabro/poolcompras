@@ -10,8 +10,9 @@ from werkzeug.utils import secure_filename
 from app import db, cache
 from app.models import (
     Produto, Rodada, RodadaProduto, Cotacao,
-    ItemPedido, ParticipacaoRodada, EventoRodada,
+    ItemPedido, ParticipacaoRodada, EventoRodada, AuditLog,
 )
+from app.services.audit import audit
 from app.services.csv_export import csv_response
 from app.services.kpis_fornecedor import total_cotacoes, cotacoes_vencedoras
 from app.services.notificacoes import (
@@ -42,6 +43,8 @@ def rodada_nova():
         db.session.commit()
         logger.info("ADMIN_RODADA_CRIADA admin=%s rodada=%s nome=%s",
                     current_user.id, rodada.id, rodada.nome)
+        audit(AuditLog.ACAO_RODADA_CRIADA, recurso_tipo="rodada",
+              recurso_id=rodada.id, detalhes=f"nome={rodada.nome[:80]}")
         flash("Rodada criada! Agora monte o catálogo de produtos.", "success")
         return redirect(url_for("admin.rodada_catalogo", rodada_id=rodada.id))
 
@@ -201,6 +204,8 @@ def rodada_finalizar(rodada_id):
             cache.delete_memoized(cotacoes_vencedoras, fid)
     logger.info("ADMIN_RODADA_FINALIZADA admin=%s rodada=%s",
                 current_user.id, rodada_id)
+    audit(AuditLog.ACAO_RODADA_FINALIZADA, recurso_tipo="rodada",
+          recurso_id=rodada_id, detalhes=f"nome={rodada.nome[:80]}")
     flash("Rodada finalizada! Lanchonetes podem agora aceitar a proposta.", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
@@ -224,6 +229,8 @@ def rodada_cancelar(rodada_id):
     notificar_cancelamento(rodada)
     logger.warning("ADMIN_RODADA_CANCELADA admin=%s rodada=%s nome=%s",
                    current_user.id, rodada_id, rodada.nome)
+    audit(AuditLog.ACAO_RODADA_CANCELADA, recurso_tipo="rodada",
+          recurso_id=rodada_id, detalhes=f"nome={rodada.nome[:80]}")
     flash(f"Rodada '{rodada.nome}' cancelada.", "success")
     return redirect(url_for("rodadas.detalhe", rodada_id=rodada_id))
 
