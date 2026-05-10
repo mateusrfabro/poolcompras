@@ -15,7 +15,7 @@ perfis no site oficial. Senhas usam Argon2 via app.services.passwords.hash_senha
 
 Padrao de credenciais documentado:
     adm@aggron.com.br        admin123    (admin — Mateus + Ademar)
-    gabriel@aggron.com.br    demo123     (vendedor SDR)
+    vendas@aggron.com.br     demo123     (vendedor SDR — Gabriel)
     smash@demo.com           demo123     (lanchonete principal)
     vendas@dsulcarnes.demo   demo123     (fornecedor principal)
     @demo.com                demo123     (todos os demais lanchonetes/fornecedores)
@@ -140,11 +140,24 @@ def main():
             print(f"  CRIADO adm@aggron.com.br senha=admin123 (admin)")
             mudancas += 1
 
-        # 2) Garante Gabriel (vendedor SDR)
-        gabriel = Usuario.query.filter_by(email="gabriel@aggron.com.br").first()
+        # 2) Garante vendedor SDR no email vendas@aggron.com.br
+        # Migra gabriel@aggron.com.br -> vendas@aggron.com.br (servidor onde
+        # Ademar nao tem mais slot pra criar gabriel@; reaproveita vendas@).
+        gabriel_legado = Usuario.query.filter_by(email="gabriel@aggron.com.br").first()
+        if gabriel_legado:
+            ja_existe = Usuario.query.filter_by(email="vendas@aggron.com.br").first()
+            if ja_existe and ja_existe.id != gabriel_legado.id:
+                # Edge: alguem ja criou vendas@ via UI — nao sobrescreve.
+                print(f"  AVISO  vendas@aggron.com.br ja existe — NAO migrando gabriel@")
+            else:
+                gabriel_legado.email = "vendas@aggron.com.br"
+                print(f"  RENOMEADO gabriel@aggron.com.br -> vendas@aggron.com.br")
+                mudancas += 1
+
+        gabriel = Usuario.query.filter_by(email="vendas@aggron.com.br").first()
         if not gabriel:
             gabriel = Usuario(
-                email="gabriel@aggron.com.br",
+                email="vendas@aggron.com.br",
                 senha_hash=hash_senha("demo123"),
                 nome_responsavel="Gabriel",
                 telefone="(43) 99999-0000",
@@ -153,13 +166,13 @@ def main():
             )
             db.session.add(gabriel)
             db.session.flush()
-            print("  CRIADO gabriel@aggron.com.br senha=demo123 (vendedor)")
+            print("  CRIADO vendas@aggron.com.br senha=demo123 (vendedor)")
             mudancas += 1
         else:
             gabriel.senha_hash = hash_senha("demo123")
             gabriel.senha_atualizada_em = agora
             gabriel.tipo = "vendedor"
-            print("  RESET  gabriel@aggron.com.br senha=demo123")
+            print("  RESET  vendas@aggron.com.br senha=demo123")
             mudancas += 1
 
         v = Vendedor.query.filter_by(usuario_id=gabriel.id).first()
