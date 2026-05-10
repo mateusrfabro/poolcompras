@@ -144,7 +144,7 @@ def create_app(config_name="default"):
     from app.routes.marketplace import marketplace_bp
     from app.routes.telegram_webhook import telegram_webhook_bp
     from app.routes.crm import crm_bp
-    from app.cli import cron_bp
+    from app.cli import cron_bp, admin_cli_bp
     from app.cli_telegram import telegram_cli_bp
 
     # Error handlers amigaveis
@@ -265,6 +265,7 @@ def create_app(config_name="default"):
     app.register_blueprint(telegram_webhook_bp)
     app.register_blueprint(cron_bp)
     app.register_blueprint(telegram_cli_bp)
+    app.register_blueprint(admin_cli_bp)
 
     # Pluralizacao por unidade. Simbolos (kg, g, ml, l) sao invariaveis em PT-BR.
     PLURAIS = {

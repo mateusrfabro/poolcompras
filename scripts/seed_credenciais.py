@@ -6,8 +6,9 @@ Uso (LOCAL DEV):
 Uso (SERVIDOR Yggdrasil):
     docker exec -it aggron-app python scripts/seed_credenciais.py
 
-Idempotente — pode rodar varias vezes. Cria Gabriel (vendedor SDR) se nao
-existir. Senhas usam Argon2 via app.services.passwords.hash_senha.
+Idempotente — pode rodar varias vezes. CRIA admin/Gabriel se nao
+existirem (em servidor recem-deployado, por exemplo). Senhas usam Argon2
+via app.services.passwords.hash_senha.
 
 Padrao de credenciais documentado:
     adm@aggron.com.br        admin123    (admin — Mateus + Ademar)
@@ -44,10 +45,24 @@ def main():
         if admin:
             admin.senha_hash = hash_senha("admin123")
             admin.senha_atualizada_em = agora
+            admin.tipo = "admin"  # garantia (defesa em profundidade)
             print(f"  RESET adm@aggron.com.br senha=admin123")
             mudancas += 1
         else:
-            print("  AVISO admin adm@aggron.com.br nao existe — criar manualmente via UI")
+            # Servidor recem-deployado: cria admin do zero pra Mateus + Ademar
+            # nao ficarem sem acesso. Email + senha conforme docstring.
+            admin = Usuario(
+                email="adm@aggron.com.br",
+                senha_hash=hash_senha("admin123"),
+                nome_responsavel="Aggron",
+                telefone="(43) 99999-0000",
+                tipo="admin",
+                senha_atualizada_em=agora,
+            )
+            db.session.add(admin)
+            db.session.flush()
+            print(f"  CRIADO adm@aggron.com.br senha=admin123 (admin)")
+            mudancas += 1
 
         # 2) Garante Gabriel (vendedor SDR)
         gabriel = Usuario.query.filter_by(email="gabriel@aggron.com.br").first()

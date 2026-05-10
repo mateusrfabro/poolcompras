@@ -2,21 +2,53 @@
 Comandos CLI customizados do Flask.
 
 Uso:
-    flask cron fechar-vencidas   # fecha rodadas com data_fechamento <= agora
-    flask cron status            # status do agendamento (debug)
+    flask cron fechar-vencidas       # fecha rodadas com data_fechamento <= agora
+    flask cron status                # status do agendamento (debug)
+    flask admin reset-senha <email>  # reseta senha de um usuario (admin recovery)
 
 Deploy: na VM (Ademar), adicionar ao crontab:
     */5 * * * * cd /app && FLASK_APP=run.py flask cron fechar-vencidas >> /var/log/poolcompras-cron.log 2>&1
 """
 from datetime import datetime, timezone
+import secrets
 import click
 from flask import Blueprint
 from flask.cli import with_appcontext
 
 from app import db
-from app.models import Rodada, EventoRodada, ParticipacaoRodada
+from app.models import Rodada, EventoRodada, ParticipacaoRodada, Usuario
+from app.services.passwords import hash_senha
 
 cron_bp = Blueprint("cron", __name__, cli_group="cron")
+admin_cli_bp = Blueprint("admin_cli", __name__, cli_group="admin")
+
+
+@admin_cli_bp.cli.command("reset-senha")
+@click.argument("email")
+@click.option("--senha", default=None,
+              help="Senha nova; se omitido, gera 16 chars aleatorios.")
+@with_appcontext
+def reset_senha(email, senha):
+    """Reseta senha de um usuario via terminal — recovery quando 'esqueci
+    senha' nao chega (ex: usuario sem Telegram linkado).
+
+    Exemplos:
+        flask admin reset-senha adm@aggron.com.br --senha admin123
+        flask admin reset-senha gabriel@aggron.com.br
+            -> imprime senha gerada (anote ANTES de fechar o terminal)
+    """
+    u = Usuario.query.filter_by(email=email).first()
+    if not u:
+        click.echo(f"ERRO: usuario {email} nao encontrado.")
+        raise SystemExit(1)
+    if not senha:
+        senha = secrets.token_urlsafe(12)  # ~16 chars seguros
+    u.senha_hash = hash_senha(senha)
+    u.senha_atualizada_em = datetime.now(timezone.utc)
+    db.session.commit()
+    click.echo(f"OK — {email} ({u.tipo}) senha redefinida.")
+    click.echo(f"     Nova senha: {senha}")
+    click.echo("     Avise o usuario por canal seguro e peca pra trocar no /perfil.")
 
 
 @cron_bp.cli.command("fechar-vencidas")
