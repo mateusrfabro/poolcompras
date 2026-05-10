@@ -266,12 +266,46 @@ h1, h2, h3, h4, h5, h6 {
     /* Glow ouro sutil pra dar destaque sobre o navbar dark. */
     filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.35));
 }
+.nav-brand .logo-text-group {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
 .nav-brand .logo-text {
     color: var(--brand-cinza-claro);
     font-family: var(--font-heading);
     font-weight: 700;
     letter-spacing: 4px;
     font-size: 1.25rem;
+    line-height: 1;
+}
+/* Tagline dourada com traços laterais — assinatura visual do briefing
+   "INTELIGÊNCIA QUE GERA VALOR" em Inter regular, ouro Aggron. */
+.nav-brand .logo-tagline {
+    color: var(--brand-ouro);
+    font-family: var(--font-body);
+    font-weight: 500;
+    letter-spacing: 1.5px;
+    font-size: 0.5rem;
+    line-height: 1;
+    margin-top: 0.35rem;
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+.nav-brand .logo-tagline::before,
+.nav-brand .logo-tagline::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--brand-ouro);
+    min-width: 0.5rem;
+}
+@media (max-width: 768px) {
+    /* Mobile: tagline some pra navbar nao ficar apertada */
+    .nav-brand .logo-tagline { display: none; }
 }
 .nav-brand a:hover { opacity: 0.85; }
 @media (max-width: 480px) {

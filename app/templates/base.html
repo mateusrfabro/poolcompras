@@ -34,13 +34,16 @@
             {% if current_user.is_authenticated %}
                 {% set brand_href = url_for('fornecedor.dashboard') if current_user.is_fornecedor else url_for('main.dashboard') %}
             {% endif %}
-            <a href="{{ brand_href }}" aria-label="Aggron — voltar ao painel">
+            <a href="{{ brand_href }}" aria-label="Aggron — Inteligência que gera valor">
                 <img class="logo-img"
                      src="{{ url_for('static', filename='images/logo-aggron-symbol.png') }}"
                      srcset="{{ url_for('static', filename='images/logo-aggron-symbol@2x.png') }} 1x, {{ url_for('static', filename='images/logo-aggron-symbol.png') }} 2x"
                      alt=""
                      width="48" height="48">
-                <span class="logo-text">AGGRON</span>
+                <span class="logo-text-group">
+                    <span class="logo-text">AGGRON</span>
+                    <span class="logo-tagline">INTELIGÊNCIA QUE GERA VALOR</span>
+                </span>
             </a>
         </div>
 
