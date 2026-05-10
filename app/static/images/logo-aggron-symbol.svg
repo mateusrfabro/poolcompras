@@ -1,21 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Aggron">
   <!--
-    Monograma A geometrico Aggron — fiel ao manual de identidade oficial.
-    5 camadas concentricas que geram profundidade:
-      1. Triangulo verde claro externo (silhueta principal do A)
-      2. Linha cinza-claro luminosa (delineamento)
-      3. Vazio interno verde escuro (cria forma do A)
-      4. Corpo interno verde claro (preenche o A)
-      5. Faixa dourada angular (assinatura visual — nao eh barra horizontal)
+    Monograma A geometrico Aggron — fiel ao manual oficial 2026.
+    Construcao por camadas alternadas Verde Aggron / Verde Claro:
+      1. Silhueta principal: Verde Aggron #0F2A1F (forma do A)
+      2. Recorte interno: Verde Claro #166B3D (cria a borda iluminada)
+      3. Vazio interior: Verde Aggron de novo (perna do A)
+      4. Corpo central: Verde Claro (preenche)
+      5. Faixa dourada angular #D4AF37: assinatura visual da marca
   -->
-  <!-- 1. Silhueta verde claro Aggron -->
-  <path d="M32 4 L60 60 L4 60 Z" fill="#166B3D"/>
-  <!-- 2. Bordinha luminosa cinza claro — destaca contorno -->
-  <path d="M32 11 L54 58 L10 58 Z" fill="#E6E6E6"/>
-  <!-- 3. Vazio interno verde escuro — cria "perna" do A -->
-  <path d="M32 16 L51 56 L13 56 Z" fill="#0F2A1F"/>
-  <!-- 4. Corpo verde claro interno -->
-  <path d="M32 26 L46 54 L18 54 Z" fill="#166B3D"/>
-  <!-- 5. Faixa dourada angular — assinatura visual Aggron -->
-  <path d="M22 44 L40 32 L42 37 L24 49 Z" fill="#D4AF37"/>
+  <path d="M32 3 L61 60 L3 60 Z" fill="#0F2A1F"/>
+  <path d="M32 8 L56 58 L8 58 Z" fill="#166B3D"/>
+  <path d="M32 14 L51 56 L13 56 Z" fill="#0F2A1F"/>
+  <path d="M32 24 L46 54 L18 54 Z" fill="#166B3D"/>
+  <path d="M19 47 L43 31 L46 36 L22 52 Z" fill="#D4AF37"/>
 </svg>
