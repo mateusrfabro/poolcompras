@@ -89,7 +89,7 @@
                             <span class="muted">— anônimo —</span>
                         {% endif %}
                     </td>
-                    <td><span class="tag">{{ e.acao }}</span></td>
+                    <td><span class="tag {{ e.acao|audit_tag_class }}">{{ e.acao }}</span></td>
                     <td>
                         {% if e.recurso_tipo %}
                             {{ e.recurso_tipo }}{% if e.recurso_id %}#{{ e.recurso_id }}{% endif %}

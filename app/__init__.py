@@ -471,4 +471,37 @@ def create_app(config_name="default"):
         _, status = EVENTO_LABELS.get(tipo, (tipo, "info"))
         return status
 
+    # Mapeamento ACAO_* (AuditLog) -> variante visual da tag.
+    # Classes correspondentes em style.css: .tag-success/.tag-danger/.tag-create/.tag-edit/.tag-info.
+    AUDIT_TAG_CLASSES = {
+        # success — eventos positivos/conclusivos
+        "login_ok": "tag-success",
+        "lead_convertido": "tag-success",
+        "rodada_finalizada": "tag-success",
+        "fatura_paga": "tag-success",
+        # danger — falhas, cancelamentos
+        "login_fail": "tag-danger",
+        "rodada_cancelada": "tag-danger",
+        # create — criacoes (entidades novas no sistema)
+        "lead_criado": "tag-create",
+        "produto_criado": "tag-create",
+        "lanchonete_criada": "tag-create",
+        "fornecedor_criado": "tag-create",
+        "vendedor_criado": "tag-create",
+        "rodada_criada": "tag-create",
+        # edit — mudancas de estado/edicoes
+        "produto_editado": "tag-edit",
+        "lead_status_alterado": "tag-edit",
+        # info — eventos neutros/auxiliares
+        "logout": "tag-info",
+        "lead_evento_adicionado": "tag-info",
+        "senha_redefinida": "tag-info",
+        "fatura_pendente": "tag-info",
+    }
+
+    @app.template_filter("audit_tag_class")
+    def audit_tag_class(acao):
+        """Devolve a classe CSS pra colorir uma tag de auditoria por categoria."""
+        return AUDIT_TAG_CLASSES.get((acao or "").strip(), "")
+
     return app

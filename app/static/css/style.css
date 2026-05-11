@@ -2133,6 +2133,193 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--gray-500);
 }
 
+/* ============================================================
+   Hero-metric — bloco dominante do dashboard admin.
+   Estilo "Stripe": UMA metrica gigante, secundarias reduzidas.
+   Atmosfera com gradient mesh sutil verde + ouro pra dar profundidade
+   sem competir com o numero. Layout assimetrico 65/35 em desktop.
+   ============================================================ */
+.hero-metric {
+    display: grid;
+    grid-template-columns: minmax(0, 1.85fr) minmax(220px, 1fr);
+    gap: var(--space-4);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: var(--space-4) var(--space-4);
+    margin-bottom: var(--space-3);
+    position: relative;
+    overflow: hidden;
+}
+/* Gradient mesh sutil — duas elipses (verde + ouro) que iluminam o fundo
+   sem virar ruido visual. Pseudo-elemento pra nao mexer no fluxo. */
+.hero-metric::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse 60% 80% at 0% 100%, rgba(22, 107, 61, 0.18), transparent 70%),
+        radial-gradient(ellipse 50% 60% at 100% 0%, rgba(212, 175, 55, 0.10), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+.hero-metric > * { position: relative; z-index: 1; }
+
+.hero-metric-eyebrow {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: var(--brand-ouro);
+    margin-bottom: var(--space-1);
+}
+.hero-metric-titulo {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 var(--space-3) 0;
+    letter-spacing: -0.01em;
+}
+
+.hero-metric-figures {
+    display: flex;
+    gap: var(--space-5);
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+.hero-metric-primary,
+.hero-metric-secondary {
+    display: flex;
+    flex-direction: column;
+}
+.hero-metric-number {
+    font-family: var(--font-heading);
+    font-size: clamp(2.8rem, 6vw, 5rem);
+    font-weight: 700;
+    color: var(--brand-ouro);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-shadow: 0 0 30px rgba(212, 175, 55, 0.18);
+}
+.hero-metric-number-sm {
+    font-family: var(--font-heading);
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+.hero-metric-denom {
+    font-size: 0.45em;
+    color: var(--text-muted);
+    font-weight: 500;
+    margin-left: 0.15em;
+    letter-spacing: 0;
+}
+.hero-metric-label {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    margin-top: var(--space-2);
+    font-weight: 500;
+}
+
+/* Lado direito do hero — countdown + acoes */
+.hero-metric-aside {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: var(--space-2);
+    border-left: 1px solid var(--border);
+    padding-left: var(--space-4);
+}
+@media (max-width: 760px) {
+    .hero-metric { grid-template-columns: 1fr; }
+    .hero-metric-aside { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--space-3); }
+}
+.hero-metric-countdown {
+    font-family: var(--font-heading);
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+.hero-metric-deadline {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-top: var(--space-1);
+    display: block;
+}
+.hero-metric-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-1);
+    margin-top: var(--space-3);
+}
+.hero-metric-actions form { margin: 0; }
+
+/* Hero vazio — quando nao ha rodada aberta. CTA dominante. */
+.hero-empty {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: var(--space-4);
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+}
+.hero-empty::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 50% 80% at 100% 50%, rgba(212, 175, 55, 0.08), transparent 70%);
+    pointer-events: none;
+}
+.hero-empty > * { position: relative; z-index: 1; }
+.hero-empty h3 {
+    font-family: var(--font-heading);
+    font-size: 1.4rem;
+    margin: var(--space-1) 0 var(--space-1) 0;
+}
+
+/* Linha de stats secundarios (sob o hero) — densidade compacta,
+   numeros menores. Sao "info de apoio", nao protagonistas. */
+.stats-row {
+    display: flex;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    flex-wrap: wrap;
+}
+.stat-mini {
+    flex: 1;
+    min-width: 180px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: var(--space-2) var(--space-3);
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-2);
+}
+.stat-mini-num {
+    font-family: var(--font-heading);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+}
+.stat-mini-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
 /* Tag (categoria de produto, etc.) */
 .tag {
     display: inline-block;
@@ -2141,6 +2328,39 @@ h1, h2, h3, h4, h5, h6 {
     border-radius: 4px;
     font-size: 0.75rem;
     color: var(--gray-700);
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border: 1px solid transparent;
+}
+
+/* Variantes semanticas — usadas no /admin/auditoria pra colorir acoes
+   por categoria (sucesso / falha / criacao / edicao / info). Tints sutis
+   sobre o card dark, com borda fina pra dar acabamento "premium" sem
+   competir com o conteudo da linha. */
+.tag-success {
+    background: rgba(74, 222, 128, 0.10);
+    color: #4ade80;
+    border-color: rgba(74, 222, 128, 0.25);
+}
+.tag-danger {
+    background: rgba(239, 68, 68, 0.10);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.30);
+}
+.tag-create {
+    background: rgba(212, 175, 55, 0.10);
+    color: var(--brand-ouro);
+    border-color: rgba(212, 175, 55, 0.30);
+}
+.tag-edit {
+    background: rgba(78, 168, 222, 0.10);
+    color: #7cc3ec;
+    border-color: rgba(78, 168, 222, 0.30);
+}
+.tag-info {
+    background: rgba(168, 176, 184, 0.08);
+    color: var(--text-secondary);
+    border-color: rgba(168, 176, 184, 0.20);
 }
 
 /* .muted texto auxiliar — gray-700 (8.6:1 sobre branco) atinge WCAG AA.
