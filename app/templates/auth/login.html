@@ -1,30 +1,60 @@
 {% extends "base.html" %}
-{% block title %}Login - Aggron{% endblock %}
+{% block title %}Entrar - Aggron{% endblock %}
+
+{# Login tem layout editorial split-screen (Fase B2) — desativa o sr-only h1
+   do base pois temos h1 visivel no card direito (auth-form-titulo). #}
+{% block h1_oculto %}{% endblock %}
 
 {% block content %}
-<div class="form-page">
-    <h2>Entrar</h2>
-    <form method="POST" class="form-card">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div class="form-group {% if erro_login %}is-invalid{% endif %}">
-            <label for="email">E-mail</label>
-            <input type="email" id="email" name="email" required
-                   value="{{ email_anterior or '' }}"
-                   autocomplete="email" placeholder="seu@email.com">
+<section class="auth-split" aria-label="Entrar na sua conta Aggron">
+    <aside class="auth-brand" aria-label="Aggron">
+        <span class="auth-brand-eyebrow">Conectamos quem fornece com quem faz acontecer</span>
+        <h1 class="auth-brand-titulo">Bem-vindo de volta à central de compras cooperativa.</h1>
+        <p class="auth-brand-sub">Hamburguerias e fornecedores cotando juntos em Londrina. Volume agregado, preço de atacado, pagamento direto.</p>
+
+        <div class="auth-brand-stats">
+            <div class="auth-brand-stat">
+                <span class="auth-brand-stat-num">10–15<small>%</small></span>
+                <span class="auth-brand-stat-label">Economia média por rodada vs cotação individual.</span>
+            </div>
+            <div class="auth-brand-stat">
+                <span class="auth-brand-stat-num">R$ 0</span>
+                <span class="auth-brand-stat-label">De comissão sobre as suas compras — economia inteira sua.</span>
+            </div>
         </div>
-        <div class="form-group {% if erro_login %}is-invalid{% endif %}">
-            <label for="senha">Senha</label>
-            <input type="password" id="senha" name="senha" required
-                   autocomplete="current-password">
-            {% if erro_login %}
-            <small class="field-error">Verifique seu e-mail e senha.</small>
-            {% endif %}
+
+        <p class="auth-brand-foot">AGGRON CENTRAL DE COMPRAS COOPERATIVA · LONDRINA-PR</p>
+    </aside>
+
+    <div class="auth-form-side">
+        <div class="auth-form-wrapper">
+            <span class="auth-form-eyebrow">Acesso à plataforma</span>
+            <h2 class="auth-form-titulo">Entrar</h2>
+            <p class="auth-form-sub">Use o e-mail e a senha do cadastro.</p>
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <div class="form-group {% if erro_login %}is-invalid{% endif %}">
+                    <label for="email">E-mail</label>
+                    <input type="email" id="email" name="email" required
+                           value="{{ email_anterior or '' }}"
+                           autocomplete="email" placeholder="seu@email.com">
+                </div>
+                <div class="form-group {% if erro_login %}is-invalid{% endif %}">
+                    <label for="senha">Senha</label>
+                    <input type="password" id="senha" name="senha" required
+                           autocomplete="current-password">
+                    {% if erro_login %}
+                    <small class="field-error">Verifique seu e-mail e senha.</small>
+                    {% endif %}
+                </div>
+                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+            </form>
+            <p class="form-footer">
+                <a href="{{ url_for('auth.esqueci_senha') }}">Esqueci minha senha</a>
+            </p>
+            <p class="form-footer">Ainda não tem conta? <a href="{{ url_for('auth.registro') }}">Cadastre-se</a></p>
         </div>
-        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
-    </form>
-    <p class="form-footer">
-        <a href="{{ url_for('auth.esqueci_senha') }}">Esqueci minha senha</a>
-    </p>
-    <p class="form-footer">Ainda não tem conta? <a href="{{ url_for('auth.registro') }}">Cadastre-se</a></p>
-</div>
+    </div>
+</section>
 {% endblock %}

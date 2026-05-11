@@ -4,7 +4,12 @@
 {% block content %}
 {% set f = form or {} %}
 <div class="form-page">
-    <h2>Cadastrar Lanchonete</h2>
+    <header class="auth-page-header">
+        <span class="auth-form-eyebrow">Cadastro · Lanchonete</span>
+        <h2 class="auth-form-titulo">Entre na central de compras cooperativa.</h2>
+        <p class="auth-form-sub">Volume agregado com outras hamburguerias de Londrina. Pagamento direto ao fornecedor — Aggron não intermedia financeiro.</p>
+    </header>
+
     {% if codigo_indicacao_pre %}
     <div class="alert alert-indicacao">
         Você está sendo indicado(a) com o código
