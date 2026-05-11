@@ -6,18 +6,30 @@
 {% block h1_oculto %}{% endblock %}
 
 {% block content %}
-<div class="hero">
-    <h1>Compre junto, pague menos.</h1>
-    <p class="hero-sub">Hamburguerias de Londrina cotando juntas. Volume agregado, preço de atacado, pagamento direto ao fornecedor.</p>
+<section class="hero" aria-label="Apresentação Aggron">
+    <div class="hero-text">
+        <span class="hero-eyebrow">Conectamos quem fornece com quem faz acontecer</span>
+        <h1>Compre junto, <span class="accent">pague menos.</span></h1>
+        <p class="hero-sub">Hamburguerias de Londrina cotando juntas. Volume agregado, preço de atacado, pagamento direto ao fornecedor.</p>
 
-    <div class="hero-actions">
-        <a href="{{ url_for('auth.registro') }}" class="btn btn-primary btn-lg">Sou lanchonete</a>
-        <a href="{{ url_for('auth.registro_fornecedor') }}" class="btn btn-outline btn-lg">Sou fornecedor</a>
+        <div class="hero-actions">
+            <a href="{{ url_for('auth.registro') }}" class="btn btn-primary btn-lg">Sou lanchonete</a>
+            <a href="{{ url_for('auth.registro_fornecedor') }}" class="btn btn-outline btn-lg">Sou fornecedor</a>
+        </div>
+        <p class="hero-secundario">
+            <a href="{{ url_for('auth.login') }}">Já tenho conta &rarr;</a>
+        </p>
     </div>
-    <p class="hero-secundario">
-        <a href="{{ url_for('auth.login') }}">Já tenho conta &rarr;</a>
-    </p>
-</div>
+
+    <aside class="hero-stage" aria-label="Resultado típico de uma rodada">
+        <div class="hero-stage-card">
+            <span class="hero-stage-eyebrow">Economia média por rodada</span>
+            <span class="hero-stage-num">10–15<span class="hero-stage-unit">%</span></span>
+            <span class="hero-stage-label">vs cotação individual em volumes típicos de hamburgueria.</span>
+        </div>
+        <span class="hero-stage-foot">Rodadas abertas todo dia em Londrina-PR</span>
+    </aside>
+</section>
 
 <section class="features">
     <div class="feature-card">
