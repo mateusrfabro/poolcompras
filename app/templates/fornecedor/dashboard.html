@@ -114,25 +114,18 @@
 
     {% if rodadas_para_cotar %}
         <h3>Rodadas abertas para cotação</h3>
-        <div class="table-wrapper"><table class="table">
-            <thead>
-                <tr>
-                    <th>Rodada</th>
-                    <th>Fechamento</th>
-                    <th>Status</th>
-                    <th></th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for r in rodadas_para_cotar %}
-                <tr {% if r.data_fechamento|urgente %}class="row-urgent"{% endif %}>
-                    <td>{{ r.nome }}</td>
-                    <td>
-                        <strong>{{ r.data_fechamento|countdown }}</strong>
-                        <br><span class="muted text-xs">Encerra em: {{ r.data_fechamento|datetime_br }}</span>
-                    </td>
-                    <td><span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span></td>
-                    <td>
+        <div class="rodada-cotacao-grid">
+            {% for r in rodadas_para_cotar %}
+                <article class="rodada-cotacao-card {% if r.data_fechamento|urgente %}is-urgent{% endif %}">
+                    <header class="rodada-cotacao-card-head">
+                        <span class="rodada-cotacao-card-nome">{{ r.nome }}</span>
+                        <span class="badge badge-{{ r.status }}">{{ r.status|status_label }}</span>
+                    </header>
+                    <div>
+                        <span class="rodada-cotacao-card-countdown">{{ r.data_fechamento|countdown }}</span>
+                        <div class="rodada-cotacao-card-data">Encerra {{ r.data_fechamento|datetime_br }}</div>
+                    </div>
+                    <div class="rodada-cotacao-card-foot">
                         {% if r.status == 'aguardando_cotacao' %}
                             <a href="{{ url_for('fornecedor.cotar_catalogo', rodada_id=r.id) }}"
                                class="btn btn-sm btn-primary">Cotar preços</a>
@@ -141,13 +134,12 @@
                                class="btn btn-sm btn-primary">Cotação final</a>
                         {% else %}
                             <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=r.id) }}"
-                               class="btn btn-sm btn-primary">Ver demanda</a>
+                               class="btn btn-sm btn-outline">Ver demanda</a>
                         {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table></div>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
     {% else %}
         <div class="card">
             <h3>Nenhuma rodada aberta para cotação</h3>

@@ -1554,6 +1554,98 @@ h1, h2, h3, h4, h5, h6 {
     .auth-form-side { padding: var(--space-4) var(--space-3); }
 }
 
+/* ============================================================
+   Card-grid de rodadas para cotacao (Fase B3) — substitui a tabela
+   generica do dashboard fornecedor por cards de acao com urgencia
+   visual destacada. Critical-path do fornecedor: ver rodada prestes
+   a fechar + tomar a acao certa em 1 olhada.
+   ============================================================ */
+.rodada-cotacao-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+}
+.rodada-cotacao-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    border-left: 4px solid var(--brand-verde-claro);
+    border-radius: 10px;
+    padding: var(--space-3);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    position: relative;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+}
+.rodada-cotacao-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 32px -12px rgba(0, 0, 0, 0.5);
+    border-color: var(--border-strong);
+}
+.rodada-cotacao-card.is-urgent {
+    border-left-color: var(--brand-ouro);
+    background:
+        linear-gradient(135deg, rgba(212, 175, 55, 0.06), transparent 60%),
+        var(--bg-elevated);
+}
+.rodada-cotacao-card.is-urgent::before {
+    content: "URGENTE";
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-3);
+    font-family: var(--font-heading);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--brand-ouro);
+    padding: 2px 8px;
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: 999px;
+}
+.rodada-cotacao-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-2);
+}
+.rodada-cotacao-card-nome {
+    font-family: var(--font-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.25;
+    max-width: 220px;
+    letter-spacing: -0.01em;
+}
+.rodada-cotacao-card-countdown {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1;
+    letter-spacing: -0.02em;
+}
+.rodada-cotacao-card.is-urgent .rodada-cotacao-card-countdown {
+    color: var(--brand-ouro);
+    text-shadow: 0 0 18px rgba(212, 175, 55, 0.25);
+}
+.rodada-cotacao-card-data {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    letter-spacing: 0.2px;
+}
+.rodada-cotacao-card-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-top: var(--space-1);
+}
+.rodada-cotacao-card .btn {
+    flex-shrink: 0;
+}
+
 /* Header editorial das paginas de cadastro (registro lanchonete + fornecedor).
    Forma longa nao cabe split-screen — entao adotamos eyebrow + h1 Sora pra
    manter identidade Aggron consistente com a tela de login. */
