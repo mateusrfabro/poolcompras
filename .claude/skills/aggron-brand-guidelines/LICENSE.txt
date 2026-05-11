@@ -1,0 +1,24 @@
+Aggron Brand Guidelines — Skill de uso interno
+
+Esta skill codifica a identidade visual oficial da Aggron baseada no
+documento "Aggron Identity System Official" (2026), fornecido pelo
+designer responsavel pela marca.
+
+Uso restrito a:
+- Equipe interna Aggron (Mateus Fabro, Ademar [sobrenome], colaboradores
+  diretos do projeto).
+- Agentes de IA operando em nome dos socios durante desenvolvimento e
+  geracao de artefatos para a Aggron.
+
+Distribuicao:
+- Nao redistribuir os assets graficos (logo PNG, PDF original) fora da
+  organizacao sem autorizacao explicita dos socios.
+- O texto desta SKILL.md em si pode ser usado como referencia interna
+  livremente pelo time do projeto.
+
+Fonte da verdade:
+docs/Aggron_Identity_System_Official.pdf — versao oficial 2026 do
+manual de identidade. Em caso de conflito entre esta skill e o PDF,
+o PDF prevalece e a skill deve ser atualizada.
+
+(c) 2026 Aggron Central de Compras Cooperativa — Londrina, PR.
