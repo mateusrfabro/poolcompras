@@ -473,30 +473,33 @@ def create_app(config_name="default"):
 
     # Mapeamento ACAO_* (AuditLog) -> variante visual da tag.
     # Classes correspondentes em style.css: .tag-success/.tag-danger/.tag-create/.tag-edit/.tag-info.
+    # Usa as constantes do model (e nao strings literais) pra detectar drift
+    # se algum dia o valor de uma constante mudar.
+    AL = models.AuditLog
     AUDIT_TAG_CLASSES = {
         # success — eventos positivos/conclusivos
-        "login_ok": "tag-success",
-        "lead_convertido": "tag-success",
-        "rodada_finalizada": "tag-success",
-        "fatura_paga": "tag-success",
+        AL.ACAO_LOGIN_OK:           "tag-success",
+        AL.ACAO_LEAD_CONVERTIDO:    "tag-success",
+        AL.ACAO_RODADA_FINALIZADA:  "tag-success",
+        AL.ACAO_FATURA_PAGA:        "tag-success",
         # danger — falhas, cancelamentos
-        "login_fail": "tag-danger",
-        "rodada_cancelada": "tag-danger",
+        AL.ACAO_LOGIN_FAIL:         "tag-danger",
+        AL.ACAO_RODADA_CANCELADA:   "tag-danger",
         # create — criacoes (entidades novas no sistema)
-        "lead_criado": "tag-create",
-        "produto_criado": "tag-create",
-        "lanchonete_criada": "tag-create",
-        "fornecedor_criado": "tag-create",
-        "vendedor_criado": "tag-create",
-        "rodada_criada": "tag-create",
+        AL.ACAO_LEAD_CRIADO:        "tag-create",
+        AL.ACAO_PRODUTO_CRIADO:     "tag-create",
+        AL.ACAO_LANCHONETE_CRIADA:  "tag-create",
+        AL.ACAO_FORNECEDOR_CRIADO:  "tag-create",
+        AL.ACAO_VENDEDOR_CRIADO:    "tag-create",
+        AL.ACAO_RODADA_CRIADA:      "tag-create",
         # edit — mudancas de estado/edicoes
-        "produto_editado": "tag-edit",
-        "lead_status_alterado": "tag-edit",
+        AL.ACAO_PRODUTO_EDITADO:    "tag-edit",
+        AL.ACAO_LEAD_STATUS_ALTERADO: "tag-edit",
         # info — eventos neutros/auxiliares
-        "logout": "tag-info",
-        "lead_evento_adicionado": "tag-info",
-        "senha_redefinida": "tag-info",
-        "fatura_pendente": "tag-info",
+        AL.ACAO_LOGOUT:             "tag-info",
+        AL.ACAO_LEAD_EVENTO:        "tag-info",
+        AL.ACAO_SENHA_REDEFINIDA:   "tag-info",
+        AL.ACAO_FATURA_PENDENTE:    "tag-info",
     }
 
     @app.template_filter("audit_tag_class")

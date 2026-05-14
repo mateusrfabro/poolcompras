@@ -15,18 +15,17 @@ Tipografia: fallback Helvetica (reportlab default). Pra usar Sora/Inter
 em prod, registrar TTFs com pdfmetrics.registerFont (deixado como TODO).
 """
 from pathlib import Path
-from datetime import datetime, date
+from datetime import datetime
 
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.colors import HexColor
-from reportlab.lib.units import mm, cm
+from reportlab.lib.units import mm
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak,
-    Image, KeepTogether,
 )
-from reportlab.pdfgen import canvas
-from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER
+from reportlab.lib.utils import ImageReader
+from reportlab.lib.enums import TA_LEFT, TA_RIGHT
 
 # === Tokens oficiais da skill aggron-brand-guidelines ===
 VERDE_AGGRON  = HexColor("#0F2A1F")
@@ -36,17 +35,15 @@ GRAFITE       = HexColor("#111418")
 GRAFITE_DARK  = HexColor("#0a0c0e")
 CINZA_CLARO   = HexColor("#E6E6E6")
 CINZA_MUTED   = HexColor("#8b929a")
-BRANCO        = HexColor("#FFFFFF")
 
 ROOT = Path(__file__).resolve().parent.parent
 LOGO_PATH = ROOT / "app" / "static" / "images" / "logo-aggron-symbol.png"
 OUT_PATH  = ROOT / "docs" / "exemplos" / "cotacao_modelo.pdf"
 
-# === Dados ficticios (rodada exemplo) ===
+# === Dados FICTICIOS de demo — nunca usar em prod ===
 RODADA = {
     "nome": "Rodada Maio 2026 #14",
     "data_fechamento": "31/05/2026",
-    "data_geracao": datetime.now().strftime("%d/%m/%Y as %H:%M"),
     "lanchonetes_participando": 7,
     "total_pedidos": 142,
     "economia_estimada": "R$ 4.832,40",
@@ -101,17 +98,15 @@ def _draw_cover_page(canvas_obj, doc):
     # Fundo verde Aggron pleno
     canvas_obj.setFillColor(VERDE_AGGRON)
     canvas_obj.rect(0, 0, A4[0], A4[1], fill=1, stroke=0)
-    # Glow ouro sutil topo direito (simulacao via circulo grande clareado)
     # Logo centralizado
     if LOGO_PATH.exists():
         try:
-            from reportlab.lib.utils import ImageReader
             img = ImageReader(str(LOGO_PATH))
             logo_w = 50 * mm
             logo_h = 50 * mm
             canvas_obj.drawImage(img, (A4[0] - logo_w) / 2, A4[1] / 2 + 20 * mm,
                                  width=logo_w, height=logo_h, mask='auto')
-        except Exception as e:
+        except OSError as e:
             print(f"Aviso: nao foi possivel embedar logo: {e}")
     # Wordmark
     canvas_obj.setFillColor(CINZA_CLARO)
@@ -153,7 +148,8 @@ def _draw_cover_page(canvas_obj, doc):
     canvas_obj.drawString(145 * mm, meta_y, "PARTICIPANTES")
     canvas_obj.setFillColor(CINZA_CLARO)
     canvas_obj.setFont("Helvetica-Bold", 11)
-    canvas_obj.drawString(25 * mm, meta_y - 6 * mm, RODADA["data_geracao"])
+    canvas_obj.drawString(25 * mm, meta_y - 6 * mm,
+                          datetime.now().strftime("%d/%m/%Y as %H:%M"))
     canvas_obj.drawString(85 * mm, meta_y - 6 * mm, RODADA["data_fechamento"])
     canvas_obj.drawString(145 * mm, meta_y - 6 * mm,
                           f"{RODADA['lanchonetes_participando']} lanchonetes")
