@@ -50,7 +50,8 @@
 
     {# Acoes pendentes AGRUPADAS POR RODADA (nao mais por lanchonete individual) #}
     {% if pendencias_por_rodada %}
-        <h3>Ações pendentes</h3>
+    <section aria-labelledby="sec-pendencias">
+        <h3 id="sec-pendencias">Ações pendentes</h3>
         <p class="subtitle">Rodadas esperando sua ação.</p>
         <div class="pendencias-grid">
             {% for bloco in pendencias_por_rodada %}
@@ -111,10 +112,12 @@
                 </div>
             {% endfor %}
         </div>
+    </section>
     {% endif %}
 
     {% if rodadas_para_cotar %}
-        <h3>Rodadas abertas para cotação</h3>
+    <section aria-labelledby="sec-rodadas-cotar">
+        <h3 id="sec-rodadas-cotar">Rodadas abertas para cotação</h3>
         <div class="rodada-cotacao-grid">
             {% for r in rodadas_para_cotar %}
                 <article class="rodada-cotacao-card {% if r.data_fechamento|urgente %}is-urgent{% endif %}">
@@ -141,6 +144,7 @@
                 </article>
             {% endfor %}
         </div>
+    </section>
     {% else %}
         <div class="card">
             <h3>Nenhuma rodada aberta para cotação</h3>
@@ -149,7 +153,8 @@
     {% endif %}
 
     {% if ultimas_rodadas %}
-        <h3 class="section-title">Últimas rodadas</h3>
+    <section aria-labelledby="sec-ultimas-rodadas">
+        <h3 id="sec-ultimas-rodadas" class="section-title">Últimas rodadas</h3>
         <div class="ultimas-rodadas-grid">
             {% for u in ultimas_rodadas %}
                 <a href="{{ url_for('fornecedor.ver_demanda', rodada_id=u.rodada.id) }}" class="ultima-rodada-card">
@@ -171,10 +176,14 @@
                 </a>
             {% endfor %}
         </div>
+    </section>
     {% endif %}
 
     {% if minhas_cotacoes %}
-        <h3>Últimas cotações enviadas</h3>
+    {# Colapsado por padrao: info de apoio, fica fora do critical-path do
+       fornecedor (criticidade vai em "Acoes pendentes" e "Rodadas pra cotar"). #}
+    <details class="dashboard-detalhe-collapse">
+        <summary><h3 class="d-inline-block">Últimas cotações enviadas</h3></summary>
         <div class="table-wrapper"><table class="table">
             <thead>
                 <tr>
@@ -201,6 +210,7 @@
                 {% endfor %}
             </tbody>
         </table></div>
+    </details>
     {% endif %}
 </div>
 {% endblock %}

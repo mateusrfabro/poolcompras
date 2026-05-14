@@ -29,10 +29,10 @@
     <div class="auth-form-side">
         <div class="auth-form-wrapper">
             <span class="auth-form-eyebrow">Acesso à plataforma</span>
-            <h2 class="auth-form-titulo">Entrar</h2>
+            <h2 class="auth-form-titulo" id="form-titulo-login">Entrar</h2>
             <p class="auth-form-sub">Use o e-mail e a senha do cadastro.</p>
 
-            <form method="POST">
+            <form method="POST" aria-labelledby="form-titulo-login">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <div class="form-group {% if erro_login %}is-invalid{% endif %}">
                     <label for="email">E-mail</label>

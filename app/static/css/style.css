@@ -1108,7 +1108,12 @@ h1, h2, h3, h4, h5, h6 {
 }
 .btn-danger:hover { background: #dc2626; border-color: #dc2626; }
 .btn-lg { padding: 0.8rem 2rem; font-size: 1rem; }
-.btn-sm { padding: 0.3rem 0.8rem; font-size: 0.8rem; }
+/* .btn-sm: padding maior em mobile (tap target >= 36px) sem inflar desktop.
+   Antes era 0.3rem 0.8rem (~28px alt) que falha WCAG 2.5.5 em telas pequenas. */
+.btn-sm { padding: 0.45rem 0.85rem; font-size: 0.8rem; }
+@media (max-width: 768px) {
+    .btn-sm { padding: 0.55rem 0.95rem; }
+}
 .btn-block { display: block; width: 100%; text-align: center; }
 .btn-logout {
     padding: 0.4rem 0.9rem !important;
@@ -2767,6 +2772,44 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-secondary);
 }
 
+/* Bloco colapsavel no dashboard — usado pra mover info de apoio
+   (ex: "Ultimas cotacoes enviadas" do fornecedor) pra fora do
+   critical-path sem perder acesso. Aberta sob demanda. */
+.dashboard-detalhe-collapse {
+    margin-top: var(--space-4);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-3);
+}
+.dashboard-detalhe-collapse > summary {
+    cursor: pointer;
+    list-style: none;
+    color: var(--text-secondary);
+    padding: var(--space-1) 0;
+    user-select: none;
+}
+.dashboard-detalhe-collapse > summary::-webkit-details-marker {
+    display: none;
+}
+.dashboard-detalhe-collapse > summary::before {
+    content: "▸";
+    display: inline-block;
+    margin-right: var(--space-1);
+    color: var(--brand-ouro);
+    transition: transform 0.15s;
+    width: 1ch;
+}
+.dashboard-detalhe-collapse[open] > summary::before {
+    transform: rotate(90deg);
+}
+.dashboard-detalhe-collapse > summary h3 {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 1rem;
+}
+.dashboard-detalhe-collapse[open] > summary h3 {
+    color: var(--text-primary);
+}
+
 /* Tag (categoria de produto, etc.) */
 .tag {
     display: inline-block;
@@ -2856,6 +2899,12 @@ h1, h2, h3, h4, h5, h6 {
    container, e <small class="field-error"> mostra mensagem especifica. */
 .form-group.is-invalid label {
     color: var(--danger);
+}
+/* Links dentro do label (ex: termos/privacidade no checkbox de registro)
+   nao herdam o vermelho — preservam affordance de link em ouro. */
+.form-group.is-invalid .form-checkbox a,
+.form-group.is-invalid a {
+    color: var(--brand-ouro);
 }
 .form-group.is-invalid input,
 .form-group.is-invalid select,
