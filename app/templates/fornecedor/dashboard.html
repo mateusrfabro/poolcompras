@@ -100,7 +100,8 @@
                                           action="{{ url_for('fluxo.informar_entrega', rodada_id=p.rodada_id, lanchonete_id=p.lanchonete_id) }}"
                                           class="pendencia-form mt-1">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                        <input type="date" name="entrega_data" required>
+                                        <label class="sr-only" for="entrega-{{ p.rodada_id }}-{{ p.lanchonete_id }}">Data prevista de entrega para {{ p.lanchonete.nome_fantasia }}</label>
+                                        <input type="date" name="entrega_data" id="entrega-{{ p.rodada_id }}-{{ p.lanchonete_id }}" required>
                                         <button type="submit" class="btn btn-primary btn-sm">Informar entrega</button>
                                     </form>
                                 </li>

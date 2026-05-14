@@ -38,7 +38,11 @@
                     <a href="{{ url_for('rodadas.detalhe', rodada_id=rodada_aberta.id) }}" class="btn btn-outline btn-sm">Ver detalhes</a>
                     <form method="POST" action="{{ url_for('admin.rodada_fechar', rodada_id=rodada_aberta.id) }}">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-danger btn-sm" data-confirm="Fechar esta rodada?">Fechar rodada</button>
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                data-confirm="Fechar esta rodada?"
+                                title="Encerra a coleta de pedidos da rodada e impede novas alterações. Ação não-reversível pela interface."
+                                aria-describedby="fechar-rodada-aviso">Fechar rodada</button>
+                        <span id="fechar-rodada-aviso" class="sr-only">Ação destrutiva: encerra a coleta de pedidos e não pode ser desfeita pela interface.</span>
                     </form>
                 </div>
             </aside>

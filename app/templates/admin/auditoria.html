@@ -102,18 +102,18 @@
             </tbody>
         </table></div>
 
-        {# Paginacao simples #}
-        <div class="form-row mt-4">
+        {# Paginacao simples — landmark de navegacao explicito pra SR. #}
+        <nav class="form-row mt-4" aria-label="Paginação da auditoria">
             {% if pagina > 1 %}
-                <a class="btn btn-outline btn-sm"
+                <a class="btn btn-outline btn-sm" rel="prev"
                    href="?{{ request.query_string.decode()|replace('p=' + pagina|string, 'p=' + (pagina-1)|string) if 'p=' in request.query_string.decode() else (request.query_string.decode() ~ '&p=' ~ (pagina-1)) }}">← Anterior</a>
             {% endif %}
-            <span class="muted text-sm">Página {{ pagina }} ({{ eventos|length }} de {{ total }} eventos)</span>
+            <span class="muted text-sm" aria-current="page">Página {{ pagina }} ({{ eventos|length }} de {{ total }} eventos)</span>
             {% if tem_proxima %}
-                <a class="btn btn-outline btn-sm"
+                <a class="btn btn-outline btn-sm" rel="next"
                    href="?{{ request.query_string.decode()|replace('p=' + pagina|string, 'p=' + (pagina+1)|string) if 'p=' in request.query_string.decode() else (request.query_string.decode() ~ '&p=' ~ (pagina+1)) }}">Próxima →</a>
             {% endif %}
-        </div>
+        </nav>
     {% endif %}
 </div>
 {% endblock %}
