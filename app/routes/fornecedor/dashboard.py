@@ -1,7 +1,7 @@
 """Dashboard e analytics do fornecedor."""
 from flask import render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
-from sqlalchemy import func
+from sqlalchemy import func, case
 
 from app import db
 from app.models import (
@@ -83,35 +83,38 @@ def dashboard():
             .limit(3)
             .all()
         )
-        # Evita N+1: pre-agrega em 3 queries agrupadas (uma por metrica) em vez
-        # de 3 queries por rodada.
+        # Pre-agrega em 2 queries (era 3) — consolidamos total + vitorias
+        # num unico GROUP BY sobre Cotacao com SUM(CASE WHEN selecionada).
+        # AvaliacaoRodada e tabela distinta, fica em query separada.
         rod_ids = [r.id for r in rodadas_cotadas]
-        cotadas = dict(
-            db.session.query(Cotacao.rodada_id, func.count(Cotacao.id))
-            .filter(Cotacao.rodada_id.in_(rod_ids),
-                    Cotacao.fornecedor_id == fornecedor.id)
-            .group_by(Cotacao.rodada_id).all()
-        ) if rod_ids else {}
-        vits = dict(
-            db.session.query(Cotacao.rodada_id, func.count(Cotacao.id))
-            .filter(Cotacao.rodada_id.in_(rod_ids),
-                    Cotacao.fornecedor_id == fornecedor.id,
-                    Cotacao.selecionada.is_(True))
-            .group_by(Cotacao.rodada_id).all()
-        ) if rod_ids else {}
-        notas = dict(
-            db.session.query(AvaliacaoRodada.rodada_id, func.avg(AvaliacaoRodada.estrelas))
-            .filter(AvaliacaoRodada.rodada_id.in_(rod_ids),
-                    AvaliacaoRodada.fornecedor_id == fornecedor.id)
-            .group_by(AvaliacaoRodada.rodada_id).all()
-        ) if rod_ids else {}
+        if rod_ids:
+            cot_vits_rows = (
+                db.session.query(
+                    Cotacao.rodada_id,
+                    func.count(Cotacao.id),
+                    func.sum(case((Cotacao.selecionada.is_(True), 1), else_=0)),
+                )
+                .filter(Cotacao.rodada_id.in_(rod_ids),
+                        Cotacao.fornecedor_id == fornecedor.id)
+                .group_by(Cotacao.rodada_id).all()
+            )
+            cot_vits = {rid: (total, int(vits or 0)) for rid, total, vits in cot_vits_rows}
+            notas = dict(
+                db.session.query(AvaliacaoRodada.rodada_id, func.avg(AvaliacaoRodada.estrelas))
+                .filter(AvaliacaoRodada.rodada_id.in_(rod_ids),
+                        AvaliacaoRodada.fornecedor_id == fornecedor.id)
+                .group_by(AvaliacaoRodada.rodada_id).all()
+            )
+        else:
+            cot_vits, notas = {}, {}
 
         for r in rodadas_cotadas:
             nota = notas.get(r.id)
+            total, vits = cot_vits.get(r.id, (0, 0))
             ultimas_rodadas.append({
                 "rodada": r,
-                "cotacoes": cotadas.get(r.id, 0),
-                "vitorias": vits.get(r.id, 0),
+                "cotacoes": total,
+                "vitorias": vits,
                 "nota": round(float(nota), 1) if nota else None,
             })
 
