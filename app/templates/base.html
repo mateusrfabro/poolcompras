@@ -35,11 +35,15 @@
                 {% set brand_href = url_for('fornecedor.dashboard') if current_user.is_fornecedor else url_for('main.dashboard') %}
             {% endif %}
             <a href="{{ brand_href }}" aria-label="Aggron — Inteligência que gera valor">
+                {# Monograma A oficial recortado em alta nitidez do board do
+                   designer (manual 2026). Assets em /static/images/brand/.
+                   Texto AGGRON + tagline ficam em HTML/CSS pra responsividade
+                   (some/encolhe em mobile sem precisar trocar imagem). #}
                 <img class="logo-img"
-                     src="{{ url_for('static', filename='images/logo-aggron-symbol.png') }}"
-                     srcset="{{ url_for('static', filename='images/logo-aggron-symbol@2x.png') }} 1x, {{ url_for('static', filename='images/logo-aggron-symbol.png') }} 2x"
+                     src="{{ url_for('static', filename='images/brand/logo-aggron-monograma.png') }}"
+                     srcset="{{ url_for('static', filename='images/brand/logo-aggron-monograma.png') }} 1x, {{ url_for('static', filename='images/brand/logo-aggron-monograma@2x.png') }} 2x"
                      alt=""
-                     width="48" height="48">
+                     width="63" height="48">
                 <span class="logo-text-group">
                     <span class="logo-text">AGGRON</span>
                     <span class="logo-tagline">INTELIGÊNCIA QUE GERA VALOR</span>
@@ -47,11 +51,16 @@
             </a>
         </div>
 
-        {# Toggle do menu mobile (CSS-only via :checked) #}
+        {# Toggle do menu mobile (CSS-only via :checked).
+           Overlay escuro fica entre toggle e nav-links pra que o sibling
+           selector ~.nav-overlay funcione quando o checkbox e marcado. #}
         <input type="checkbox" id="nav-toggle" class="nav-toggle" aria-hidden="true">
         <label for="nav-toggle" class="nav-toggle-label" aria-label="Abrir menu">
             <span class="nav-toggle-icon" aria-hidden="true"></span>
         </label>
+        {# Overlay clicavel: tocar fora do menu fecha (toggle do mesmo checkbox).
+           CSP-safe via <label for> em vez de onclick. #}
+        <label for="nav-toggle" class="nav-overlay" aria-label="Fechar menu"></label>
 
         <div class="nav-links">
             {% if current_user.is_authenticated %}

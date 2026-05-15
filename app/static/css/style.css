@@ -192,7 +192,7 @@ input, select, textarea {
     color: var(--text-primary);
     border: 1px solid var(--border-strong);
 }
-input::placeholder, textarea::placeholder { color: var(--text-muted); }
+input::placeholder, textarea::placeholder { color: var(--text-secondary); opacity: 0.7; }
 
 /* Bloqueia o autofill amarelo do Chrome em fundo dark — sem isso o
    campo de email/senha pisca amarelo flagrante depois que o navegador
@@ -259,12 +259,12 @@ h1, h2, h3, h4, h5, h6 {
     align-items: center;
     gap: 0.7rem;
 }
+/* Monograma A oficial (recortado em alta nitidez do board do designer).
+   Fundo escuro embed funde com a navbar dark. */
 .nav-brand img.logo-img {
     height: 48px;
-    width: 48px;
+    width: auto;
     display: block;
-    /* Glow ouro sutil pra dar destaque sobre o navbar dark. */
-    filter: drop-shadow(0 0 10px rgba(212, 175, 55, 0.35));
 }
 .nav-brand .logo-text-group {
     display: flex;
@@ -452,13 +452,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 .hero-stage-num {
     font-family: var(--font-heading);
-    font-size: clamp(3.5rem, 8vw, 5.5rem);
+    /* Min reduzido (2.4rem) pra caber em telas <=360px sem cortar o "%".
+       Antes era 3.5rem o que sobrepujava o clamp em mobile pequeno. */
+    font-size: clamp(2.4rem, 9vw, 5.5rem);
     font-weight: 700;
     color: var(--brand-ouro);
     line-height: 1;
     letter-spacing: -0.04em;
     text-shadow: 0 0 40px rgba(212, 175, 55, 0.2);
     display: block;
+    word-break: keep-all;  /* impede "Até 15" quebrar entre palavras */
 }
 .hero-stage-unit {
     font-size: 0.5em;
@@ -714,8 +717,12 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--text-primary);
     font-size: 1rem;
     list-style: none;
-    padding-right: var(--space-3);
+    /* padding-right maior (2.5rem) pra que perguntas longas em mobile
+       NAO encostem no botao "+" da direita. */
+    padding-right: 2.5rem;
     position: relative;
+    min-height: 28px;
+    line-height: 1.4;
 }
 .faq-secao summary::after {
     content: "+";
@@ -2953,6 +2960,7 @@ h1, h2, h3, h4, h5, h6 {
         flex-wrap: wrap;
     }
     .nav-toggle-label { display: block; }
+    /* Menu fechado: invisivel mas ainda no DOM (mantem flex-wrap funcionando) */
     .nav-links {
         display: none;
         flex-basis: 100%;
@@ -2962,10 +2970,45 @@ h1, h2, h3, h4, h5, h6 {
         padding: 0.5rem 0;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
     }
-    .nav-toggle:checked ~ .nav-links { display: flex; }
+    /* Menu aberto: vira drawer com fundo SOLIDO grafite (opaco 100%) ancorado
+       abaixo da navbar. Box-shadow + z-index >> conteudo da pagina. */
+    .nav-toggle:checked ~ .nav-links {
+        display: flex;
+        position: absolute;
+        top: 100%;  /* logo abaixo da navbar */
+        left: 0;
+        right: 0;
+        background: var(--brand-grafite);
+        border-top: 1px solid var(--border-strong);
+        border-bottom: 1px solid var(--border-strong);
+        box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6);
+        padding: var(--space-1) var(--space-2);
+        z-index: 100;
+        max-height: calc(100vh - 64px);
+        overflow-y: auto;
+    }
+    /* Overlay escurecendo o conteudo da pagina atras do menu — usa o
+       proprio nav-toggle:checked como gatilho via sibling selector. */
+    .nav-toggle:checked ~ .nav-overlay {
+        display: block;
+    }
+    .nav-overlay {
+        display: none;
+        position: fixed;
+        top: 64px;  /* abaixo da navbar */
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: var(--bg-page);  /* fundo solido da pagina — zero vazamento */
+        z-index: 90;  /* abaixo do menu (100), acima do conteudo */
+        cursor: pointer;  /* tap-to-close: clica no overlay fecha o menu */
+    }
     .nav-links a {
-        padding: 0.8rem 0.5rem;
+        padding: 0.9rem 0.6rem;
         font-size: 0.95rem;
+        min-height: 44px;  /* tap target WCAG 2.5.5 */
+        display: flex;
+        align-items: center;
     }
     .nav-links a:hover { background: rgba(255, 255, 255, 0.05); }
 
