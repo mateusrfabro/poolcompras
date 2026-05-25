@@ -3,9 +3,13 @@
 Revision ID: a1b2c3d4e5f6
 Revises: e9fa130602
 Create Date: 2026-05-02
+
+Reescrita idempotente (2026-05): baseline cria coluna via metadata.
 """
 from alembic import op
 import sqlalchemy as sa
+
+from migrations._idempotent import has_column
 
 
 revision = "a1b2c3d4e5f6"
@@ -18,10 +22,12 @@ def upgrade():
     # Usuario.aceite_termos_em: timestamp de aceite do checkbox de Termos+Privacidade.
     # Nullable pra preservar usuarios legacy sem dado historico — quando NULL,
     # UI pode forcar reaceite no proximo login. Usuarios novos sempre setam.
-    with op.batch_alter_table("usuarios") as batch_op:
-        batch_op.add_column(sa.Column("aceite_termos_em", sa.DateTime(timezone=True), nullable=True))
+    if not has_column('usuarios', 'aceite_termos_em'):
+        with op.batch_alter_table("usuarios") as batch_op:
+            batch_op.add_column(sa.Column("aceite_termos_em", sa.DateTime(timezone=True), nullable=True))
 
 
 def downgrade():
-    with op.batch_alter_table("usuarios") as batch_op:
-        batch_op.drop_column("aceite_termos_em")
+    if has_column('usuarios', 'aceite_termos_em'):
+        with op.batch_alter_table("usuarios") as batch_op:
+            batch_op.drop_column("aceite_termos_em")

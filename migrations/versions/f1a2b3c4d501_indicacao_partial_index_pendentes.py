@@ -14,6 +14,8 @@ nao depender de kwargs especificos do dialect dentro do batch.
 Revision ID: f1a2b3c4d501
 Revises: b7d8e9fa1301
 Create Date: 2026-05-04
+
+Reescrita idempotente (2026-05): IF NOT EXISTS em vez de CREATE simples.
 """
 from alembic import op
 
@@ -26,7 +28,7 @@ depends_on = None
 
 def upgrade():
     op.execute(
-        "CREATE INDEX ix_indicacao_pendentes "
+        "CREATE INDEX IF NOT EXISTS ix_indicacao_pendentes "
         "ON indicacoes (indicador_lanchonete_id, criado_em) "
         "WHERE recompensa_aplicada_em IS NULL"
     )

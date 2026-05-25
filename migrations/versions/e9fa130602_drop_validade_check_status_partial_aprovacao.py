@@ -9,10 +9,15 @@ Hygiene:
 - validade nunca foi populado nem filtrado — campo morto.
 - status: bloqueia INSERT/UPDATE com typo (ex: 'aberto' em vez de 'aberta').
 - partial index: fila admin "aprovar produtos sugeridos" (aprovado IS NULL
-  AND adicionado_por_fornecedor_id IS NOT NULL) é query quente.
+  AND adicionado_por_fornecedor_id IS NOT NULL) eh query quente.
+
+Reescrita idempotente (2026-05): baseline nao cria validade (foi removida
+do model). Em DB limpo, drop_column eh skipado.
 """
 from alembic import op
 import sqlalchemy as sa
+
+from migrations._idempotent import has_check, has_column
 
 
 revision = "e9fa130602"
@@ -23,16 +28,18 @@ depends_on = None
 
 def upgrade():
     # 1. Drop Cotacao.validade
-    with op.batch_alter_table("cotacoes") as batch_op:
-        batch_op.drop_column("validade")
+    if has_column('cotacoes', 'validade'):
+        with op.batch_alter_table("cotacoes") as batch_op:
+            batch_op.drop_column("validade")
 
     # 2. CheckConstraint em Rodada.status
-    with op.batch_alter_table("rodadas") as batch_op:
-        batch_op.create_check_constraint(
-            "ck_rodada_status_valido",
-            "status IN ('preparando','aguardando_cotacao','aberta',"
-            "'em_negociacao','fechada','cotando','finalizada','cancelada')",
-        )
+    if not has_check('rodadas', 'ck_rodada_status_valido'):
+        with op.batch_alter_table("rodadas") as batch_op:
+            batch_op.create_check_constraint(
+                "ck_rodada_status_valido",
+                "status IN ('preparando','aguardando_cotacao','aberta',"
+                "'em_negociacao','fechada','cotando','finalizada','cancelada')",
+            )
 
     # 3. Partial index pra fila de aprovacao admin
     op.execute(
@@ -45,8 +52,10 @@ def upgrade():
 def downgrade():
     op.execute("DROP INDEX IF EXISTS ix_rodada_produto_aprovacao_pendente")
 
-    with op.batch_alter_table("rodadas") as batch_op:
-        batch_op.drop_constraint("ck_rodada_status_valido", type_="check")
+    if has_check('rodadas', 'ck_rodada_status_valido'):
+        with op.batch_alter_table("rodadas") as batch_op:
+            batch_op.drop_constraint("ck_rodada_status_valido", type_="check")
 
-    with op.batch_alter_table("cotacoes") as batch_op:
-        batch_op.add_column(sa.Column("validade", sa.DateTime(timezone=True), nullable=True))
+    if not has_column('cotacoes', 'validade'):
+        with op.batch_alter_table("cotacoes") as batch_op:
+            batch_op.add_column(sa.Column("validade", sa.DateTime(timezone=True), nullable=True))
