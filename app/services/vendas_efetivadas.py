@@ -3,13 +3,18 @@
 Regra de inclusao (mesma dos 2 servicos):
 - Cotacao.selecionada=True pro produto+rodada+fornecedor
 - ParticipacaoRodada.aceite_proposta=True (lanchonete aceitou a proposta)
+- NAO existe RecusaFornecedor pra (rodada, lanchonete, fornecedor) — aceite
+  parcial: lanchonete pode aceitar a proposta global e recusar fornecedor
+  especifico, e nesse caso aquela venda nao conta como efetivada.
 
 Garantir fonte unica evita o CMV/P&L divergirem com o tempo.
 """
+from sqlalchemy import and_, exists
+
 from app import db
 from app.models import (
     Rodada, Produto, Lanchonete, Fornecedor, ItemPedido, Cotacao,
-    RodadaProduto, ParticipacaoRodada,
+    RodadaProduto, ParticipacaoRodada, RecusaFornecedor,
 )
 
 
@@ -57,6 +62,14 @@ def linhas_efetivadas(lanchonete_id: int = None, fornecedor_id: int = None):
                    (RodadaProduto.rodada_id == ItemPedido.rodada_id) &
                    (RodadaProduto.produto_id == ItemPedido.produto_id))
         .filter(ParticipacaoRodada.aceite_proposta.is_(True))
+        # Aceite parcial: exclui linhas onde a lanchonete recusou esse fornecedor
+        .filter(
+            ~exists().where(and_(
+                RecusaFornecedor.rodada_id == ItemPedido.rodada_id,
+                RecusaFornecedor.lanchonete_id == ItemPedido.lanchonete_id,
+                RecusaFornecedor.fornecedor_id == Cotacao.fornecedor_id,
+            ))
+        )
     )
     if lanchonete_id is not None:
         q = q.filter(ItemPedido.lanchonete_id == lanchonete_id)

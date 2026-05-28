@@ -356,6 +356,42 @@ class ParticipacaoRodada(db.Model):
     )
 
 
+class RecusaFornecedor(db.Model):
+    """Aceite parcial: lanchonete aceitou a proposta MAS recusou fornecedor(es) especifico(s).
+
+    Uma linha por (rodada, lanchonete, fornecedor) recusado. Ausencia de linha
+    = fornecedor aceito quando ParticipacaoRodada.aceite_proposta=True.
+
+    Decisao Mateus 2026-05-28 (opcao MINI):
+    - Aceite continua bool em ParticipacaoRodada (compat retroativa)
+    - Lanchonete pode recusar fornecedores especificos via lista
+    - Cada bloco "Fornecedor X com Y itens" tem botoes Aceitar/Recusar
+    - Comprovante e recebimento seguem unicos (lanchonete soma o aceito)
+    - Calculos CMV/P&L/pagamento_por_fornecedor filtram fornecedores recusados
+    """
+    __tablename__ = "recusas_fornecedor"
+
+    id = db.Column(db.Integer, primary_key=True)
+    rodada_id     = db.Column(db.Integer, db.ForeignKey("rodadas.id"),
+                              nullable=False, index=True)
+    lanchonete_id = db.Column(db.Integer, db.ForeignKey("lanchonetes.id"),
+                              nullable=False, index=True)
+    fornecedor_id = db.Column(db.Integer, db.ForeignKey("fornecedores.id"),
+                              nullable=False, index=True)
+    motivo        = db.Column(db.String(500))  # opcional — pra negociar futuro
+    criado_em     = db.Column(db.DateTime(timezone=True),
+                               default=lambda: datetime.now(timezone.utc))
+
+    rodada      = db.relationship("Rodada")
+    lanchonete  = db.relationship("Lanchonete")
+    fornecedor  = db.relationship("Fornecedor")
+
+    __table_args__ = (
+        UniqueConstraint("rodada_id", "lanchonete_id", "fornecedor_id",
+                         name="uq_recusa_rodada_lanch_forn"),
+    )
+
+
 class AvaliacaoRodada(db.Model):
     """Avaliacao por fornecedor dentro de uma rodada (opcao D — so preenche se nota geral <= 3).
 

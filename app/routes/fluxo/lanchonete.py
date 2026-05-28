@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app import db, limiter
 from app.auth_decorators import lanchonete_required
 from app.models import ParticipacaoRodada, EventoRodada
+from app.services.aceite_parcial import registrar_recusas
 from app.services.storage import get_storage
 from . import (
     fluxo_bp, COMPROVANTE_EXT, MAGIC_BYTES,
@@ -20,23 +21,55 @@ from . import (
 @lanchonete_required
 @limiter.limit("60 per hour")
 def aceitar_proposta(rodada_id):
+    """Aceita a proposta consolidada. Aceite pode ser PARCIAL — form aceita
+    lista 'fornecedor_recusado' (multi) com IDs de fornecedores recusados.
+    Cria RecusaFornecedor pra cada recusado. Fornecedores nao recusados ficam
+    aceitos (ausencia de linha = aceito).
+    """
     rodada, lanchonete = _so_dona_lanchonete(rodada_id)
     if not _ja_aceita_fase_aceite(rodada):
         flash("Rodada não está disponível para aceite.", "error")
         return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
 
+    # Lista de fornecedor_id recusados (vazia = aceita tudo)
+    recusados_str = request.form.getlist("fornecedor_recusado")
+    recusados_ids: list[int] = []
+    for s in recusados_str:
+        try:
+            recusados_ids.append(int(s))
+        except (TypeError, ValueError):
+            pass
+
     try:
         p = _obter_ou_criar_participacao(rodada_id, lanchonete.id)
         if p.aceite_proposta is True:
             flash("Você já havia aceitado esta proposta.", "warning")
+            return redirect(url_for("historico.detalhe", rodada_id=rodada_id))
+
+        p.aceite_proposta = True
+        p.aceite_em = _agora()
+
+        novas_recusas = registrar_recusas(rodada_id, lanchonete.id, recusados_ids)
+
+        if novas_recusas > 0:
+            descricao = (f"Cliente aceitou a proposta final, recusando "
+                         f"{novas_recusas} fornecedor(es)")
         else:
-            p.aceite_proposta = True
-            p.aceite_em = _agora()
-            _registrar_evento(rodada_id, EventoRodada.TIPO_PROPOSTA_ACEITA,
-                              "Cliente aceitou a proposta final",
-                              lanchonete_id=lanchonete.id, ator_id=current_user.id)
-            db.session.commit()
-            flash("Proposta aceita! Próximo passo: enviar o comprovante de pagamento.", "success")
+            descricao = "Cliente aceitou a proposta final"
+        _registrar_evento(rodada_id, EventoRodada.TIPO_PROPOSTA_ACEITA,
+                          descricao,
+                          lanchonete_id=lanchonete.id, ator_id=current_user.id)
+        db.session.commit()
+
+        if novas_recusas > 0:
+            flash(
+                f"Proposta aceita parcialmente ({novas_recusas} fornecedor(es) "
+                "recusado(s)). Envie o comprovante do valor aceito.",
+                "success",
+            )
+        else:
+            flash("Proposta aceita! Próximo passo: enviar o comprovante de pagamento.",
+                  "success")
     except SQLAlchemyError:
         db.session.rollback()
         flash("Erro ao registrar aceite. Tente novamente.", "error")

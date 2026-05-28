@@ -17,6 +17,7 @@ from app.models import (
     Rodada, ItemPedido, Cotacao, Produto, RodadaProduto,
     ParticipacaoRodada, EventoRodada, SubmissaoCotacao,
 )
+from app.services.aceite_parcial import fornecedores_recusados_por_lanchonete
 from . import historico_bp, lanchonete_required
 
 
@@ -130,27 +131,38 @@ def detalhe(rodada_id):
     total_partida = _q2(total_partida)
     economia = (total_partida - total_estimado) if total_partida and total_estimado else _ZERO
 
-    # Break-down por fornecedor vencedor: valor a pagar + dados bancarios
-    pagamento_por_fornecedor = {}
+    # Aceite parcial: lanchonete pode ter recusado fornecedor especifico.
+    recusados_ids = fornecedores_recusados_por_lanchonete(rodada_id, lanchonete.id)
+
+    # Agrupa itens por fornecedor vencedor. Estrutura usada em 2 contextos:
+    # - propostas_por_fornecedor (pre-aceite): TODOS fornecedores, com checkbox
+    # - pagamento_por_fornecedor (pos-aceite): so nao-recusados
+    grupos_por_forn = {}
     for i in itens_detalhe:
         forn = i.get("fornecedor")
         if forn and i.get("subtotal"):
-            if forn.id not in pagamento_por_fornecedor:
-                pagamento_por_fornecedor[forn.id] = {
+            if forn.id not in grupos_por_forn:
+                grupos_por_forn[forn.id] = {
                     "fornecedor": forn,
                     "total": _ZERO,
                     "itens": [],
+                    "recusado": forn.id in recusados_ids,
                 }
-            pagamento_por_fornecedor[forn.id]["total"] += i["subtotal"]
-            pagamento_por_fornecedor[forn.id]["itens"].append({
+            grupos_por_forn[forn.id]["total"] += i["subtotal"]
+            grupos_por_forn[forn.id]["itens"].append({
                 "nome": i["produto"].nome,
                 "quantidade": i["quantidade"],
                 "unidade": i["produto"].unidade,
                 "subtotal": i["subtotal"],
             })
-    for entry in pagamento_por_fornecedor.values():
+    for entry in grupos_por_forn.values():
         entry["total"] = _q2(entry["total"])
-    pagamento_por_fornecedor = list(pagamento_por_fornecedor.values())
+
+    propostas_por_fornecedor = list(grupos_por_forn.values())
+    # Pos-aceite: exibe so os fornecedores que a lanchonete vai pagar.
+    pagamento_por_fornecedor = [g for g in propostas_por_fornecedor if not g["recusado"]]
+    # Pra UI mostrar "X fornecedor(es) recusado(s)" pos-aceite.
+    recusados_info = [g for g in propostas_por_fornecedor if g["recusado"]]
 
     # Insights pra rodada finalizada
     insights = []
@@ -222,6 +234,8 @@ def detalhe(rodada_id):
         insights=insights,
         media_geral=_media_geral_rodada(rodada_id),
         pagamento_por_fornecedor=pagamento_por_fornecedor,
+        propostas_por_fornecedor=propostas_por_fornecedor,
+        recusados_info=recusados_info,
         proposta_disponivel=proposta_disponivel,
     )
 

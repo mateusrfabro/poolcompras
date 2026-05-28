@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from app import db, limiter
 from app.models import ParticipacaoRodada, EventoRodada, Lanchonete
+from app.services.aceite_parcial import fornecedor_recusado
 from app.services.notificacoes import notificar_evento
 from . import (
     fluxo_bp, _agora, _registrar_evento,
@@ -23,6 +24,11 @@ def confirmar_pagamento(rodada_id, lanchonete_id):
     # Ownership: fornecedor so confirma pagamento de lanchonete cujos itens ele venceu.
     if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):
         abort(403)
+    # Aceite parcial: se a lanchonete recusou esse fornecedor, ele nao
+    # deveria estar nem na fila de pendencias — defesa em profundidade.
+    if fornecedor_recusado(rodada_id, lanchonete_id, _fornecedor.id):
+        flash("Esta lanchonete recusou sua proposta nesta rodada.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
     p = db.first_or_404(
         select(ParticipacaoRodada).where(
             ParticipacaoRodada.rodada_id == rodada_id,
@@ -70,6 +76,9 @@ def informar_entrega(rodada_id, lanchonete_id):
     rodada, _fornecedor = _so_fornecedor_da_rodada(rodada_id)
     if not _fornecedor_atende_lanchonete(rodada_id, _fornecedor.id, lanchonete_id):
         abort(403)
+    if fornecedor_recusado(rodada_id, lanchonete_id, _fornecedor.id):
+        flash("Esta lanchonete recusou sua proposta nesta rodada.", "error")
+        return redirect(url_for("fornecedor.dashboard"))
     p = db.first_or_404(
         select(ParticipacaoRodada).where(
             ParticipacaoRodada.rodada_id == rodada_id,

@@ -6,7 +6,9 @@ pra evitar duplicacao entre dashboard, historico e notificacoes.
 from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import joinedload
 from app import db
-from app.models import ParticipacaoRodada, Rodada, Cotacao, ItemPedido
+from app.models import (
+    ParticipacaoRodada, Rodada, Cotacao, ItemPedido, RecusaFornecedor,
+)
 
 
 def pendencias_lanchonete(lanchonete_id):
@@ -82,11 +84,22 @@ def pendencias_fornecedor(fornecedor_id):
         .exists()
     )
 
+    # Aceite parcial: se a lanchonete recusou esse fornecedor especifico,
+    # ele NAO deve aparecer como tendo pendencia com ela.
+    recusou_esse_fornecedor = (
+        db.session.query(RecusaFornecedor.id)
+        .filter(RecusaFornecedor.rodada_id == ParticipacaoRodada.rodada_id)
+        .filter(RecusaFornecedor.lanchonete_id == ParticipacaoRodada.lanchonete_id)
+        .filter(RecusaFornecedor.fornecedor_id == fornecedor_id)
+        .exists()
+    )
+
     participacoes = (
         ParticipacaoRodada.query
         .options(joinedload(ParticipacaoRodada.lanchonete),
                  joinedload(ParticipacaoRodada.rodada))
         .filter(cotou_nesta_rodada)
+        .filter(~recusou_esse_fornecedor)
         .filter(ParticipacaoRodada.aceite_proposta.is_(True))
         .filter(ParticipacaoRodada.comprovante_key.isnot(None))
         .filter(ParticipacaoRodada.entrega_informada_em.is_(None))

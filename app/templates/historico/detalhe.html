@@ -124,22 +124,64 @@
             <h3 class="action-card-title">Próxima ação</h3>
 
             {% if participacao.aceite_proposta is none %}
-                <p>Você recebeu a proposta final consolidada desta rodada. Aceita?</p>
-                <div class="action-card-buttons">
-                    <form method="POST" action="{{ url_for('fluxo.aceitar_proposta', rodada_id=rodada.id) }}" class="inline-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-primary">Aceitar proposta</button>
-                    </form>
-                    <form method="POST" action="{{ url_for('fluxo.recusar_proposta', rodada_id=rodada.id) }}" class="inline-form">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button type="submit" class="btn btn-outline" data-confirm="Recusar a proposta? Você ficará de fora desta rodada.">Recusar</button>
-                    </form>
-                </div>
+                <p>Você recebeu a proposta consolidada desta rodada. Aceite por fornecedor:
+                   marque <strong>Recusar</strong> nos que não quiser comprar nesta rodada.</p>
+
+                {% if propostas_por_fornecedor %}
+                <form method="POST" action="{{ url_for('fluxo.aceitar_proposta', rodada_id=rodada.id) }}"
+                      class="aceite-parcial-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="pagamento-list">
+                        {% for bloco in propostas_por_fornecedor %}
+                        <div class="pagamento-box">
+                            <div class="pagamento-head">
+                                <strong>{{ bloco.fornecedor.razao_social }}</strong>
+                                <span class="pagamento-total">Subtotal: {{ bloco.total|brl }}</span>
+                            </div>
+                            <details class="pagamento-itens">
+                                <summary>Ver itens deste fornecedor ({{ bloco.itens|length }})</summary>
+                                <ul>
+                                    {% for it in bloco.itens %}
+                                        <li>{{ it.nome }} — {{ it.quantidade|fmt_un(it.unidade) }} — {{ it.subtotal|brl }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </details>
+                            <label class="form-checkbox aceite-parcial-toggle">
+                                <input type="checkbox" name="fornecedor_recusado"
+                                       value="{{ bloco.fornecedor.id }}">
+                                <span>Recusar este fornecedor</span>
+                            </label>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <div class="action-card-buttons">
+                        <button type="submit" class="btn btn-primary">Confirmar aceite</button>
+                    </div>
+                </form>
+                {# Form separado pra recusar tudo (HTML nao permite forms aninhados) #}
+                <form method="POST" action="{{ url_for('fluxo.recusar_proposta', rodada_id=rodada.id) }}"
+                      class="inline-form" style="margin-top: var(--space-3);">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit" class="btn btn-outline btn-sm"
+                            data-confirm="Recusar TODA a proposta? Você ficará de fora desta rodada.">
+                        Recusar tudo
+                    </button>
+                </form>
+                {% else %}
+                <p class="muted">Nenhum fornecedor tem proposta aprovada nesta rodada ainda.</p>
+                {% endif %}
 
             {% elif participacao.aceite_proposta is false %}
                 <p class="muted">Você recusou esta proposta. Sem próximas ações.</p>
 
             {% elif not participacao.comprovante_key %}
+                {% if recusados_info %}
+                    <div class="alert alert-info" role="status" style="margin-bottom: var(--space-4);">
+                        Você recusou {{ recusados_info|length }} fornecedor(es) nesta rodada:
+                        {{ recusados_info|map(attribute='fornecedor.razao_social')|join(', ') }}.
+                        Eles não aparecem no pagamento abaixo.
+                    </div>
+                {% endif %}
                 <p><strong>Hora de pagar!</strong> Pague direto para o(s) fornecedor(es) abaixo e depois envie o comprovante.</p>
 
                 {% if pagamento_por_fornecedor %}
