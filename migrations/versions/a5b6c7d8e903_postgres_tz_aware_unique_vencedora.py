@@ -6,8 +6,16 @@ Create Date: 2026-04-23
 
 SQLite: no-op (DateTime(timezone=True) so afeta binding Python; SQLite retorna naive).
 Postgres: ALTER COLUMN TYPE TIMESTAMPTZ USING col AT TIME ZONE 'UTC' + CREATE UNIQUE INDEX partial.
+
+Defensivo (2026-05): cada ALTER eh envelopado com has_column. Cenarios cobertos:
+- "cotacoes.validade" entrou na lista e foi dropada em migration posterior (e9fa130602).
+  Em DB limpo, baseline cria schema final SEM validade -> ALTER quebrava.
+- Qualquer outra coluna que venha a ser dropada no futuro herda a mesma protecao
+  sem precisar editar a lista.
 """
 from alembic import op
+
+from migrations._idempotent import has_column
 
 
 revision = "a5b6c7d8e903"
@@ -16,7 +24,10 @@ branch_labels = None
 depends_on = None
 
 
-# (tabela, coluna) pra cada db.DateTime(timezone=True) do schema.
+# (tabela, coluna) pra cada db.DateTime(timezone=True) do schema *na epoca*
+# desta migration. "validade" ja nao existe no model atual (foi dropada por
+# e9fa130602), mas mantemos na lista por fidelidade historica: a guarda
+# has_column abaixo skipa em DB limpo onde a coluna nunca foi criada.
 COLUNAS_TEMPORAIS = [
     ("usuarios", "criado_em"),
     ("usuarios", "senha_atualizada_em"),
@@ -63,6 +74,8 @@ def upgrade():
         return  # SQLite: no-op
 
     for tabela, coluna in COLUNAS_TEMPORAIS:
+        if not has_column(tabela, coluna):
+            continue  # baseline cria schema final via create_all — pula ALTER em DB limpo
         op.execute(
             f'ALTER TABLE {tabela} '
             f'ALTER COLUMN {coluna} TYPE TIMESTAMPTZ '
@@ -84,6 +97,8 @@ def downgrade():
     op.execute('DROP INDEX IF EXISTS ix_cotacao_vencedora_unica')
 
     for tabela, coluna in COLUNAS_TEMPORAIS:
+        if not has_column(tabela, coluna):
+            continue
         op.execute(
             f'ALTER TABLE {tabela} '
             f'ALTER COLUMN {coluna} TYPE TIMESTAMP'
