@@ -117,6 +117,23 @@ def create_app(config_name="default"):
     from app.services.storage import init_storage
     init_storage(app)
 
+    # Splash banner no boot: log unico com versao + migration head + dialect DB.
+    # Pipeline /deploy_aggron (Ademar) le esse log pra confirmar que subiu o
+    # commit certo + migration aplicada. Skipa em testing (408 testes criam
+    # 408 apps, poluiria log da suite).
+    if config_name != "testing":
+        from app.services.app_info import app_version, migration_head
+        with app.app_context():
+            try:
+                head = migration_head()
+                dialect = db.engine.dialect.name
+            except Exception:
+                head, dialect = "unknown", "unknown"
+            app.logger.info(
+                "[aggron] BOOT version=%s migration_head=%s db=%s env=%s",
+                app_version(), head, dialect, config_name,
+            )
+
     # Em testing, o conftest mantem 1 app_context aberto durante todo o teste,
     # entao `g` (que vive no app_context) PERSISTE entre requests. Flask-Login
     # cacheia `g._login_user` no 1o request e retorna o user errado nos

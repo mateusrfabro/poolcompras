@@ -8,6 +8,7 @@ from app.models import (
     Lanchonete, Rodada, ItemPedido, Produto,
     ParticipacaoRodada, Fornecedor,
 )
+from app.services.app_info import app_version, migration_head
 from app.services.dashboard_lanchonete import dashboard_data
 from app.services.rodada_corrente import rodada_corrente_aberta
 from app.services.kpis_admin import (
@@ -20,18 +21,34 @@ main_bp = Blueprint("main", __name__)
 
 @main_bp.route("/health")
 def health():
-    """Healthcheck: retorna 200 se app + DB estao ok. Sem auth.
+    """Healthcheck: retorna 200 se app + DB estao ok, 503 se DB caido. Sem auth.
+
+    Payload inclui app_version (git SHA curto) + migration_head (revisao
+    Alembic aplicada) — usado pelo pipeline /deploy_aggron do Ademar pra
+    confirmar que o container subiu na versao certa E que as migrations
+    rodaram. Cenario que o payload simples 'ok' nao detectava: codigo novo
+    no ar, migration desatualizada (bug 1+2 de 2026-05-27).
 
     NUNCA inclui detalhes do erro na resposta — endpoint publico, atacante
     nao precisa saber se DB caiu por timeout, auth ou driver. Loga
     internamente pra debug.
+
+    503 (Service Unavailable) eh semanticamente correto pra DB caido —
+    balanceador/proxy pode tirar a instancia do pool sem marcar como erro.
     """
+    payload = {"app_version": app_version()}
     try:
         db.session.execute(text("SELECT 1"))
-        return jsonify({"status": "ok", "db": "ok"}), 200
+        payload["status"] = "ok"
+        payload["db"] = "ok"
+        payload["migration_head"] = migration_head()
+        return jsonify(payload), 200
     except Exception:
         logging.getLogger(__name__).exception("HEALTH_DB_FAIL")
-        return jsonify({"status": "error", "db": "error"}), 500
+        payload["status"] = "error"
+        payload["db"] = "error"
+        payload["migration_head"] = "unknown"
+        return jsonify(payload), 503
 
 
 @main_bp.route("/termos")
