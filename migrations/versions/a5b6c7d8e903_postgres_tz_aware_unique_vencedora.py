@@ -44,7 +44,6 @@ COLUNAS_TEMPORAIS = [
     ("rodadas", "deadline_confirmacao"),
     ("itens_pedido", "criado_em"),
     ("fornecedores", "criado_em"),
-    ("cotacoes", "validade"),
     ("cotacoes", "criado_em"),
     ("participacoes_rodada", "pedido_enviado_em"),
     ("participacoes_rodada", "pedido_aprovado_em"),

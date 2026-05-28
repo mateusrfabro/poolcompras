@@ -5,6 +5,8 @@ comprovante, pagamento, entrega, recebimento, avaliacao), insights automaticos
 e break-down de pagamento por fornecedor.
 """
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
+
 from flask import render_template, redirect, url_for, flash
 from flask_login import login_required, current_user
 from sqlalchemy import func
@@ -16,6 +18,26 @@ from app.models import (
     ParticipacaoRodada, EventoRodada, SubmissaoCotacao,
 )
 from . import historico_bp, lanchonete_required
+
+
+_ZERO = Decimal("0")
+_CENT = Decimal("0.01")
+
+
+def _to_dec(v):
+    """Converte qualquer numerico pra Decimal preservando precisao."""
+    if v is None:
+        return None
+    if isinstance(v, Decimal):
+        return v
+    return Decimal(str(v))
+
+
+def _q2(v):
+    """Quantize pra centavos (None passa). Mantem Decimal — |brl aceita."""
+    if v is None:
+        return None
+    return v.quantize(_CENT, rounding=ROUND_HALF_UP)
 
 
 @historico_bp.route("/<int:rodada_id>")
@@ -62,13 +84,14 @@ def detalhe(rodada_id):
             cotacoes_por_produto[c.produto_id].append(c)
 
     partidas_por_produto = {
-        rp.produto_id: float(rp.preco_partida) if rp.preco_partida else None
+        rp.produto_id: _to_dec(rp.preco_partida) if rp.preco_partida else None
         for rp in RodadaProduto.query.filter_by(rodada_id=rodada_id).all()
     }
 
     # Monta detalhe de cada item com lookup O(1)
     # preco_partida = RodadaProduto.preco_partida (preco de referencia, fase 1)
     # preco_final = menor cotacao final (vencedora) OU cotacao selecionada se existir
+    # Aritmetica monetaria em Decimal — float acumula drift em totais.
     itens_detalhe = []
     for item in meus_itens:
         cots = cotacoes_por_produto.get(item.produto_id, [])
@@ -76,32 +99,36 @@ def detalhe(rodada_id):
         if cots:
             selecionada = next((c for c in cots if c.selecionada), None)
             if selecionada:
-                preco_final = float(selecionada.preco_unitario)
+                preco_final = _to_dec(selecionada.preco_unitario)
                 forn_vencedor = selecionada.fornecedor
             else:
                 menor = min(cots, key=lambda c: c.preco_unitario)
-                preco_final = float(menor.preco_unitario)
+                preco_final = _to_dec(menor.preco_unitario)
                 forn_vencedor = menor.fornecedor
         else:
             preco_final = None
             forn_vencedor = None
 
-        qtd_float = float(item.quantidade)
+        qtd = _to_dec(item.quantidade) or _ZERO
         itens_detalhe.append({
             "item": item,
             "produto": item.produto,
-            "quantidade": qtd_float,
+            "quantidade": qtd,
             "preco_partida": preco_partida,
             "preco_final": preco_final,
             "fornecedor": forn_vencedor,
-            "subtotal": (preco_final * qtd_float) if preco_final else None,
+            "subtotal": _q2(preco_final * qtd) if preco_final else None,
         })
 
-    total_estimado = sum(i["subtotal"] for i in itens_detalhe if i["subtotal"]) or 0
-    total_partida = sum(
-        (i["preco_partida"] or 0) * i["quantidade"] for i in itens_detalhe
+    total_estimado = sum(
+        (i["subtotal"] for i in itens_detalhe if i["subtotal"]), _ZERO
     )
-    economia = total_partida - total_estimado if total_partida and total_estimado else 0
+    total_partida = sum(
+        ((i["preco_partida"] or _ZERO) * i["quantidade"] for i in itens_detalhe),
+        _ZERO,
+    )
+    total_partida = _q2(total_partida)
+    economia = (total_partida - total_estimado) if total_partida and total_estimado else _ZERO
 
     # Break-down por fornecedor vencedor: valor a pagar + dados bancarios
     pagamento_por_fornecedor = {}
@@ -111,22 +138,25 @@ def detalhe(rodada_id):
             if forn.id not in pagamento_por_fornecedor:
                 pagamento_por_fornecedor[forn.id] = {
                     "fornecedor": forn,
-                    "total": 0,
+                    "total": _ZERO,
                     "itens": [],
                 }
-            pagamento_por_fornecedor[forn.id]["total"] += float(i["subtotal"])
+            pagamento_por_fornecedor[forn.id]["total"] += i["subtotal"]
             pagamento_por_fornecedor[forn.id]["itens"].append({
                 "nome": i["produto"].nome,
                 "quantidade": i["quantidade"],
                 "unidade": i["produto"].unidade,
-                "subtotal": float(i["subtotal"]),
+                "subtotal": i["subtotal"],
             })
+    for entry in pagamento_por_fornecedor.values():
+        entry["total"] = _q2(entry["total"])
     pagamento_por_fornecedor = list(pagamento_por_fornecedor.values())
 
     # Insights pra rodada finalizada
     insights = []
     if economia and total_partida:
-        pct = float(economia / total_partida * 100)
+        pct = float((economia / total_partida * Decimal("100"))
+                    .quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
         insights.append(f"Economia total de {pct:.1f}% sobre o preço de partida.")
 
     itens_com_eco = [
@@ -136,10 +166,10 @@ def detalhe(rodada_id):
     if itens_com_eco:
         top = max(itens_com_eco,
                   key=lambda i: (i["preco_partida"] - i["preco_final"]) * i["quantidade"])
-        eco_top = (top["preco_partida"] - top["preco_final"]) * top["quantidade"]
+        eco_top = _q2((top["preco_partida"] - top["preco_final"]) * top["quantidade"])
         insights.append(
             f"Maior economia nesta rodada: {top['produto'].nome} "
-            f"(você economizou R$ {float(eco_top):,.2f} nesse item)."
+            f"(você economizou R$ {eco_top:,.2f} nesse item)."
             .replace(",", "X").replace(".", ",").replace("X", ".")
         )
 

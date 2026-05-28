@@ -780,13 +780,10 @@ class RodadaProduto(db.Model):
     fornecedor_sugeriu = db.relationship("Fornecedor")
 
     __table_args__ = (
-        db.Index("ix_rodada_produtos_rodada_aprovado",
-                 "rodada_id", "aprovado"),
-    )
-
-    __table_args__ = (
         UniqueConstraint("rodada_id", "produto_id",
                          name="uq_rodada_produto"),
+        db.Index("ix_rodada_produtos_rodada_aprovado",
+                 "rodada_id", "aprovado"),
         # Fila admin "aprovar produtos sugeridos por fornecedores" — query
         # quente filtra aprovado IS NULL + adicionado_por_fornecedor_id IS NOT NULL.
         db.Index(

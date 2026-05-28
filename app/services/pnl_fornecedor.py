@@ -8,9 +8,32 @@ Regra: so conta linhas onde (a) Cotacao.selecionada=True e (b) a lanchonete
 dona do ItemPedido aceitou a proposta (aceite_proposta=True). Isso garante
 paridade com o que aparece no CMV da lanchonete — o somatorio de CMV de
 todas lanchonetes = soma dos P&L de todos fornecedores.
+
+Aritmetica monetaria em Decimal (R$ tem 2 casas — float acumula drift).
+Conversao pra float so no payload final (o filtro |brl no template aceita
+qualquer numero).
 """
 from collections import defaultdict
+from decimal import Decimal, ROUND_HALF_UP
+
 from app.services.vendas_efetivadas import linhas_efetivadas
+
+
+_ZERO = Decimal("0")
+_CENT = Decimal("0.01")
+
+
+def _to_dec(v) -> Decimal:
+    if v is None:
+        return _ZERO
+    if isinstance(v, Decimal):
+        return v
+    return Decimal(str(v))
+
+
+def _q2(v: Decimal) -> float:
+    """Quantize pra 2 casas e devolve float (payload pro template)."""
+    return float(v.quantize(_CENT, rounding=ROUND_HALF_UP))
 
 
 def calcular_pnl(fornecedor_id: int) -> dict:
@@ -30,17 +53,17 @@ def calcular_pnl(fornecedor_id: int) -> dict:
     """
     linhas = linhas_efetivadas(fornecedor_id=fornecedor_id)
 
-    receita_total = 0.0
-    receita_seria_partida = 0.0
-    receita_por_cliente = defaultdict(lambda: {"gasto": 0.0, "itens": 0})
+    receita_total = _ZERO
+    receita_seria_partida = _ZERO
+    receita_por_cliente = defaultdict(lambda: {"gasto": _ZERO, "itens": 0})
     por_produto = defaultdict(lambda: {"nome": "", "unidade": "",
-                                         "qtd": 0.0, "receita": 0.0})
+                                         "qtd": _ZERO, "receita": _ZERO})
     por_rodada = {}
 
     for l in linhas:
-        qtd = float(l.quantidade or 0)
-        final = float(l.preco_final or 0)
-        partida = float(l.preco_partida) if l.preco_partida else final
+        qtd = _to_dec(l.quantidade)
+        final = _to_dec(l.preco_final)
+        partida = _to_dec(l.preco_partida) if l.preco_partida else final
         receita = qtd * final
         receita_partida = qtd * partida
 
@@ -62,7 +85,7 @@ def calcular_pnl(fornecedor_id: int) -> dict:
             "rodada_id": l.rodada_id,
             "rodada_nome": l.rodada_nome,
             "data": l.data,
-            "receita": 0.0,
+            "receita": _ZERO,
             "itens": 0,
             "clientes": set(),
         })
@@ -71,28 +94,43 @@ def calcular_pnl(fornecedor_id: int) -> dict:
         r["clientes"].add(l.cliente)
 
     rodadas_vendidas = len(por_rodada)
-    ticket_medio = (receita_total / rodadas_vendidas) if rodadas_vendidas else 0
+    ticket_medio = (receita_total / rodadas_vendidas) if rodadas_vendidas else _ZERO
     margem = receita_total - receita_seria_partida
     # Positivo = fornecedor vendeu POR CIMA do preco de partida (raro).
     # Negativo = fornecedor abriu margem pra vencer (cenario comum).
-    margem_pct = (margem / receita_seria_partida * 100) if receita_seria_partida > 0 else 0
+    if receita_seria_partida > _ZERO:
+        margem_pct = float((margem / receita_seria_partida * Decimal("100"))
+                           .quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
+    else:
+        margem_pct = 0.0
 
-    top_clientes = sorted(
+    top_clientes_raw = sorted(
         receita_por_cliente.values(), key=lambda c: c["gasto"], reverse=True
     )[:10]
     top_clientes = [
-        (c["nome"], c["gasto"], c["itens"],
-         round(c["gasto"] / receita_total * 100, 1) if receita_total else 0)
-        for c in top_clientes
+        (
+            c["nome"],
+            _q2(c["gasto"]),
+            c["itens"],
+            float((c["gasto"] / receita_total * Decimal("100"))
+                  .quantize(Decimal("0.1"), rounding=ROUND_HALF_UP))
+            if receita_total > _ZERO else 0.0,
+        )
+        for c in top_clientes_raw
     ]
 
-    top_produtos = sorted(
+    top_produtos_raw = sorted(
         por_produto.values(), key=lambda p: p["receita"], reverse=True,
     )[:10]
     top_produtos = [
-        (p["nome"], p["unidade"], p["qtd"], p["receita"],
-         round(p["receita"] / p["qtd"], 2) if p["qtd"] else 0)
-        for p in top_produtos
+        (
+            p["nome"],
+            p["unidade"],
+            float(p["qtd"]),
+            _q2(p["receita"]),
+            _q2(p["receita"] / p["qtd"]) if p["qtd"] > _ZERO else 0.0,
+        )
+        for p in top_produtos_raw
     ]
 
     por_rodada_list = sorted(
@@ -100,14 +138,15 @@ def calcular_pnl(fornecedor_id: int) -> dict:
     )
     for r in por_rodada_list:
         r["clientes"] = ", ".join(sorted(r["clientes"]))
+        r["receita"] = _q2(r["receita"])
 
     return {
         "kpis": {
-            "receita_total": round(receita_total, 2),
-            "ticket_medio": round(ticket_medio, 2),
+            "receita_total": _q2(receita_total),
+            "ticket_medio": _q2(ticket_medio),
             "rodadas_vendidas": rodadas_vendidas,
-            "margem_vs_partida": round(margem, 2),
-            "margem_vs_partida_pct": round(margem_pct, 1),
+            "margem_vs_partida": _q2(margem),
+            "margem_vs_partida_pct": margem_pct,
         },
         "top_clientes": top_clientes,
         "top_produtos": top_produtos,
