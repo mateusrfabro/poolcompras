@@ -87,8 +87,15 @@ def detalhe(rodada_id):
         )
 
     # Se lanchonete logada: mostra "Seu pedido" ao lado do total agregado
+    # Tambem usado abaixo pra ESCONDER agregados de outras lanchonetes
+    # (decisao do Mateus mai/2026: "lanchonete X nao deve ver pedido especifico
+    # da Y"). Agregado da rodada inteira fica visivel so pra admin e fornecedor
+    # — fornecedor precisa pra cotar demanda; lanchonete so ve o proprio.
     meus_pedidos_map = {}
-    if current_user.is_lanchonete and current_user.lanchonete:
+    eh_lanchonete_logada = (
+        current_user.is_lanchonete and current_user.lanchonete is not None
+    )
+    if eh_lanchonete_logada:
         meus = (
             ItemPedido.query
             .filter_by(rodada_id=rodada_id, lanchonete_id=current_user.lanchonete.id)
@@ -143,17 +150,39 @@ def detalhe(rodada_id):
             forn = None
 
         subtotal = (preco_final * float(item.total_quantidade)) if preco_final else None
+
+        # Lanchonete logada: zera campos agregados pra nao revelar pedidos de
+        # outras lanchonetes. Ela ainda ve preco_partida/preco_final/fornecedor
+        # (dados de mercado) e o proprio pedido (via meus_pedidos_map).
+        # Admin e fornecedor mantem visao agregada.
+        if eh_lanchonete_logada and not current_user.is_admin:
+            total_quantidade_render = None
+            total_lanchonetes_render = None
+            subtotal_render = None
+        else:
+            total_quantidade_render = item.total_quantidade
+            total_lanchonetes_render = item.total_lanchonetes
+            subtotal_render = subtotal
+
         agregado_enriquecido.append({
             "id": item.id,
             "nome": item.nome,
             "categoria": item.categoria,
             "unidade": item.unidade,
-            "total_quantidade": item.total_quantidade,
-            "total_lanchonetes": item.total_lanchonetes,
+            "total_quantidade": total_quantidade_render,
+            "total_lanchonetes": total_lanchonetes_render,
             "preco_partida": partidas_por_produto.get(item.id),
             "preco_final": preco_final,
             "fornecedor": forn,
-            "subtotal": subtotal,
+            "subtotal": subtotal_render,
+            # Subtotal proprio da lanchonete logada (substitui o agregado pra ela)
+            "meu_subtotal": (
+                (preco_final * float(meus_pedidos_map[item.id]))
+                if eh_lanchonete_logada
+                   and item.id in meus_pedidos_map
+                   and preco_final
+                else None
+            ),
         })
 
     # Status das submissoes (visivel a todos perfis)
@@ -186,6 +215,7 @@ def detalhe(rodada_id):
         agregado=agregado_enriquecido,
         cotacoes=cotacoes,
         meus_pedidos_map=meus_pedidos_map,
+        eh_lanchonete_logada=(eh_lanchonete_logada and not current_user.is_admin),
         pendentes_aprovacao=pendentes_aprovacao,
         pedidos_pendentes_moderacao=pedidos_pendentes_moderacao,
         cotacoes_pendentes_aprovacao=cotacoes_pendentes_aprovacao,

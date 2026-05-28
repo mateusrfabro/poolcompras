@@ -115,3 +115,83 @@ def test_todos_veem_vencedor_apos_finalizar(app):
     assert r.status_code == 200
     # Apos finalizacao, forn B ja pode ver o resultado
     assert b"Fornec Teste" in r.data
+
+
+# ============================================================================
+# IDOR cross-lanchonete (decisao Mateus mai/2026):
+# Lanchonete X nao deve ver pedido especifico da Y nem agregados que permitam
+# inferi-los (Volume total, count de lanchonetes, subtotal/total agregado).
+# Ve so dados de mercado (precos, fornecedor vencedor) + proprio pedido.
+# ============================================================================
+
+
+def _cenario_duas_lanchonetes_pedindo():
+    """Lanch A pede 10 unidades, Lanch B pede 25 unidades — total 35."""
+    rodada = Rodada.query.first()
+    produto = Produto.query.first()
+    lanchA = Lanchonete.query.filter_by(nome_fantasia="Lanch A").first()
+    lanchB = Lanchonete.query.filter_by(nome_fantasia="Lanch B").first()
+
+    rp = RodadaProduto.query.filter_by(rodada_id=rodada.id, produto_id=produto.id).first()
+    if rp:
+        rp.preco_partida = 20.00
+
+    db.session.add(ItemPedido(rodada_id=rodada.id, lanchonete_id=lanchA.id,
+                               produto_id=produto.id, quantidade=10))
+    db.session.add(ItemPedido(rodada_id=rodada.id, lanchonete_id=lanchB.id,
+                               produto_id=produto.id, quantidade=25))
+    db.session.add(ParticipacaoRodada(rodada_id=rodada.id, lanchonete_id=lanchA.id,
+                                       pedido_enviado_em=_agora(),
+                                       pedido_aprovado_em=_agora()))
+    db.session.add(ParticipacaoRodada(rodada_id=rodada.id, lanchonete_id=lanchB.id,
+                                       pedido_enviado_em=_agora(),
+                                       pedido_aprovado_em=_agora()))
+    db.session.commit()
+    return rodada.id, lanchA.id, lanchB.id
+
+
+def test_lanchonete_logada_nao_ve_titulo_agregado(app, client_lanchA):
+    """Lanch A vê 'Sua participação' em vez de 'Pedidos agregados'."""
+    rodada_id, _, _ = _cenario_duas_lanchonetes_pedindo()
+
+    r = client_lanchA.get(f"/rodadas/{rodada_id}")
+    assert r.status_code == 200
+    # Titulo da secao foi adaptado pra lanchonete
+    assert "Sua participação".encode("utf-8") in r.data
+    # Titulo "Pedidos agregados" eh exclusivo de admin/fornecedor
+    assert "Pedidos agregados".encode("utf-8") not in r.data
+
+
+def test_lanchonete_logada_nao_ve_total_rodada(app, client_lanchA):
+    """A pediu 10, B pediu 25 — A nao deve ver o '35' (total agregado) que
+    permitiria inferir o pedido de B."""
+    rodada_id, _, _ = _cenario_duas_lanchonetes_pedindo()
+
+    r = client_lanchA.get(f"/rodadas/{rodada_id}")
+    assert r.status_code == 200
+    # Coluna "Volume total" e "Lanchonetes" nao devem aparecer pra lanchonete
+    assert b"Volume total" not in r.data
+    # 'Lanchonetes' aparece em outras telas, mas como cabecalho de coluna nao
+    assert b"<th>Lanchonetes</th>" not in r.data
+    # Total geral da rodada (subtotal agregado) nao deve aparecer
+    assert "Total da rodada".encode("utf-8") not in r.data
+
+
+def test_admin_continua_vendo_agregado(app, client_admin):
+    """Admin deve continuar vendo agregado completo — feature so afeta lanchonete."""
+    rodada_id, _, _ = _cenario_duas_lanchonetes_pedindo()
+
+    r = client_admin.get(f"/rodadas/{rodada_id}")
+    assert r.status_code == 200
+    assert "Pedidos agregados".encode("utf-8") in r.data
+    assert b"Volume total" in r.data
+
+
+def test_fornecedor_continua_vendo_agregado(app, client_forn):
+    """Fornecedor precisa ver demanda agregada pra cotar — feature nao afeta ele."""
+    rodada_id, _, _ = _cenario_duas_lanchonetes_pedindo()
+
+    r = client_forn.get(f"/rodadas/{rodada_id}")
+    assert r.status_code == 200
+    assert "Pedidos agregados".encode("utf-8") in r.data
+    assert b"Volume total" in r.data
