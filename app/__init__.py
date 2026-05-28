@@ -382,6 +382,24 @@ def create_app(config_name="default"):
             un_fmt = PLURAIS.get(unidade.lower(), unidade + "s")
         return f"{num} {un_fmt}"
 
+    # Brasil nao observa horario de verao desde 2019; UTC-3 fixo.
+    # Usar ZoneInfo (stdlib 3.9+) em vez de timedelta(-3) pra ser robusto a
+    # mudancas de regra de fuso e a regioes com TZ diferente (futuro multi-cidade).
+    from zoneinfo import ZoneInfo
+    _BRASIL_TZ = ZoneInfo("America/Sao_Paulo")
+
+    def _em_brasil(dt):
+        """Converte datetime aware (UTC ou outro) pra timezone Brasil.
+
+        DB armazena tudo em UTC (DateTime(timezone=True)). Display ao usuario
+        DEVE ser horario local — fonte de bug: usuario logando 19:23 BR via
+        log mostrando 19:23 UTC fica desorientado.
+        """
+        from datetime import timezone
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(_BRASIL_TZ)
+
     def _normaliza_alvo(data):
         """Converte date/datetime pro alvo efetivo. Se datetime com hora 00:00, trata como fim do dia.
 
@@ -425,22 +443,33 @@ def create_app(config_name="default"):
             return f"Fecha em {horas}h{minutos:02d}min"
         return f"Fecha em {minutos}min"
 
-    # Filter: formata data+hora em PT-BR ("18/04/2026 as 23:59")
+    # Filter: formata data+hora em PT-BR ("18/04/2026 as 23:59") no fuso de Brasilia.
+    # DB guarda UTC; usuario ve horario local — caso contrario UTC+3h faz log de
+    # login das 19:23 BR aparecer como 22:23, totalmente desorientador.
     @app.template_filter("datetime_br")
     def format_datetime_br(data):
-        alvo = _normaliza_alvo(data)
-        if alvo is None:
+        from datetime import datetime as dt
+        if data is None:
             return "—"
-        return alvo.strftime("%d/%m/%Y às %H:%M")
+        if isinstance(data, dt):
+            return _em_brasil(data).strftime("%d/%m/%Y às %H:%M")
+        # date puro (sem hora): nao tem o que converter — strftime direto
+        try:
+            return data.strftime("%d/%m/%Y às %H:%M")
+        except AttributeError:
+            return "—"
 
     # Filter: formata so a data em PT-BR ("18/04/2026"). Usar em listagens.
+    # Tambem converte pra fuso Brasilia se receber datetime — datetime salvo
+    # 28/05 22:30 BR fica como 29/05 01:30 UTC; sem conversao data_br exibiria
+    # 29/05 (errado pro usuario).
     @app.template_filter("data_br")
     def format_data_br(data):
         from datetime import date, datetime as dt
         if data is None:
             return "—"
         if isinstance(data, dt):
-            return data.strftime("%d/%m/%Y")
+            return _em_brasil(data).strftime("%d/%m/%Y")
         if isinstance(data, date):
             return data.strftime("%d/%m/%Y")
         return "—"
