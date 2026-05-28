@@ -142,7 +142,10 @@ def test_audit_log_admin_moderar_pedido(app, client_admin, caplog):
     db.session.commit()
 
     csrf = _csrf(client_admin, f"/admin/rodadas/{rodada_id}/moderar-pedidos")
-    with caplog.at_level(logging.INFO, logger="app.routes.admin.moderacao"):
+    # Logger mudou pra services apos refactor (mai/2026) — log
+    # ADMIN_MODERAR_PEDIDO continua emitido, originado em
+    # app.services.moderacao_pedido agora.
+    with caplog.at_level(logging.INFO, logger="app.services.moderacao_pedido"):
         client_admin.post(
             f"/admin/rodadas/{rodada_id}/moderar-pedidos",
             data={"csrf_token": csrf, "participacao_id": p.id, "acao": "aprovar"},

@@ -85,7 +85,7 @@ Use via `Task` tool com `subagent_type`.
 1. Tipo de mudanca? feature/fix/refactor/docs/test/chore
 2. Afeta modelo? Precisa migration Alembic
 3. Afeta rotas? Pensar IDOR + CSRF + decorators de papel
-4. Afeta template? Respeitar identidade visual (paleta azul corporativa #1D3557, verde alimento #2A9D8F como acento, cards claros — rebrand abr/2026)
+4. Afeta template? Respeitar identidade visual (paleta dark verde institucional #0F2A1F + ouro #D4AF37 como acento, tipografia Sora+Inter — rebrand Aggron mai/2026, sobrescreveu a paleta clara anterior)
 5. Escrever/atualizar teste correspondente
 6. Rodar `pytest tests/ -q` — deve passar 100%
 7. Smoke HTTP com requests contra localhost:5050
@@ -96,7 +96,7 @@ Use via `Task` tool com `subagent_type`.
 - **NUNCA** import `from app.models import X` dentro de funcao — UnboundLocalError
 - **NUNCA** Float pra dinheiro — sempre `Numeric(12, 2)`
 - **NUNCA** commitar `.env` ou credenciais
-- **NUNCA** alterar identidade visual sem autorizacao (paleta azul corporativa do Aggron pos-rebrand B2B)
+- **NUNCA** alterar identidade visual sem autorizacao (paleta dark verde+ouro do Aggron pos-rebrand B2B)
 - **NUNCA** usar `onclick=` inline (CSP bloqueia) — JS externo em `app/static/js/`
 - **NUNCA** deploy/push force sem autorizacao explicita
 
@@ -133,16 +133,16 @@ app/
   static/
     css/style.css  # Variaveis (--space-*, --font-*, paleta) e classes
     js/            # Externos, CSP-safe
-migrations/versions/  # 18 migrations aplicadas
-tests/             # ~280 testes (auth/fluxo/security/moderacao/filters/notif/auto-save)
+migrations/versions/  # 26 migrations aplicadas
+tests/             # ~408 testes (auth/fluxo/security/moderacao/filters/notif/auto-save/financeiro/crm)
 tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 ```
 
 ## Features-chave implementadas
-- Fluxo de moderacao de pedidos (admin aprova/devolve/reprova/reverte) com guards de idempotencia
+- Fluxo de moderacao de pedidos (admin aprova/devolve/reprova/reverte) com guards de idempotencia — handlers extraidos pra `services/moderacao_pedido.py` + `moderacao_cotacao.py` (mai/2026)
 - Cotacao em 2 etapas (preco de partida + preco final com volumes reais)
-- Aprovacao de cotacao final + chat de negociacao admin<->fornecedor (append-only)
-- Economia calculada automaticamente (por produto e total da rodada)
+- Aprovacao de cotacao final + chat de negociacao admin<->fornecedor (append-only, simetria garantida entre os 2 lados)
+- Economia calculada automaticamente (por produto e total da rodada) — Decimal end-to-end em PnL/CMV/historico (mai/2026)
 - Quick wins: repetir ultimo pedido, historico precos SKU, funil conversao
 - Filtros de invisibilidade: nao-aprovados ficam ocultos pro fornecedor
 - Sub-nav padronizada nos 3 perfis
@@ -150,14 +150,23 @@ tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 - Mascara R$ em todos campos de preco
 - Meu P&L (fornecedor) + Meu CMV (lanchonete)
 - Notificacoes Telegram em todas transicoes-chave de rodada (catalogo enviado, aberta, em_negociacao, cotacao aprovada, cancelada) + moderacao individual
-- Rebrand corporativo B2B (azul + Inter/Montserrat + container 1200px + sistema 8px)
+- Rebrand Aggron B2B (dark verde+ouro + Sora/Inter + container 1200px + sistema 8px)
 - Suite de carga Locust (3 cenarios em tests/load/)
+- CI: pytest + coverage (70% gate) + ruff + bandit + pip-audit
+- A11y: :focus-visible global, paginas de erro 4xx/5xx com identidade Aggron
 
 ## Backlog aberto
 ### Tecnico
 - Locust contra Yggdrasil (revalidar perf real apos Argon2 + cache + Redis)
 - Field-errors em mais forms admin (produto, fornecedor, lanchonete) — padrao ja criado, aplicado em login + 3 fluxos auth
 - Cache nos KPIs do dashboard fornecedor/lanchonete (hoje so admin)
+- Strings cruas de status em templates ("finalizada", "em_negociacao") — Python ja migrado pra `Rodada.STATUS_*` em mai/2026, templates pendentes
+- 62 ocorrencias de `Model.query.X` em 18 arquivos — migrar incremental pra SQLA 2.0 (`db.session.scalars(select(...))`)
+- Cascade em Rodada -> filhos: hoje admin nao deleta rodada de teste (FK violation). Decisao consciente preservar historico ou bug?
+
+### Decisoes pendentes (precisa Mateus/Ademar)
+- IDOR ou design em `/rodadas/<id>`? Lanchonete A ve totais agregados que incluem dados de B. Filtro de invisibilidade so protege fornecedor. Transparencia cooperativa proposital?
+- Aceite parcial existe? Modelo so tem `aceite_proposta: bool`, nao ha `qtd_aceita`. Confirmar se eh feature futura ou backlog cancelado.
 
 ### Produto
 - Aguardar feedback Ademar pos-deploy
@@ -168,7 +177,7 @@ tests/load/        # Suite Locust (carga simulada — nao roda em CI)
 - Cloudflare Tunnel: ✅ (substituiu nginx + Let's Encrypt)
 - Gunicorn multi-worker: ✅ (2*CPU+1, max-requests 1000+jitter)
 - Redis pra Flask-Limiter: ✅ (compose com servico redis, RATELIMIT_STORAGE_URI no env)
-- GitHub Actions CI/CD: ✅ (pytest a cada push/PR)
+- GitHub Actions CI/CD: ✅ (pytest + coverage 70% + ruff + bandit + pip-audit a cada push/PR)
 
 ## Gotchas conhecidos
 1. **Import dentro de funcao** — UnboundLocalError. Sempre topo do arquivo.
