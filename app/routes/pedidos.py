@@ -375,6 +375,7 @@ def novo():
 
 
 @pedidos_bp.route("/remover/<int:item_id>", methods=["POST"])
+@login_required
 @lanchonete_required
 def remover(item_id):
     item = db.session.get(ItemPedido, item_id)

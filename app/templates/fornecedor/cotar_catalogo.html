@@ -41,10 +41,9 @@
                                 <td>{{ rp.produto.unidade }}</td>
                                 <td>
                                     <input type="text" inputmode="numeric" name="preco_{{ rp.id }}"
-                                           class="money-input"
+                                           class="money-input input-w-160"
                                            placeholder="R$ 0,00"
-                                           value="{{ rp.preco_partida|float if rp.preco_partida is not none else '' }}"
-                                           class="money-input input-w-160">
+                                           value="{{ rp.preco_partida|float if rp.preco_partida is not none else '' }}">
                                     {% if rp.adicionado_por_fornecedor_id and rp.aprovado is none %}
                                         <span class="badge badge-aguardando_aprovacao">Aguardando aprovação</span>
                                     {% endif %}

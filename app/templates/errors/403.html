@@ -3,8 +3,9 @@
 
 {% block content %}
 <div class="error-page">
+    <span class="error-page-eyebrow">Acesso negado</span>
     <h1>403</h1>
-    <h2>Acesso negado</h2>
+    <h2>Sem permissão para este recurso</h2>
     <p>Você não tem permissão para acessar este recurso.</p>
     <div class="error-page-actions">
         <a href="{{ url_for('main.dashboard') }}" class="btn btn-primary">Voltar ao painel</a>

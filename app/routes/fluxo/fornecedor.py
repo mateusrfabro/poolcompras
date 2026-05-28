@@ -79,6 +79,9 @@ def informar_entrega(rodada_id, lanchonete_id):
     if not p.pagamento_confirmado_em:
         flash("Confirme o pagamento antes de informar a entrega.", "error")
         return redirect(url_for("fornecedor.dashboard"))
+    if p.entrega_informada_em:
+        flash("Entrega já foi informada anteriormente.", "warning")
+        return redirect(url_for("fornecedor.dashboard"))
 
     data_str = request.form.get("entrega_data")
     try:

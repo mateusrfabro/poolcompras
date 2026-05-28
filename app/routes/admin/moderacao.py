@@ -322,6 +322,11 @@ def adicionar_nota_negociacao_admin(submissao_id):
     if not sub:
         flash("Submissão não encontrada.", "error")
         return redirect(url_for("main.dashboard"))
+    # Simetria com fornecedor.cotacao_final.adicionar_nota_negociacao: chat
+    # eh append-only ate aprovacao. Apos aprovada, nao ha mais negociacao.
+    if sub.aprovada_em:
+        flash("Cotação já foi aprovada — sem negociação ativa.", "warning")
+        return redirect(url_for("admin.aprovar_cotacoes", rodada_id=sub.rodada_id))
     texto = request.form.get("texto", "").strip()
     if not texto:
         flash("Escreva uma mensagem antes de enviar.", "warning")
