@@ -5,8 +5,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func, select, text
 from app import db
 from app.models import (
-    Lanchonete, Rodada, ItemPedido, Produto,
-    ParticipacaoRodada, Fornecedor,
+    Lanchonete, Rodada, ItemPedido, ParticipacaoRodada, Fornecedor,
 )
 from app.services.app_info import app_version, migration_head
 from app.services.dashboard_lanchonete import dashboard_data

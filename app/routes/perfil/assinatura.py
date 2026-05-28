@@ -16,7 +16,6 @@ from flask import render_template, abort
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
-from app import db
 from app.auth_decorators import lanchonete_required
 from app.models import Assinatura
 from . import perfil_bp

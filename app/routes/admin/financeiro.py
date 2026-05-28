@@ -26,7 +26,7 @@ from sqlalchemy.orm import joinedload, selectinload
 from app import db, limiter
 from app.models import Assinatura, Fatura, Lanchonete
 from app.services.assinatura import (
-    criar_assinatura_inicial, criar_assinatura_inicial_idempotente,
+    criar_assinatura_inicial_idempotente,
 )
 from app.services.storage import get_storage
 from . import admin_bp, admin_required

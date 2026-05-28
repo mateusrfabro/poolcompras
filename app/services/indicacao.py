@@ -141,7 +141,7 @@ def _notificar_quase_la_se_aplicavel(indicador: Lanchonete) -> None:
         return
     if not indicador.responsavel:
         return
-    titulo = f"Falta 1 indicação pra você ganhar 1 mês grátis"
+    titulo = "Falta 1 indicação pra você ganhar 1 mês grátis"
     detalhes = (
         f"Você já tem {pendentes} indicações registradas. "
         f"Indique mais 1 e, quando completar 30 dias ativa, libera o "

@@ -24,9 +24,9 @@ from __future__ import annotations
 import os
 import uuid
 from abc import ABC, abstractmethod
-from typing import BinaryIO, Optional
+from typing import Optional
 
-from flask import current_app, url_for
+from flask import url_for
 from werkzeug.datastructures import FileStorage
 from werkzeug.utils import secure_filename
 

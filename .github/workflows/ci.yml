@@ -14,7 +14,7 @@ concurrency:
 
 jobs:
   test:
-    name: pytest
+    name: pytest + coverage
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -34,10 +34,63 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-dev.txt
 
-      - name: Run tests
+      - name: Run tests with coverage
         env:
           # SECRET_KEY é exigido pelo create_app(). Em CI, qualquer string
           # serve — não é uma chave de prod.
           SECRET_KEY: ci-test-secret-not-for-prod
         # Exclui tests/load (Locust) — é teste de carga, não unit/integration.
-        run: pytest tests/ -q --ignore=tests/load
+        # Threshold 70% — base atual ~75%, deixa folga pra novos testes.
+        run: |
+          pytest tests/ -q --ignore=tests/load \
+            --cov=app --cov-report=term-missing \
+            --cov-fail-under=70
+
+  lint:
+    name: ruff
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install ruff
+        run: pip install ruff==0.7.4
+
+      - name: Run ruff
+        # Soh checa erros (--select=E,F) — projeto ainda nao adotou style
+        # rules. Pode evoluir pra full check depois de uma passada de cleanup.
+        # Ignora:
+        # - E501 (line length): codigo BR usa portugues + comentarios extensos
+        # - E741 (l ambiguo): convencao do projeto, sem ambiguidade real
+        # - F811 (redefinition): falso positivo em fluxo/__init__.py
+        #   (param de funcao vs import de submodulo em escopos diferentes)
+        run: ruff check app/ --select=E,F --ignore=E501,E741,F811
+
+  security:
+    name: bandit + pip-audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Nao bloqueia o merge enquanto a base nao for revisada — gera report
+    # informativo. Promover pra blocking depois do primeiro pente fino.
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install bandit + pip-audit
+        run: pip install bandit==1.7.10 pip-audit==2.7.3
+
+      - name: Run bandit (security scan no codigo)
+        run: bandit -r app/ -ll --skip B101,B311
+
+      - name: Run pip-audit (CVE em dependencias)
+        run: pip-audit --requirement requirements.txt --strict

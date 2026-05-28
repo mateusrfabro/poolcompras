@@ -1,9 +1,8 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
-from datetime import datetime
 from sqlalchemy import func
 from app import db
-from app.models import Rodada, ItemPedido, Cotacao, Fornecedor, Produto, ParticipacaoRodada, RodadaProduto, SubmissaoCotacao, EventoRodada
+from app.models import Rodada, ItemPedido, Cotacao, Produto, ParticipacaoRodada, RodadaProduto, SubmissaoCotacao, EventoRodada
 from sqlalchemy.orm import joinedload
 
 rodadas_bp = Blueprint("rodadas", __name__, url_prefix="/rodadas")

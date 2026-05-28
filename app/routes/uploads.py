@@ -9,7 +9,7 @@ Regras de acesso:
 Nao servir arquivos via static/: o storage guarda em instance/uploads/
 (fora da raiz web) e esta rota valida ownership antes de mandar o arquivo.
 """
-from flask import Blueprint, abort, send_file, current_app
+from flask import Blueprint, abort, send_file
 from flask_login import login_required, current_user
 from io import BytesIO
 from sqlalchemy import select

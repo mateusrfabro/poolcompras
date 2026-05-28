@@ -7,14 +7,13 @@ entregou, quem confirmou.
 from __future__ import annotations
 
 from collections import OrderedDict
-from datetime import datetime, timezone
 
 from sqlalchemy import select, func
 from sqlalchemy.orm import joinedload
 
 from app import db
 from app.models import (
-    Rodada, ParticipacaoRodada, Lanchonete, Cotacao, Fornecedor,
+    Rodada, ParticipacaoRodada, Cotacao, Fornecedor,
 )
 
 
