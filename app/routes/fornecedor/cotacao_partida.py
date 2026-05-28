@@ -59,7 +59,7 @@ def ver_demanda(rodada_id):
 def cotar_catalogo(rodada_id):
     """Fornecedor preenche preço de partida nos produtos do catálogo + sugere novos."""
     rodada = db.get_or_404(Rodada, rodada_id)
-    if rodada.status != "aguardando_cotacao":
+    if rodada.status != Rodada.STATUS_AGUARDANDO_COTACAO:
         flash("Esta rodada não está mais aberta para cotação.", "warning")
         return redirect(url_for("fornecedor.dashboard"))
 

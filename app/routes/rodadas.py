@@ -123,7 +123,7 @@ def detalhe(rodada_id):
     # Protecao contra vazamento competitivo: fornecedor so ve preco_final/vencedor
     # nas linhas onde ele proprio venceu, enquanto a rodada ainda nao terminou.
     # Apos 'finalizada'/'cancelada', todos veem tudo (transparencia do resultado).
-    rodada_encerrada = rodada.status in ("finalizada", "cancelada")
+    rodada_encerrada = rodada.status in (Rodada.STATUS_FINALIZADA, Rodada.STATUS_CANCELADA)
     esconder_concorrencia = (
         current_user.is_fornecedor
         and current_user.fornecedor

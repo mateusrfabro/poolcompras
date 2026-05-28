@@ -388,7 +388,7 @@ def remover(item_id):
         flash("Você não pode remover este item.", "error")
         return redirect(url_for("pedidos.listar"))
 
-    if item.rodada.status != "aberta":
+    if item.rodada.status != Rodada.STATUS_ABERTA:
         flash("Esta rodada já foi fechada.", "error")
         return redirect(url_for("pedidos.listar"))
 

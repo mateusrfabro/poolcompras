@@ -45,9 +45,9 @@ def _ja_aceita_fase_aceite(rodada):
     - status == 'em_negociacao' com ao menos 1 SubmissaoCotacao aprovada
       (fluxo novo — lanchonetes ja podem aceitar proposta parcial)
     """
-    if rodada.status == "finalizada":
+    if rodada.status == Rodada.STATUS_FINALIZADA:
         return True
-    if rodada.status == "em_negociacao":
+    if rodada.status == Rodada.STATUS_EM_NEGOCIACAO:
         return db.session.query(SubmissaoCotacao.id).filter_by(
             rodada_id=rodada.id
         ).filter(SubmissaoCotacao.aprovada_em.isnot(None)).first() is not None

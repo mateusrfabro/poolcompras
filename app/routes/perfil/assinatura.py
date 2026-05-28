@@ -17,7 +17,7 @@ from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
 
 from app.auth_decorators import lanchonete_required
-from app.models import Assinatura
+from app.models import Assinatura, Fatura
 from . import perfil_bp
 
 logger = logging.getLogger(__name__)
@@ -49,11 +49,11 @@ def assinatura():
     if a:
         contagens["total"] = len(a.faturas)
         for f in a.faturas:
-            if f.status == "paga":
+            if f.status == Fatura.STATUS_PAGA:
                 contagens["pagas"] += 1
-            elif f.status == "atrasada":
+            elif f.status == Fatura.STATUS_ATRASADA:
                 contagens["atrasadas"] += 1
-            elif f.status == "cancelada":
+            elif f.status == Fatura.STATUS_CANCELADA:
                 contagens["canceladas"] += 1
             else:
                 contagens["pendentes"] += 1

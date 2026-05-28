@@ -1,6 +1,10 @@
-"""Rotas admin de moderacao: pedidos de lanchonetes, produtos sugeridos e cotacoes finais."""
+"""Rotas admin de moderacao: pedidos de lanchonetes, produtos sugeridos e cotacoes finais.
+
+Logica de aprovar/devolver/reprovar/reverter foi extraida pra:
+    app/services/moderacao_pedido.py   (4 acoes em pedido)
+    app/services/moderacao_cotacao.py  (3 acoes em cotacao final)
+"""
 import logging
-from datetime import datetime, timezone
 from flask import render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from sqlalchemy.orm import joinedload
@@ -10,9 +14,7 @@ from app.models import (
     Produto, Rodada, RodadaProduto, Cotacao,
     ItemPedido, ParticipacaoRodada, SubmissaoCotacao, NotaNegociacao,
 )
-from app.services.notificacoes import (
-    notificar_evento, notificar_lanchonetes_cotacao_aprovada,
-)
+from app.services import moderacao_pedido, moderacao_cotacao
 from . import admin_bp, admin_required
 
 logger = logging.getLogger(__name__)
@@ -74,6 +76,16 @@ def rodada_aprovar_produtos(rodada_id):
     )
 
 
+# Dispatch acao -> service. Cada handler tem assinatura unificada
+# (part, admin, rodada) exceto devolver(part, admin, rodada, motivo).
+_ACOES_PEDIDO = {
+    "aprovar":  lambda part, admin, rodada, motivo: moderacao_pedido.aprovar(part, admin, rodada),
+    "devolver": lambda part, admin, rodada, motivo: moderacao_pedido.devolver(part, admin, rodada, motivo),
+    "reprovar": lambda part, admin, rodada, motivo: moderacao_pedido.reprovar(part, admin, rodada),
+    "reverter": lambda part, admin, rodada, motivo: moderacao_pedido.reverter(part, admin, rodada),
+}
+
+
 @admin_bp.route("/rodadas/<int:rodada_id>/moderar-pedidos", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -91,68 +103,13 @@ def moderar_pedidos(rodada_id):
             flash("Participação não encontrada.", "error")
             return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
 
-        nome_lanchonete = part.lanchonete.nome_fantasia if part.lanchonete else f"#{part.lanchonete_id}"
+        handler = _ACOES_PEDIDO.get(acao)
+        if handler is None:
+            flash("Ação inválida.", "error")
+            return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
 
-        notif_titulo = notif_detalhes = None
-        if acao == "aprovar":
-            # Idempotencia: 2 cliques rapidos / 2 admins simultaneos nao geram 2 notifs.
-            if part.pedido_aprovado_em is not None:
-                flash(f"Pedido de {nome_lanchonete} ja estava aprovado.", "info")
-                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
-            part.pedido_aprovado_em = datetime.now(timezone.utc)
-            part.pedido_aprovado_por_id = current_user.id
-            part.pedido_devolvido_em = None
-            part.pedido_reprovado_em = None
-            flash(f"Pedido de {nome_lanchonete} aprovado.", "success")
-            notif_titulo = "Pedido aprovado"
-            notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi aprovado "
-                              f"e entrou no pool.")
-        elif acao == "devolver":
-            # Idempotencia: ja devolvida e lanchonete nao reenviou ainda — nao
-            # duplica notif/log. Se lanchonete reenviou (pedido_enviado_em
-            # != None), eh OK devolver de novo.
-            if part.pedido_devolvido_em is not None and part.pedido_enviado_em is None:
-                flash(f"Pedido de {nome_lanchonete} ja estava devolvido e aguardando reenvio.", "info")
-                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
-            part.pedido_devolvido_em = datetime.now(timezone.utc)
-            part.pedido_motivo_devolucao = motivo
-            part.pedido_enviado_em = None
-            part.pedido_aprovado_em = None
-            flash(f"Pedido de {nome_lanchonete} devolvido a lanchonete.", "success")
-            notif_titulo = "Pedido devolvido"
-            motivo_txt = f" Motivo: {motivo}." if motivo else ""
-            notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi devolvido "
-                              f"pelo admin.{motivo_txt} Ajuste e reenvie.")
-        elif acao == "reprovar":
-            # Reprovar eh estado terminal — 2 cliques nao devem duplicar log/notif.
-            if part.pedido_reprovado_em is not None:
-                flash(f"Pedido de {nome_lanchonete} ja estava reprovado.", "info")
-                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
-            part.pedido_reprovado_em = datetime.now(timezone.utc)
-            part.pedido_aprovado_em = None
-            flash(f"Pedido de {nome_lanchonete} reprovado.", "warning")
-            notif_titulo = "Pedido reprovado"
-            notif_detalhes = (f"Seu pedido na rodada '{rodada.nome}' foi reprovado "
-                              f"pelo admin. Contate-nos se precisar.")
-        elif acao == "reverter":
-            # Sem aprovacao em vigor, nao ha o que reverter.
-            if part.pedido_aprovado_em is None:
-                flash(f"Pedido de {nome_lanchonete} não está aprovado — nada a reverter.", "info")
-                return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
-            part.pedido_aprovado_em = None
-            part.pedido_aprovado_por_id = None
-            flash(f"Aprovacao de {nome_lanchonete} revertida. Pedido voltou a aguardar moderacao.", "info")
-
-        db.session.commit()
-        logger.info(
-            "ADMIN_MODERAR_PEDIDO admin=%s acao=%s rodada=%s lanchonete=%s",
-            current_user.id, acao, rodada_id, part.lanchonete_id,
-        )
-
-        # Notifica a lanchonete do desfecho
-        if notif_titulo and part.lanchonete and part.lanchonete.responsavel:
-            notificar_evento(part.lanchonete.responsavel, notif_titulo, notif_detalhes)
-
+        result = handler(part, current_user, rodada, motivo)
+        flash(result.flash_msg, result.flash_tipo)
         return redirect(url_for("admin.moderar_pedidos", rodada_id=rodada_id))
 
     participacoes = (
@@ -195,6 +152,13 @@ def moderar_pedidos(rodada_id):
     )
 
 
+_ACOES_COTACAO = {
+    "aprovar":  moderacao_cotacao.aprovar,
+    "devolver": moderacao_cotacao.devolver,
+    "reverter": moderacao_cotacao.reverter,
+}
+
+
 @admin_bp.route("/rodadas/<int:rodada_id>/aprovar-cotacoes", methods=["GET", "POST"])
 @login_required
 @admin_required
@@ -210,57 +174,13 @@ def aprovar_cotacoes(rodada_id):
             flash("Submissão não encontrada.", "error")
             return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
 
-        nome_forn = sub.fornecedor.razao_social if sub.fornecedor else f"#{sub.fornecedor_id}"
+        handler = _ACOES_COTACAO.get(acao)
+        if handler is None:
+            flash("Ação inválida.", "error")
+            return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
 
-        notif_titulo = notif_detalhes = None
-        if acao == "aprovar":
-            # Guarda idempotente: 2 admins clicando "Aprovar" simultaneo nao
-            # devem disparar 2 notificacoes nem 2 logs. Se ja foi aprovada,
-            # mensagem amigavel e retorna sem mutacao.
-            if sub.aprovada_em is not None:
-                flash(f"Cotacao de {nome_forn} ja estava aprovada.", "info")
-                return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
-            sub.aprovada_em = datetime.now(timezone.utc)
-            sub.aprovada_por_id = current_user.id
-            sub.devolvida_em = None
-            flash(f"Cotacao de {nome_forn} aprovada.", "success")
-            notif_titulo = "Cotação aprovada"
-            notif_detalhes = (f"Sua cotação final na rodada '{rodada.nome}' foi "
-                              f"aprovada pelo admin e está disponível pras lanchonetes.")
-        elif acao == "devolver":
-            # Idempotencia: ja devolvida e fornecedor ainda nao reenviou.
-            if sub.devolvida_em is not None and sub.enviada_em is None:
-                flash(f"Cotacao de {nome_forn} ja estava devolvida e aguardando reenvio.", "info")
-                return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
-            sub.devolvida_em = datetime.now(timezone.utc)
-            sub.enviada_em = None
-            sub.aprovada_em = None
-            flash(f"Cotação de {nome_forn} devolvida para negociação.", "success")
-            notif_titulo = "Cotação devolvida"
-            notif_detalhes = (f"Sua cotação na rodada '{rodada.nome}' foi devolvida "
-                              f"pelo admin. Ajuste os preços e reenvie.")
-        elif acao == "reverter":
-            # Sem aprovacao em vigor, nada a reverter.
-            if sub.aprovada_em is None:
-                flash(f"Cotação de {nome_forn} não está aprovada — nada a reverter.", "info")
-                return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
-            sub.aprovada_em = None
-            sub.aprovada_por_id = None
-            flash(f"Aprovacao de {nome_forn} revertida.", "info")
-
-        db.session.commit()
-        logger.info(
-            "ADMIN_APROVAR_COTACAO admin=%s acao=%s rodada=%s submissao=%s fornecedor=%s",
-            current_user.id, acao, rodada_id, submissao_id, sub.fornecedor_id,
-        )
-
-        if notif_titulo and sub.fornecedor and sub.fornecedor.responsavel:
-            notificar_evento(sub.fornecedor.responsavel, notif_titulo, notif_detalhes)
-        # Aprovacao tambem deve avisar lanchonetes que tem proposta nova
-        # disponivel pra aceitar (notif separada — ja que a notif de
-        # "Cotacao aprovada" eh do ponto de vista do fornecedor).
-        if acao == "aprovar" and sub.fornecedor:
-            notificar_lanchonetes_cotacao_aprovada(rodada, sub.fornecedor)
+        result = handler(sub, current_user, rodada)
+        flash(result.flash_msg, result.flash_tipo)
         return redirect(url_for("admin.aprovar_cotacoes", rodada_id=rodada_id))
 
     submissoes = (
