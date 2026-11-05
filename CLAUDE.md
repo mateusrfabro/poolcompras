@@ -5,7 +5,7 @@ Central de compras cooperativa para hamburguerias de Londrina. Lanchonetes fazem
 
 **Marca atual:** Aggron (rebrand de PoolCompras em 2026-05). Domínio: aggron.com.br
 **Repo:** https://github.com/mateusrfabro/poolcompras (nome do repo NAO foi renomeado — manter)
-**Pasta local:** `C:/Users/NITRO/Projects/poolcompras` (pasta NAO foi renomeada — manter)
+**Pasta local:** `C:/Users/mateu/Projects/poolcompras` (pasta NAO foi renomeada — manter)
 **Stack:** Flask + SQLAlchemy + Alembic + Jinja2 + CSS vanilla + JS vanilla CSP-safe
 
 ### Bindings ainda como `poolcompras` (intencional — NAO mexer)
@@ -26,7 +26,7 @@ Central de compras cooperativa para hamburguerias de Londrina. Lanchonetes fazem
 3. **Fornecedor**: cota precos (partida + final), negocia com admin, recebe pagamentos
 
 ## Ambiente de execucao
-- **Python 3.12:** `C:/Users/NITRO/AppData/Local/Programs/Python/Python312/python.exe`
+- **Python 3.12:** `C:/Users/mateu/AppData/Local/Programs/Python/Python312/python.exe`
   - 314 existe no PATH mas falta pacotes — sempre 3.12
 - **Rodar Flask:** `python run.py > /tmp/flask.log 2>&1 &`
 - **Ngrok:** `ngrok http 5050 --log=stdout > /tmp/ngrok.log 2>&1 &`
