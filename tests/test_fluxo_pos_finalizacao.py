@@ -8,7 +8,10 @@ Cobre happy path e IDOR por rota.
 """
 import io
 import re
-from datetime import datetime, timezone
+from datetime import date, datetime, timedelta, timezone
+
+# A rota rejeita entrega com mais de 30 dias no passado: data fixa vira bomba-relogio.
+ENTREGA_DATA = (date.today() + timedelta(days=3)).isoformat()
 
 from app import db
 from app.models import (
@@ -257,14 +260,14 @@ def test_fornecedor_informa_entrega_apos_pagamento(app, client_lanchA):
     csrf = _get_csrf(client_lanchA, "/fornecedor/dashboard")
     client_lanchA.post(
         f"/fluxo/rodada/{rodada_id}/lanchonete/{lanch_id}/entrega",
-        data={"csrf_token": csrf, "entrega_data": "2026-05-01"},
+        data={"csrf_token": csrf, "entrega_data": ENTREGA_DATA},
         follow_redirects=False,
     )
     p = ParticipacaoRodada.query.filter_by(
         rodada_id=rodada_id, lanchonete_id=lanch_id,
     ).first()
     assert p.entrega_informada_em is not None
-    assert p.entrega_data.isoformat() == "2026-05-01"
+    assert p.entrega_data.isoformat() == ENTREGA_DATA
 
 
 def test_entrega_sem_pagamento_confirmado_bloqueia(app, client_lanchA):
@@ -273,7 +276,7 @@ def test_entrega_sem_pagamento_confirmado_bloqueia(app, client_lanchA):
     csrf = _get_csrf(client_lanchA, "/fornecedor/dashboard")
     client_lanchA.post(
         f"/fluxo/rodada/{rodada_id}/lanchonete/{lanch_id}/entrega",
-        data={"csrf_token": csrf, "entrega_data": "2026-05-01"},
+        data={"csrf_token": csrf, "entrega_data": ENTREGA_DATA},
         follow_redirects=False,
     )
     p = ParticipacaoRodada.query.filter_by(
@@ -293,7 +296,7 @@ def _prepara_ate_entrega(app, client):
                 data={"csrf_token": csrf}, follow_redirects=False)
     csrf = _get_csrf(client, "/fornecedor/dashboard")
     client.post(f"/fluxo/rodada/{rodada_id}/lanchonete/{lanch_id}/entrega",
-                data={"csrf_token": csrf, "entrega_data": "2026-05-01"},
+                data={"csrf_token": csrf, "entrega_data": ENTREGA_DATA},
                 follow_redirects=False)
     # Volta pra lanchonete pra proximas acoes
     _troca_para(client, "lancha@test.com")
