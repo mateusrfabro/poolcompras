@@ -6,3 +6,8 @@ __pycache__/
 instance/
 .venv/
 venv/
+# Claude Code: config local de maquina
+.claude/settings.local.json
+# env: qualquer .env* fica fora; so o exemplo e versionado
+.env*
+!.env.example
